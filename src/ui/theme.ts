@@ -8,7 +8,7 @@ export const theme = {
   warning: pc.yellow,
   error: pc.red,
   muted: pc.dim,
-  border: pc.gray,
+  border: 'gray',
   title: (text: string): string => pc.bold(pc.cyan(text)),
   highlight: (text: string): string => pc.bold(pc.cyan(text)),
 } as const;
