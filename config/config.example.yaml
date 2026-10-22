@@ -39,8 +39,11 @@ database:
 player:
   # Reproductor por defecto: debe existir una entrada con ese nombre en `players`.
   default: mpv
-  # `detach`: la TUI sigue funcionando; `foreground`: se espera al proceso.
+  # `detach`: la TUI sigue funcionando y el reproductor sobrevive al cierre.
+  # `foreground`: se espera al proceso (útil en scripts). La TUI siempre usa detach.
   onLaunch: detach
+  # `args` es una lista de argumentos, no una línea de shell. `{file}` es obligatorio
+  # y se sustituye por la ruta del vídeo; las rutas con espacios no se dividen.
   players:
     mpv:
       command: mpv

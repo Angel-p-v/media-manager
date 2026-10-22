@@ -6,7 +6,7 @@
 
 [![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%28M5%29-orange)](#estado-del-proyecto)
+[![Status](https://img.shields.io/badge/status-alpha%20%28M6%29-orange)](#estado-del-proyecto)
 
 ---
 
@@ -28,16 +28,16 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 
 ## ¿Para qué sirve?
 
-- **Centralizar el acceso.** Una sola entrada (`mm`) a toda tu colección, sin reliance del
+- **Centralizar el acceso.** Una sola entrada (`mm`) a toda tu colección, sin depender del
   explorador de archivos ni de la web del servidor de streaming.
 - **Indexer local, instantáneo.** Un índice SQLite (con FTS5) convierte "buscar entre
   10 000 ficheros" en "buscar entre 10 000 filas" con búsqueda _full-text_.
 - **Reproducir, no retransmitir.** El vídeo se abre en el reproductor local (`mpv`, `vlc`)
   con el hardware y la calidad que ya tienes; la app solo orquesta el proceso.
-- **Ser incredibly configurable.** Rutas, exclusiones, reproductores, tema y atajos de
+- **Configurable de verdad.** Rutas, exclusiones, reproductores, tema y atajos de
   teclado viven en un `config.yaml` externo, validado estrictamente al arrancar.
-- **Ser componible.** Todo lo que hace la TUI se puede hacer también por línea de
-  comandos y en formato `--json`, para integrarlo con scripts,Hooks o cualquier otra
+- **Componible.** Todo lo que hace la TUI se puede hacer también por línea de
+  comandos y en formato `--json`, para integrarlo con scripts, hooks o cualquier otra
   herramienta.
 
 ## Características
@@ -49,14 +49,14 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Indexación recursiva + incremental                           | ✅ M3  |
 | Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅ M3  |
 | Búsqueda instantánea en línea de comandos                    | ✅ M4  |
-| Reproducción con `mpv` / `vlc`                               | 🔜 M6  |
+| Reproducción con `mpv` / `vlc`                               | ✅ M6  |
 | Configuración YAML validada con Zod                          | ✅ M1  |
-| Modo _watch_ (reindexado automático)                         | 🔜 M6  |
+| Modo _watch_ (reindexado automático)                         | ✅ M6  |
 | Salida `--json` para scripts                                 | ✅ M4  |
 
 ## Estado del proyecto
 
-**Alpha — M5 completado; siguiente M6 (reproductor y modo _watch_).** El plan de
+**Alpha — M6 completado; siguiente M7 (robustez y rendimiento).** El plan de
 desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
@@ -68,7 +68,7 @@ desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas
 | M3   | Indexación y parseo           | `0.3.0` ✅ |
 | M4   | CLI _headless_ + búsqueda     | `0.4.0` ✅ |
 | M5   | TUI (Ink)                     | `0.5.0` ✅ |
-| M6   | Reproductor + modo watch      | `0.6.0`    |
+| M6   | Reproductor + modo watch      | `0.6.0` ✅ |
 | M7   | Robustez y rendimiento        | `0.7.0`    |
 | M8   | Publicación `v1.0.0`          | `1.0.0`    |
 
@@ -106,10 +106,18 @@ mm list                  # enumera la biblioteca
 mm search "cowboy bebop" # búsqueda por título
 mm search "akira" --json # salida para scripts
 mm show "cowboy bebop"   # detalle de un título (temporadas, episodios, rutas)
-mm play "cowboy bebop"   # lanza el siguiente episodio sin ver en mpv/vlc
+mm play "cowboy bebop"   # abre el primer episodio (o el fichero con --file) en mpv/vlc
+mm play "akira" --dry-run # muestra el comando sin lanzar el reproductor
+mm watch                 # vigila las raíces y reindexa al detectar cambios
 mm config --path          # ruta del archivo de configuración en uso
 mm db stats               # tamaño de la biblioteca y del índice
 ```
+
+`mm play` acepta `--file <id>` para elegir un fichero concreto (el id aparece en
+`mm show`), `--player <nombre>` para usar otro reproductor de los configurados,
+`--foreground` para esperar a que termine y `--dry-run` para inspeccionar el comando.
+La salida `--json` de `mm play --dry-run` incluye el comando, los argumentos, el modo y
+el fichero resuelto.
 
 ### Códigos de salida
 
@@ -135,7 +143,7 @@ pueden cambiar en `keybindings` de la configuración):
 | `/`     | abrir el buscador; `Esc` vuelve          |
 | `s`     | ver la configuración efectiva            |
 | `?`     | ayuda con los atajos                     |
-| `p`     | reproducir (llega en el hito M6)         |
+| `p`     | reproducir el primer fichero del título  |
 
 ## Configuración
 
@@ -189,6 +197,11 @@ keybindings:
   play: p
   nextSection: tab
 ```
+
+`{file}` es obligatorio en la plantilla de `args`: se sustituye por la ruta del vídeo
+como un argumento independiente (nunca se pasa por una shell). `onLaunch: detach` no
+bloquea la terminal y el reproductor sigue vivo si cierras la TUI; `foreground` espera a
+que termine. La TUI usa siempre `detach` para no congelarse.
 
 Precedencia de la configuración: `defaults → archivo YAML → variables de entorno → flags`.
 

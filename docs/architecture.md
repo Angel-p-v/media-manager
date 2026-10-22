@@ -47,7 +47,9 @@ Conexión SQLite (WAL, claves foráneas), migraciones versionadas y repositorios
 ### `src/core/indexer/`
 
 Recorrido del árbol de ficheros, clasificación del contenido y parsers de nombres
-(`S01E02`, `1x02`, títulos de película). Hito M3.
+(`S01E02`, `1x02`, títulos de película). Hito M3. `watcher.ts` añade el modo _watch_:
+filtra eventos de vídeo, agrupa ráfagas con debounce y reindexa de forma incremental para
+detectar altas, cambios y borrados (M6).
 
 ### `src/core/library/`
 
@@ -57,8 +59,17 @@ buscar con FTS5, resolver un id o un título con sus ficheros y agregar estadís
 
 ### `src/core/player/`
 
-Lanzamiento de reproductores externos (`mpv`, `vlc`) mediante `spawn` sin shell.
-Hito M6.
+Lanzamiento de reproductores externos implementado en el hito M6:
+
+- `launcher.ts` construye el plan a partir de la plantilla `{file}`, elige el reproductor
+  configurado y comprueba que el binario exista antes de lanzarlo. Usa siempre
+  `spawn` con `shell: false` y argumentos separados.
+- En modo `detach` el hijo se lanza con stdio ignorado y `unref()`, de modo que sobrevive
+  al cierre de la TUI; en `foreground` hereda stdio y `wait()` espera su salida.
+- `selection.ts` resuelve qué fichero se reproduce: el primero ordenado por temporada y
+  episodio, o el id indicado con `--file`.
+- La TUI fuerza `detach` para no bloquearse; la CLI respeta `player.onLaunch` y permite
+  `--foreground`.
 
 ### `src/ui/`
 
@@ -76,8 +87,10 @@ Interfaz de terminal con Ink implementada en el hito M5:
 ### `src/commands/`
 
 Subcomandos de la CLI que no dependen de Ink: `config`, `index`, `list`, `search`,
-`show`, `db stats`. Los códigos de salida y el contrato de `--json` están fijados en el
-[ADR 0004](./adr/0004-contrato-cli.md); los errores van a `stderr`.
+`show`, `play`, `watch` y `db stats`. Los códigos de salida y el contrato de `--json`
+están fijados en el [ADR 0004](./adr/0004-contrato-cli.md); los errores van a `stderr`.
+Las decisiones de reproducción y _watch_ están en el
+[ADR 0006](./adr/0006-reproductor-y-watch.md).
 
 ## Flujo de datos de una indexación
 
@@ -98,6 +111,33 @@ mm search "sever" ──▶ commands/search ──▶ LibraryService.search
                                               │
                                               ▼
                                    media_fts MATCH + bm25 → SQLite
+```
+
+## Flujo de reproducción
+
+```
+mm play "sever" ──▶ LibraryService.find ──▶ fichero (primero o --file)
+                                              │
+                                              ▼
+                           createLaunchPlan (sustituye {file})
+                                              │
+                                              ▼
+                     spawn(command, args, { shell: false })
+                         │ detach                    │ foreground
+                         ▼                           ▼
+              stdio ignore + unref          stdio inherit + await close
+```
+
+## Flujo del modo _watch_
+
+```
+chokidar (raíces) ──▶ evento add/change/unlink
+                              │ debounce 400 ms
+                              ▼
+                    indexLibrary (incremental)
+                              │
+                              ▼
+                 repositorios → SQLite (altas y borrados)
 ```
 
 `mm list`, `mm show` y `mm db stats` recorren el mismo camino: la capa de comandos solo
