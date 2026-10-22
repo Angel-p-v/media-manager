@@ -113,9 +113,9 @@ Hitos del plan (ver `PLAN.md` §7):
 | ---- | ----------------------------------------------------- | ----------- |
 | M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho    |
 | M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ en curso |
-| M3   | Indexación y parseo (scanner + parsers)               | ☐ siguiente |
-| M4   | CLI headless + búsqueda                               | ☐           |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
+| M4   | CLI headless + búsqueda                               | ☐ siguiente |
 | M5   | TUI (Ink)                                             | ☐           |
 | M6   | Reproductor mpv/vlc + modo watch                      | ☐           |
 | M7   | Robustez y rendimiento                                | ☐           |

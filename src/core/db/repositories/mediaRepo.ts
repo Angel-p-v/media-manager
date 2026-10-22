@@ -27,6 +27,7 @@ export type MediaRepository = {
   list(options?: ListMediaOptions): MediaRow[];
   search(query: string, limit?: number): MediaRow[];
   remove(id: number): boolean;
+  removeEmpty(): number;
   count(type?: MediaType): number;
   listFolders(): string[];
 };
@@ -48,6 +49,10 @@ export function createMediaRepository(db: Db): MediaRepository {
   const findByIdStatement = db.prepare('SELECT * FROM media WHERE id = ?');
   const findByFolderStatement = db.prepare('SELECT * FROM media WHERE folder_path = ?');
   const removeStatement = db.prepare('DELETE FROM media WHERE id = ?');
+  const removeEmptyStatement = db.prepare(`
+    DELETE FROM media
+    WHERE NOT EXISTS (SELECT 1 FROM media_files WHERE media_files.media_id = media.id)
+  `);
   const countStatement = db.prepare<[MediaType], { total: number }>(
     'SELECT COUNT(*) AS total FROM media WHERE type = ?',
   );
@@ -133,6 +138,11 @@ export function createMediaRepository(db: Db): MediaRepository {
 
     remove(id: number): boolean {
       return removeStatement.run(id).changes > 0;
+    },
+
+    /** Elimina los títulos que se han quedado sin ficheros. */
+    removeEmpty(): number {
+      return removeEmptyStatement.run().changes;
     },
 
     count(type?: MediaType): number {

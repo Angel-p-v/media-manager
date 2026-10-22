@@ -188,7 +188,35 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 
 ## 7. Roadmap por hitos
 
+> **Seguimiento obligatorio.** Cada tarea completada se marca `[x]` en el mismo commit
+> en que se termina. Un hito pasa a ✅ solo cuando todas sus casillas están marcadas,
+> `npm run verify` está en verde y su PR se ha mergeado con squash. El estado se
+> refleja aquí, en la tabla de hitos de `README.md` y en `AGENTS.md`.
+>
+> **Leyenda:** ✅ completado · 🟡 en curso · ☐ pendiente
+
+| Hito | Contenido                                             | Estado | Progreso |
+| ---- | ----------------------------------------------------- | ------ | -------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅     | 6/6      |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅     | 5/5      |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅     | 5/5      |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅     | 9/9      |
+| M4   | CLI _headless_ + búsqueda                             | ☐      | 0/10     |
+| M5   | TUI (Ink)                                             | ☐      | 0/7      |
+| M6   | Reproductor + modo _watch_                            | ☐      | 0/6      |
+| M7   | Robustez y rendimiento                                | ☐      | 0/6      |
+| M8   | Release `v1.0.0`                                      | ☐      | 0/7      |
+
 ### M0 — Cimientos del repositorio · `0.0.1`
+
+**Tareas**
+
+- [x] Estructura de carpetas, `tsconfig` estricto y ficheros base del repositorio
+- [x] ESLint 10 _type-aware_ + Prettier 3.9
+- [x] Vitest 5 con proyectos `unit`, `integration` y `e2e`
+- [x] Husky 9 + lint-staged 17 + commitlint 21
+- [x] CI en Node 22/24/26, Dependabot y plantillas de GitHub
+- [x] README, LICENSE y `npm run verify` reproducible desde cero
 
 **Alcance:** `git init` en `main`, estructura de carpetas, `tsconfig` estricto, ESLint,
 Prettier, Vitest con 3 proyectos, Husky + lint-staged + commitlint, workflow de CI,
@@ -204,6 +232,14 @@ público con `npm run verify` reproducible desde cero.
 ---
 
 ### M1 — Núcleo de configuración · `0.1.0`
+
+**Tareas**
+
+- [x] Esquema Zod estricto y valores por defecto
+- [x] Fusión profunda con arrays reemplazados
+- [x] Carga de YAML con precedencia `defaults → archivo → entorno` y errores accionables
+- [x] Rutas XDG, `~`, `MM_CONFIG` y `mm config [--path|--validate|--json]`
+- [x] Tests unitarios/integración y ADR 0002
 
 **Alcance:** `src/core/config/{schema,defaults,loader,paths}.ts` con Zod estricto;
 carga de `~/.config/media-manager/config.yaml`; precedencia
@@ -221,11 +257,19 @@ errores accionables con ruta y campo; `mm config [--path|--validate|--json]`.
 
 ---
 
-### M2 — Persistencia SQLite · `0.2.0` ✅ _implementado en `feat/db-persistence`_
+### M2 — Persistencia SQLite · `0.2.0` ✅
+
+**Tareas**
+
+- [x] Conexión SQLite con WAL, claves foráneas y `busy_timeout`
+- [x] Migraciones versionadas en TypeScript e idempotentes
+- [x] Repositorios `mediaRepo`/`fileRepo`/`indexRunRepo` con la `Database` inyectada
+- [x] Búsqueda FTS5 con disparadores insert/update/delete
+- [x] Tests de integración sobre SQLite real (`:memory:` y fichero temporal)
 
 **Alcance:** `src/core/db/` con `connection.ts` (WAL, `foreign_keys`, `busy_timeout`),
-migraciones versionadas, repositorios `mediaRepo`/`fileRepo`, tabla FTS5 para búsqueda,
-`mm db stats`.
+migraciones versionadas, repositorios `mediaRepo`/`fileRepo`, tabla FTS5 para búsqueda.
+El comando `mm db stats` se implementa en M4, cuando existe la capa de consulta.
 
 **A testear**
 
@@ -243,7 +287,19 @@ búsqueda FTS5 con disparadores y 22 tests de integración sobre SQLite real.
 
 ---
 
-### M3 — Indexación y parseo · `0.3.0` ⚠️ _hito crítico_
+### M3 — Indexación y parseo · `0.3.0` ✅ _hito crítico_
+
+**Tareas**
+
+- [x] `scanner` con profundidad, exclusiones, tamaño mínimo y orden estable
+- [x] `classifier` para series, anime y películas
+- [x] Parsers puros `episode`/`movie`/`text` con tabla de casos
+- [x] Indexación incremental por ruta + `mtime` (sin duplicados)
+- [x] Detección de ficheros borrados y títulos huérfanos
+- [x] `mm index [--dry-run|--root|--json]`
+- [x] Fixtures versionados en `tests/fixtures/library/`
+- [x] CLI y `core` comparten la misma lógica de parseo
+- [x] Tests unitarios/integración, parsers al 100 % de cobertura y ADR 0003
 
 **Alcance:** `src/core/indexer/` con `scanner.ts` (recorrido, profundidad, exclusiones),
 `classifier.ts` (serie/anime/película), `parsers/episode.ts` y `parsers/movie.ts` **puros y sin
@@ -262,9 +318,26 @@ efectos**, upsert incremental (ruta + mtime), detección de borrados,
 **DoD:** parsers al 100 % de cobertura con tabla de casos · fixtures versionados en
 `tests/fixtures/library/` · CLI y `core` comparten la misma lógica de parseo.
 
+**Estado:** implementado en `feat/indexer`. Fixtures reales en `tests/fixtures/library/`,
+pruebas unitarias de patrones y de clasificación, integración con SQLite y árbol temporal,
+y `mm index --dry-run|--root|--json` con estadísticas de ejecución.
+
 ---
 
 ### M4 — CLI _headless_ + búsqueda · `0.4.0`
+
+**Tareas**
+
+- [ ] Casos de uso en `src/core/library/` (listar, buscar, resolver, estadísticas)
+- [ ] `mm list` con filtros de tipo, orden y paginación
+- [ ] `mm search` con FTS5 y filtro de tipo
+- [ ] `mm show` por id o título, con sus ficheros
+- [ ] `mm db stats`
+- [ ] Códigos de salida 0/1/2 documentados
+- [ ] `--json` estable con _snapshots_
+- [ ] E2E del binario compilado (argv, stdout, stderr y `exitCode`)
+- [ ] Integración FTS5 vs `LIKE` comparando planes con `EXPLAIN QUERY PLAN`
+- [ ] README, arquitectura y `AGENTS.md` actualizados
 
 **Alcance:** `src/cli.tsx` con Commander · subcomandos `index|search|show|list|db|config` ·
 códigos de salida documentados (0 ok · 1 error · 2 uso incorrecto) · salida `--json` estable.
@@ -281,6 +354,16 @@ códigos de salida documentados (0 ok · 1 error · 2 uso incorrecto) · salida 
 ---
 
 ### M5 — TUI (Ink) · `0.5.0`
+
+**Tareas**
+
+- [ ] `App.tsx`, `theme.ts` y `screen.ts` (alternate screen)
+- [ ] Hooks `useLibrary`, `useKeymap` y `useConfig`
+- [ ] Componentes `Header`, `Sidebar`, `MediaList`, `MediaDetails`, `StatusBar` y `HelpOverlay`
+- [ ] Vistas `Library`, `Search` y `Settings`
+- [ ] Keybindings configurables desde YAML
+- [ ] Tests de render con `ink-testing-library` y test de arquitectura
+- [ ] Arranque en < 300 ms con 10 000 elementos
 
 **Alcance:** `src/ui/` con `App.tsx`, `theme.ts`, `screen.ts` (alternate screen `?1049h`),
 hooks (`useLibrary`, `useKeymap`, `useConfig`), componentes (`Header`, `Sidebar`,
@@ -299,6 +382,15 @@ arranca en < 300 ms con 10 000 elementos.
 ---
 
 ### M6 — Reproductor + modo _watch_ · `0.6.0`
+
+**Tareas**
+
+- [ ] Launcher con plantilla `{file}`, `detach`/`foreground` y `spawn` sin `shell`
+- [ ] Reproductores `mpv`/`vlc` configurables
+- [ ] `mm play`
+- [ ] `mm watch` con `chokidar` y reindexado incremental
+- [ ] Tests con reproductor _fake_ y E2E de `mm play --dry-run`
+- [ ] UI no bloqueante y proceso hijo que sobrevive al cierre de la TUI
 
 **Alcance:** `src/core/player/launcher.ts` (plantilla de args con `{file}`, `detach` /
 `foreground`, `spawn` sin `shell`), reproductores `mpv`/`vlc` configurables, `mm play`, y
@@ -319,6 +411,15 @@ nunca se usa `shell: true`.
 
 ### M7 — Robustez y rendimiento · `0.7.0`
 
+**Tareas**
+
+- [ ] Benchmarks de escaneo, indexado y búsqueda con `vitest bench`
+- [ ] Logging estructurado con niveles configurables y `--verbose`
+- [ ] Gestor global de errores con códigos
+- [ ] `PRAGMA optimize` / `VACUUM`
+- [ ] Prueba de migración de esquema v1 → v2
+- [ ] `docs/performance.md` con presupuesto de rendimiento
+
 **Alcance:** `vitest bench` (escaneo de 10 000 ficheros, indexado completo, búsqueda) ·
 logging estructurado con niveles configurables · gestor de errores global con códigos ·
 `--verbose` · `PRAGMA optimize` / `VACUUM` · prueba de migración de esquema v1 → v2.
@@ -332,6 +433,16 @@ entradas · test de migración desde la v0.2.
 ---
 
 ### M8 — Release `v1.0.0` · `1.0.0`
+
+**Tareas**
+
+- [ ] Empaquetado y publicación en npm con _provenance_
+- [ ] Binario standalone opcional
+- [ ] `CHANGELOG.md` con release-please
+- [ ] README con demo, `SECURITY.md` y `CONTRIBUTING.md`
+- [ ] Workflow de release
+- [ ] _Smoke post-build_ con el tarball (`npm pack` → instalar → ejecutar)
+- [ ] Tag `v1.0.0`, release de GitHub y verificación en los 3 nodos
 
 **Alcance:** empaquetado y publicación en npm con _provenance_ · binario standalone
 opcional · `CHANGELOG.md` (release-please) · README con demo · `SECURITY.md` ·

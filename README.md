@@ -6,7 +6,7 @@
 
 [![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%28M0%29-orange)](#estado-del-proyecto)
+[![Status](https://img.shields.io/badge/status-alpha%20%28M3%29-orange)](#estado-del-proyecto)
 
 ---
 
@@ -46,8 +46,8 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | ------------------------------------------------------------ | ------ |
 | TUI navegable (Ink + React)                                  | 🔜 M5  |
 | Índice local en SQLite con FTS5                              | ✅ M2  |
-| Indexación recursiva + incremental                           | 🔜 M3  |
-| Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | 🔜 M3  |
+| Indexación recursiva + incremental                           | ✅ M3  |
+| Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅ M3  |
 | Búsqueda instantánea en línea de comandos                    | 🔜 M4  |
 | Reproducción con `mpv` / `vlc`                               | 🔜 M6  |
 | Configuración YAML validada con Zod                          | ✅ M1  |
@@ -56,15 +56,16 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 
 ## Estado del proyecto
 
-**Alpha — en la fase M3 (indexación y parseo).** El plan de desarrollo completo, con
-hitos, criterios de aceptación y estrategia de pruebas, vive en [`PLAN.md`](./PLAN.md).
+**Alpha — M3 completado; siguiente M4 (CLI _headless_ y búsqueda).** El plan de
+desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
+[`PLAN.md`](./PLAN.md).
 
 | Hito | Contenido                     | Versión    |
 | ---- | ----------------------------- | ---------- |
 | M0   | Cimientos: tooling, hooks, CI | `0.0.1` ✅ |
 | M1   | Núcleo de configuración       | `0.1.0` ✅ |
 | M2   | Persistencia SQLite           | `0.2.0` ✅ |
-| M3   | Indexación y parseo           | `0.3.0`    |
+| M3   | Indexación y parseo           | `0.3.0` ✅ |
 | M4   | CLI _headless_ + búsqueda     | `0.4.0`    |
 | M5   | TUI (Ink)                     | `0.5.0`    |
 | M6   | Reproductor + modo watch      | `0.6.0`    |
