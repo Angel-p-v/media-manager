@@ -36,7 +36,8 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<AppCo
   const configPath = resolveConfigPath(options);
 
   const raw = await readConfigFile(configPath);
-  const merged = mergeDeep(defaultConfig, raw);
+  // Se clona para no compartir referencias con los valores por defecto.
+  const merged = structuredClone(mergeDeep(defaultConfig, raw));
   const withEnv = applyEnvOverrides(merged, env);
   const parsed = validateConfig(withEnv, configPath);
   return expandConfigPaths(parsed, path.dirname(configPath));
@@ -60,7 +61,8 @@ export async function readConfigFile(configPath: string): Promise<unknown> {
   }
 
   try {
-    const parsed = parseYaml(content) as unknown;
+    // Un archivo vacío (o solo con comentarios) se considera una configuración vacía.
+    const parsed = (parseYaml(content) ?? {}) as unknown;
     if (!isPlainObject(parsed)) {
       throw new ConfigError(
         'El archivo debe contener un mapa de opciones (clave: valor), no una lista u otro tipo.',

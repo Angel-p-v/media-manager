@@ -2,7 +2,6 @@ import { existsSync } from 'node:fs';
 
 import pc from 'picocolors';
 
-import { defaultConfig } from '../core/config/defaults.js';
 import { loadConfig, resolveConfigPath } from '../core/config/loader.js';
 
 export type ConfigCommandOptions = {
@@ -63,5 +62,5 @@ export async function runConfigCommand(options: ConfigCommandOptions): Promise<v
     console.log(`    ${pc.dim(pattern)}`);
   }
   console.log('');
-  console.log(pc.dim(`  atajos: ${Object.keys(defaultConfig.keybindings).length} definidos`));
+  console.log(pc.dim(`  atajos: ${Object.keys(config.keybindings).length} definidos`));
 }
