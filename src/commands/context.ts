@@ -1,15 +1,8 @@
 import { loadConfig } from '../core/config/loader.js';
-import { closeDatabase, openDatabase, type Db } from '../core/db/connection.js';
-import { createFileRepository } from '../core/db/repositories/fileRepo.js';
-import { createIndexRunRepository } from '../core/db/repositories/indexRunRepo.js';
-import { createMediaRepository } from '../core/db/repositories/mediaRepo.js';
-import {
-  createLibraryService,
-  type LibraryRepositories,
-  type LibraryService,
-} from '../core/library/service.js';
+import { openLibrary } from '../core/library/open.js';
 
 import type { AppConfig } from '../core/config/schema.js';
+import type { LibraryRepositories, LibraryService } from '../core/library/service.js';
 
 /** Opciones comunes a todos los subcomandos que necesitan configuración y base de datos. */
 export type CommandOptions = {
@@ -19,7 +12,6 @@ export type CommandOptions = {
 /** Dependencias que recibe un subcomando ya conectado a la biblioteca. */
 export type CommandContext = {
   config: AppConfig;
-  db: Db;
   repositories: LibraryRepositories;
   library: LibraryService;
 };
@@ -37,22 +29,15 @@ export async function withCommandContext<T>(
   const config = await loadConfig(
     options.config === undefined ? {} : { configPath: options.config },
   );
-  const db = openDatabase(config.database.path);
+  const opened = openLibrary(config.database.path);
 
   try {
-    const repositories: LibraryRepositories = {
-      mediaRepo: createMediaRepository(db),
-      fileRepo: createFileRepository(db),
-      indexRunRepo: createIndexRunRepository(db),
-    };
-
     return await run({
       config,
-      db,
-      repositories,
-      library: createLibraryService(repositories),
+      repositories: opened.repositories,
+      library: opened.library,
     });
   } finally {
-    closeDatabase(db);
+    opened.close();
   }
 }

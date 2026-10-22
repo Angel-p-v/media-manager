@@ -38,6 +38,7 @@ export const defaultConfig: AppConfig = {
     play: 'p',
     refresh: 'r',
     nextSection: 'tab',
+    settings: 's',
     up: 'up',
     down: 'down',
     left: 'left',
