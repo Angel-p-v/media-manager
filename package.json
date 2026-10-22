@@ -1,6 +1,6 @@
 {
-  "name": "media-manager",
-  "version": "0.0.1",
+  "name": "media-manager-cli",
+  "version": "1.0.0",
   "description": "Gestor de contenido multimedia 100% terminal: índice SQLite local y reproducción con mpv/vlc",
   "repository": {
     "type": "git",
@@ -22,7 +22,10 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "prepack": "npm run build",
     "prepare": "husky",
+    "smoke": "node scripts/smoke-pack.mjs",
+    "standalone": "node scripts/build-standalone.mjs",
     "start": "node dist/cli.js",
     "test": "vitest run",
     "test:e2e": "vitest run --project e2e",
@@ -38,8 +41,12 @@
   "files": [
     "dist",
     "config",
+    "docs",
     "README.md",
     "PLAN.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
     "LICENSE"
   ],
   "engines": {
@@ -88,6 +95,9 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "allowScripts": {
     "better-sqlite3": true,

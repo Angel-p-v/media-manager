@@ -6,13 +6,20 @@
 
 [![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%28M7%29-orange)](#estado-del-proyecto)
+[![Status](https://img.shields.io/badge/status-release%20candidate-orange)](#estado-del-proyecto)
 
 ---
 
+## Demo
+
+![Demo de media-manager-cli: indexar, buscar, ver el detalle y preparar la reproducción](./docs/demo.svg)
+
+La demo es una transcripción estática de una sesión real contra la biblioteca de pruebas.
+Para probarla en tu terminal, empieza por la sección de [instalación](#instalación).
+
 ## ¿Qué es?
 
-`media-manager` (CLI: `mm`) es una aplicación de línea de comandos para organizar y
+`media-manager-cli` (CLI: `mm`) es una aplicación de línea de comandos para organizar y
 consumir una biblioteca multimedia personal que ya vive en tu disco.
 
 La idea es sencilla: **tus vídeos ya están ordenados en carpetas**; el trabajo de la
@@ -55,10 +62,12 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Salida `--json` para scripts                                 | ✅ M4  |
 | Logs estructurados, `--verbose` y errores con código         | ✅ M7  |
 | Mantenimiento SQLite (`optimize` / `VACUUM`)                 | ✅ M7  |
+| Paquete npm, tarball smoke y distribución portable           | 🟡 M8  |
 
 ## Estado del proyecto
 
-**Alpha — M7 completo; siguiente M8 (release `v1.0.0`).** El plan de desarrollo
+**Release `v1.0.0` en preparación.** El paquete se llamará `media-manager-cli` en npm;
+la publicación queda pendiente de las credenciales del mantenedor. El plan de desarrollo
 completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
@@ -72,7 +81,7 @@ completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 | M5   | TUI (Ink)                     | `0.5.0` ✅ |
 | M6   | Reproductor + modo watch      | `0.6.0` ✅ |
 | M7   | Robustez y rendimiento        | `0.7.0` ✅ |
-| M8   | Publicación `v1.0.0`          | `1.0.0`    |
+| M8   | Publicación `v1.0.0`          | `1.0.0` 🟡 |
 
 ## Requisitos
 
@@ -82,21 +91,36 @@ completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 
 ## Instalación
 
-> Disponible a partir del hito M8. Durante el desarrollo:
+Cuando `v1.0.0` esté publicada en npm:
 
 ```bash
-git clone https://github.com/<tu-usuario>/media-manager.git
-cd media-manager
-npm install
-npm run dev          # ejecuta la CLI desde el código fuente
-```
-
-Instalación global previsto:
-
-```bash
-npm i -g media-manager
+npm install --global media-manager-cli
+mm --version
 mm --help
 ```
+
+> La publicación está preparada pero pendiente de las credenciales de npm. Hasta
+> entonces, instala desde el código fuente:
+
+```bash
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
+npm ci
+npm run build
+npm link             # deja `mm` disponible en el PATH
+mm --version
+```
+
+Para ejecutar sin instalar el binario global:
+
+```bash
+npm run dev          # CLI en modo watch desde el código fuente
+node dist/cli.js --help
+```
+
+El paquete npm incluye `dist/`, la configuración de ejemplo, el README, el CHANGELOG,
+las políticas de seguridad y contribución y la demo. Los detalles de publicación están
+en [`docs/release.md`](./docs/release.md).
 
 ## Uso
 
@@ -273,6 +297,8 @@ npm run test:integration
 npm run test:e2e
 npm run coverage     # informe de cobertura
 npm run bench        # benchmarks de escaneo, indexado y consultas
+npm run smoke        # npm pack → instalación limpia → smoke de la CLI
+npm run standalone   # distribución portable con Node incluido (opcional)
 ```
 
 Calidad y convenciones:
@@ -281,7 +307,8 @@ Calidad y convenciones:
 - **Vitest 5** con tres proyectos: `unit`, `integration` y `e2e`.
 - **Husky** + **lint-staged** (formato y lint en el commit) + **commitlint**
   ([Conventional Commits](https://www.conventionalcommits.org/)).
-- **CI** en GitHub Actions: lint, formato, tipos, build y tests en Node 22/24/26.
+- **CI** en GitHub Actions: lint, formato, tipos, build y tests en Node 22/24/26, más un
+  job que instala el tarball real y ejecuta el smoke.
 
 Contribución: consultar [`PLAN.md`](./PLAN.md) y [`CONTRIBUTING.md`](./CONTRIBUTING.md).
 
@@ -290,8 +317,11 @@ Contribución: consultar [`PLAN.md`](./PLAN.md) y [`CONTRIBUTING.md`](./CONTRIBU
 - [`PLAN.md`](./PLAN.md) — plan de desarrollo por hitos
 - [`docs/architecture.md`](./docs/architecture.md) — decisiones técnicas
 - [`docs/performance.md`](./docs/performance.md) — presupuesto y benchmarks
+- [`docs/release.md`](./docs/release.md) — publicación, tags y credenciales
 - [`docs/adr/`](./docs/adr) — _Architecture Decision Records_
 - [`CHANGELOG.md`](./CHANGELOG.md) — historial de versiones
+- [`SECURITY.md`](./SECURITY.md) — cómo reportar vulnerabilidades
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — flujo de desarrollo y PRs
 
 ## Licencia
 

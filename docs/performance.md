@@ -49,7 +49,7 @@ normal de una máquina compartida. Si un benchmark supera su umbral, se investig
 mergear el cambio.
 
 El test de estrés vive en
-[`tests/integration/performance/stress.integration.test.ts`](../tests/integration/performance/stress.integration.test.ts)
+[`tests/integration/performance/stress.integration.test.ts`](https://github.com/Angel-p-v/media-manager/blob/main/tests/integration/performance/stress.integration.test.ts)
 y falla la suite si la siembra supera 15 s o cualquiera de las consultas supera 500 ms.
 
 ## Metodología
