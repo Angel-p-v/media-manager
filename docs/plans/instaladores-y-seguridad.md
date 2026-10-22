@@ -539,3 +539,9 @@ También se documentará:
 4. ¿Se añade `--init-config` al instalador o se mantiene la configuración manual?
 5. ¿Se firman también los checksums con minisign/GPG además de la atestación de GitHub?
 6. ¿Cuántas versiones anteriores se conservan al actualizar?
+
+## 16. Siguiente plan
+
+Una vez publicada y verificada `v1.0.0`, el siguiente paso es
+[`version-2.0.md`](./version-2.0.md): estado de reproducción, continuar viendo,
+biblioteca sana y soporte macOS.

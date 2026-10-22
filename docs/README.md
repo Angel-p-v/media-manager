@@ -9,6 +9,7 @@ Este directorio reúne la documentación técnica y de mantenimiento del proyect
 - [Planes](./plans/): planes de trabajo y propuestas de evolución.
   - [Instaladores, distribución y seguridad](./plans/instaladores-y-seguridad.md):
     plan vigente para sustituir npm por GitHub Releases.
+  - [Versión 2.0](./plans/version-2.0.md): siguiente plan, tras cerrar `v1.0.0`.
   - [Distribución sin npm](./plans/distribucion-sin-npm.md): antecedente y contexto.
 - [Demo](./assets/demo.svg): transcripción visual de una sesión de la CLI.
 
