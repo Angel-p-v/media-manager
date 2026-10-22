@@ -51,7 +51,9 @@ Recorrido del árbol de ficheros, clasificación del contenido y parsers de nomb
 
 ### `src/core/library/`
 
-Casos de uso de consulta: listado, búsqueda (FTS5) y detalle. Hito M4.
+Casos de uso de consulta implementados en el hito M4: listar con filtros y paginación,
+buscar con FTS5, resolver un id o un título con sus ficheros y agregar estadísticas del
+índice. La capa de presentación no escribe SQL: consume `LibraryService`.
 
 ### `src/core/player/`
 
@@ -64,8 +66,9 @@ Interfaz de terminal con Ink: componentes, vistas y hooks. Hito M5.
 
 ### `src/commands/`
 
-Subcomandos de la CLI que no dependen de Ink: `config`, `index`, `search`, `show`,
-`play`, `db`.
+Subcomandos de la CLI que no dependen de Ink: `config`, `index`, `list`, `search`,
+`show`, `db stats`. Los códigos de salida y el contrato de `--json` están fijados en el
+[ADR 0004](./adr/0004-contrato-cli.md); los errores van a `stderr`.
 
 ## Flujo de datos de una indexación
 
@@ -75,6 +78,21 @@ config.yaml
    ▼
 AppConfig ──▶ indexer/scanner ──▶ parsers ──▶ mediaRepo ──▶ SQLite
 ```
+
+## Flujo de datos de una consulta
+
+```
+mm search "sever" ──▶ commands/search ──▶ LibraryService.search
+                                              │
+                                              ▼
+                                   mediaRepo.search (FTS5)
+                                              │
+                                              ▼
+                                   media_fts MATCH + bm25 → SQLite
+```
+
+`mm list`, `mm show` y `mm db stats` recorren el mismo camino: la capa de comandos solo
+formatea la salida (humana o JSON) y nunca escribe SQL.
 
 ## Decisiones registradas
 
