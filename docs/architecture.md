@@ -30,7 +30,10 @@ interfaz.
 
 ### `src/shared/`
 
-Errores tipados (`AppError` y derivados), logger con niveles y utilidades de rutas.
+Errores tipados (`AppError` y derivados), normalización de errores para la CLI
+(`describeError` / `formatErrorWithCode`), logger estructurado y utilidades de rutas.
+El logger soporta niveles (`silent`…`debug`), formato `text` o `json` (una línea por
+evento), campos estructurados y `child()` para añadir contexto sin mutar el padre.
 
 ### `src/core/config/`
 
@@ -42,7 +45,12 @@ Precedencia de la configuración: `defaults → archivo YAML → variables de en
 ### `src/core/db/`
 
 Conexión SQLite (WAL, claves foráneas), migraciones versionadas y repositorios
-`mediaRepo` / `fileRepo`. Se implementa en el hito M2.
+`mediaRepo` / `fileRepo`. Se implementa en el hito M2. La migración v2 (M7) añade
+índices de rendimiento para listados y mantenimiento sin tocar los datos.
+
+`maintenance.ts` encapsula `PRAGMA optimize` y `VACUUM`; `size.ts` calcula el tamaño del
+fichero principal más WAL/SHM. `closeDatabase()` ejecuta una optimización _best effort_
+antes de cerrar, mientras que la compactación solo se lanza con `mm db optimize --vacuum`.
 
 ### `src/core/indexer/`
 
@@ -87,10 +95,15 @@ Interfaz de terminal con Ink implementada en el hito M5:
 ### `src/commands/`
 
 Subcomandos de la CLI que no dependen de Ink: `config`, `index`, `list`, `search`,
-`show`, `play`, `watch` y `db stats`. Los códigos de salida y el contrato de `--json`
-están fijados en el [ADR 0004](./adr/0004-contrato-cli.md); los errores van a `stderr`.
-Las decisiones de reproducción y _watch_ están en el
+`show`, `play`, `watch`, `db stats` y `db optimize`. Los códigos de salida y el contrato
+de `--json` están fijados en el [ADR 0004](./adr/0004-contrato-cli.md); los errores van a
+`stderr`. Las decisiones de reproducción y _watch_ están en el
 [ADR 0006](./adr/0006-reproductor-y-watch.md).
+
+`context.ts` carga la configuración, crea el logger y abre/cierra la biblioteca en un
+único punto. `errorHandler.ts` es el gestor global de errores: imprime `[CÓDIGO] mensaje`
+y, con `--verbose`, la pila. Las decisiones de logging, códigos y mantenimiento están en
+el [ADR 0007](./adr/0007-logging-errores-y-mantenimiento.md).
 
 ## Flujo de datos de una indexación
 
@@ -142,6 +155,21 @@ chokidar (raíces) ──▶ evento add/change/unlink
 
 `mm list`, `mm show` y `mm db stats` recorren el mismo camino: la capa de comandos solo
 formatea la salida (humana o JSON) y nunca escribe SQL.
+
+## Logging y errores
+
+El nivel y el formato se configuran en `logging` (YAML) o con `MM_LOG_LEVEL` /
+`MM_LOG_FORMAT`. `--verbose` es global y fuerza `debug`; Commander lo copia al subcomando
+para que el flag funcione antes o después del comando. Los logs van a `stderr` en texto o
+en una línea JSON por evento; `stdout` queda reservado para la salida de usuario y
+`--json`.
+
+Los errores de ejecución se normalizan con `describeError()` y los imprime un único
+manejador global en `stderr` con el formato `[CÓDIGO] mensaje`. La pila solo aparece con
+`--verbose`. Los códigos de salida siguen siendo `0`/`1`/`2`.
+
+El presupuesto de rendimiento y la metodología de los benchmarks están en
+[`performance.md`](./performance.md).
 
 ## Decisiones registradas
 

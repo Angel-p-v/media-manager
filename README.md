@@ -6,7 +6,7 @@
 
 [![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%28M6%29-orange)](#estado-del-proyecto)
+[![Status](https://img.shields.io/badge/status-alpha%20%28M7%29-orange)](#estado-del-proyecto)
 
 ---
 
@@ -53,11 +53,13 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Configuración YAML validada con Zod                          | ✅ M1  |
 | Modo _watch_ (reindexado automático)                         | ✅ M6  |
 | Salida `--json` para scripts                                 | ✅ M4  |
+| Logs estructurados, `--verbose` y errores con código         | ✅ M7  |
+| Mantenimiento SQLite (`optimize` / `VACUUM`)                 | ✅ M7  |
 
 ## Estado del proyecto
 
-**Alpha — M6 completado; siguiente M7 (robustez y rendimiento).** El plan de
-desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
+**Alpha — M7 completo; siguiente M8 (release `v1.0.0`).** El plan de desarrollo
+completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
 | Hito | Contenido                     | Versión    |
@@ -69,7 +71,7 @@ desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas
 | M4   | CLI _headless_ + búsqueda     | `0.4.0` ✅ |
 | M5   | TUI (Ink)                     | `0.5.0` ✅ |
 | M6   | Reproductor + modo watch      | `0.6.0` ✅ |
-| M7   | Robustez y rendimiento        | `0.7.0`    |
+| M7   | Robustez y rendimiento        | `0.7.0` ✅ |
 | M8   | Publicación `v1.0.0`          | `1.0.0`    |
 
 ## Requisitos
@@ -111,6 +113,9 @@ mm play "akira" --dry-run # muestra el comando sin lanzar el reproductor
 mm watch                 # vigila las raíces y reindexa al detectar cambios
 mm config --path          # ruta del archivo de configuración en uso
 mm db stats               # tamaño de la biblioteca y del índice
+mm db optimize            # actualiza estadísticas de SQLite
+mm db optimize --vacuum   # además compacta el fichero (puede tardar)
+mm index --verbose        # diagnóstico detallado por stderr
 ```
 
 `mm play` acepta `--file <id>` para elegir un fichero concreto (el id aparece en
@@ -119,6 +124,20 @@ mm db stats               # tamaño de la biblioteca y del índice
 La salida `--json` de `mm play --dry-run` incluye el comando, los argumentos, el modo y
 el fichero resuelto.
 
+### Logs y diagnóstico
+
+Los logs se escriben **siempre en `stderr`**, nunca en `stdout`. `--verbose` (`-v`) fuerza
+el nivel `debug` y añade la pila a los errores; funciona antes o después del subcomando.
+El nivel y el formato también se configuran en `logging` o con variables de entorno:
+
+```bash
+MM_LOG_FORMAT=json mm search "akira" --verbose > resultados.json 2> diagnostico.log
+```
+
+`logging.format: json` emite una línea JSON por evento con `time`, `level`, `event` y
+campos estructurados. `logging.level` acepta `silent`, `error`, `warn`, `info` y `debug`
+(por defecto `warn`).
+
 ### Códigos de salida
 
 | Código | Significado                                                       |
@@ -126,6 +145,11 @@ el fichero resuelto.
 | `0`    | Éxito                                                             |
 | `1`    | Error de ejecución (configuración, base de datos, título ausente) |
 | `2`    | Uso incorrecto (comando u opción inválidos, falta un argumento)   |
+
+Los errores de ejecución se imprimen en `stderr` con un código estable delante:
+`[CONFIG_ERROR]`, `[DB_ERROR]`, `[INDEX_ERROR]`, `[PLAYER_ERROR]`, `[NOT_FOUND]`,
+`[AMBIGUOUS]` o `[APP_ERROR]` para fallos inesperados. Con `--verbose` se añade la pila
+del error.
 
 La salida `--json` es el contrato estable para scripts: un único objeto JSON por
 `stdout`, sin colores. Los errores se escriben en `stderr`.
@@ -190,6 +214,10 @@ ui:
   layout: split
   sort: title
 
+logging:
+  level: warn
+  format: text
+
 keybindings:
   quit: q
   help: '?'
@@ -204,6 +232,15 @@ bloquea la terminal y el reproductor sigue vivo si cierras la TUI; `foreground` 
 que termine. La TUI usa siempre `detach` para no congelarse.
 
 Precedencia de la configuración: `defaults → archivo YAML → variables de entorno → flags`.
+
+| Variable           | Efecto                                    |
+| ------------------ | ----------------------------------------- |
+| `MM_CONFIG`        | ruta alternativa del archivo YAML         |
+| `MM_DATABASE_PATH` | ruta alternativa de la base SQLite        |
+| `MM_PLAYER`        | reproductor por defecto                   |
+| `MM_LOG_LEVEL`     | nivel de logging (`silent`…`debug`)       |
+| `MM_LOG_FORMAT`    | formato de logging (`text` o `json`)      |
+| `NO_COLOR`         | desactiva colores en la salida de usuario |
 
 ## Arquitectura
 
@@ -230,9 +267,12 @@ Reglas que se verifican automáticamente con tests:
 npm install          # instala dependencias (prepara los hooks de Husky)
 npm run dev          # CLI en modo watch
 npm run verify       # lint + formato + tipos + tests  (gate local)
-npm test             # suite completa
+npm test             # suite completa (incluye el test de estrés)
 npm run test:unit    # solo unitarias (rápidas)
+npm run test:integration
+npm run test:e2e
 npm run coverage     # informe de cobertura
+npm run bench        # benchmarks de escaneo, indexado y consultas
 ```
 
 Calidad y convenciones:
@@ -249,6 +289,7 @@ Contribución: consultar [`PLAN.md`](./PLAN.md) y [`CONTRIBUTING.md`](./CONTRIBU
 
 - [`PLAN.md`](./PLAN.md) — plan de desarrollo por hitos
 - [`docs/architecture.md`](./docs/architecture.md) — decisiones técnicas
+- [`docs/performance.md`](./docs/performance.md) — presupuesto y benchmarks
 - [`docs/adr/`](./docs/adr) — _Architecture Decision Records_
 - [`CHANGELOG.md`](./CHANGELOG.md) — historial de versiones
 

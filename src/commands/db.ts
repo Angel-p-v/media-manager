@@ -1,11 +1,15 @@
-import { statSync } from 'node:fs';
-
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
 import { formatBytes } from './output.js';
+import { databaseSizeBytes } from '../core/db/size.js';
 
 export type DbStatsCommandOptions = CommandOptions & {
+  json?: boolean;
+};
+
+export type DbOptimizeCommandOptions = CommandOptions & {
+  vacuum?: boolean;
   json?: boolean;
 };
 
@@ -14,7 +18,7 @@ export async function runDbStatsCommand(options: DbStatsCommandOptions): Promise
   await withCommandContext(options, ({ config, library }) => {
     const stats = library.stats();
     const databasePath = config.database.path;
-    const sizeBytes = databaseSize(databasePath);
+    const sizeBytes = databaseSizeBytes(databasePath);
 
     if (options.json) {
       console.log(
@@ -65,16 +69,43 @@ export async function runDbStatsCommand(options: DbStatsCommandOptions): Promise
   });
 }
 
-/** Suma el tamaño del fichero principal y de sus auxiliares WAL/SHM. */
-function databaseSize(databasePath: string): number {
-  if (databasePath === ':memory:') return 0;
+/** Implementa `mm db optimize`: actualiza estadísticas y, opcionalmente, compacta. */
+export async function runDbOptimizeCommand(options: DbOptimizeCommandOptions): Promise<void> {
+  await withCommandContext(options, ({ config, maintenance, logger }) => {
+    const beforeBytes = databaseSizeBytes(config.database.path);
+    const startedAt = performance.now();
 
-  return [`${databasePath}`, `${databasePath}-wal`, `${databasePath}-shm`].reduce((total, file) => {
-    try {
-      return total + statSync(file).size;
-    } catch {
-      // Un fichero auxiliar puede no existir todavía; su tamaño es cero.
-      return total;
+    maintenance.optimize();
+    if (options.vacuum === true) maintenance.vacuum();
+
+    const durationMs = Math.round(performance.now() - startedAt);
+    const afterBytes = databaseSizeBytes(config.database.path);
+    logger.debug('db.optimized', {
+      vacuum: options.vacuum === true,
+      beforeBytes,
+      afterBytes,
+      durationMs,
+    });
+
+    if (options.json) {
+      console.log(
+        JSON.stringify(
+          {
+            optimized: true,
+            vacuum: options.vacuum === true,
+            beforeBytes,
+            afterBytes,
+            durationMs,
+          },
+          null,
+          2,
+        ),
+      );
+      return;
     }
-  }, 0);
+
+    const method = options.vacuum === true ? 'PRAGMA optimize + VACUUM' : 'PRAGMA optimize';
+    console.log(pc.green('✔') + ` Base de datos optimizada (${method}) en ${durationMs} ms`);
+    console.log(pc.dim(`  ${formatBytes(beforeBytes)} → ${formatBytes(afterBytes)}`));
+  });
 }

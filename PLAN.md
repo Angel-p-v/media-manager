@@ -204,7 +204,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M4   | CLI _headless_ + búsqueda                             | ✅     | 10/10    |
 | M5   | TUI (Ink)                                             | ✅     | 7/7      |
 | M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
-| M7   | Robustez y rendimiento                                | ☐      | 0/6      |
+| M7   | Robustez y rendimiento                                | ✅     | 6/6      |
 | M8   | Release `v1.0.0`                                      | ☐      | 0/7      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
@@ -430,12 +430,12 @@ desacoplado.
 
 **Tareas**
 
-- [ ] Benchmarks de escaneo, indexado y búsqueda con `vitest bench`
-- [ ] Logging estructurado con niveles configurables y `--verbose`
-- [ ] Gestor global de errores con códigos
-- [ ] `PRAGMA optimize` / `VACUUM`
-- [ ] Prueba de migración de esquema v1 → v2
-- [ ] `docs/performance.md` con presupuesto de rendimiento
+- [x] Benchmarks de escaneo, indexado y búsqueda con `vitest bench`
+- [x] Logging estructurado con niveles configurables y `--verbose`
+- [x] Gestor global de errores con códigos
+- [x] `PRAGMA optimize` / `VACUUM`
+- [x] Prueba de migración de esquema v1 → v2
+- [x] `docs/performance.md` con presupuesto de rendimiento
 
 **Alcance:** `vitest bench` (escaneo de 10 000 ficheros, indexado completo, búsqueda) ·
 logging estructurado con niveles configurables · gestor de errores global con códigos ·
@@ -446,6 +446,16 @@ entradas · test de migración desde la v0.2.
 
 **DoD:** cobertura global ≥ 80 % · presupuesto de rendimiento escrito en
 `docs/performance.md`.
+
+**Estado:** implementado en `feat/robustness`. `npm run bench` mide escaneo de 10 000
+ficheros, indexado completo y búsqueda/listado sobre 100 000 títulos; el test de estrés de
+100 000 entradas forma parte de la suite de integración. Logging configurable en YAML y
+por entorno, formato `text`/`json` en `stderr` y `--verbose` global. Los errores de la CLI
+se imprimen con código estable (`[CONFIG_ERROR]`, `[NOT_FOUND]`, …) y pila opcional. La
+migración v2 añade índices de rendimiento y se prueba desde v1 con datos. `PRAGMA
+optimize` se ejecuta al cerrar y `mm db optimize --vacuum` compacta la base. Decisiones en
+el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto en
+[`docs/performance.md`](./docs/performance.md).
 
 ---
 
@@ -501,7 +511,7 @@ npm pkg set scripts.prepare="husky" \
   scripts.test="vitest run" scripts.test:unit="vitest run --project unit" \
   scripts.test:integration="vitest run --project integration" \
   scripts.test:e2e="vitest run --project e2e" scripts.test:watch="vitest" \
-  scripts.coverage="vitest run --coverage" scripts.bench="vitest bench" \
+  scripts.coverage="vitest run --coverage" scripts.bench="vitest bench --reporter=verbose" \
   scripts.verify="npm run lint && npm run format:check && npm run typecheck && npm run test"
 
 npx husky init

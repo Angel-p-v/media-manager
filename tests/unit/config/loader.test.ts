@@ -95,6 +95,24 @@ describe('applyEnvOverrides', () => {
     expect(result.player.default).toBe('vlc');
   });
 
+  it('sobrescribe el nivel y el formato de logging', () => {
+    const result = applyEnvOverrides(defaultConfig, {
+      MM_LOG_LEVEL: 'debug',
+      MM_LOG_FORMAT: 'json',
+    });
+
+    expect(result.logging).toEqual({ level: 'debug', format: 'json' });
+  });
+
+  it('rechaza un nivel o formato de logging inválido', () => {
+    expect(() => applyEnvOverrides(defaultConfig, { MM_LOG_LEVEL: 'trace' })).toThrow(
+      'MM_LOG_LEVEL inválido',
+    );
+    expect(() => applyEnvOverrides(defaultConfig, { MM_LOG_FORMAT: 'yaml' })).toThrow(
+      'MM_LOG_FORMAT inválido',
+    );
+  });
+
   it('no toca la configuración si no hay variables', () => {
     const result = applyEnvOverrides(defaultConfig, {});
 

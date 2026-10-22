@@ -53,12 +53,12 @@ describe('mm (e2e, binario compilado)', () => {
     await rm(workDir, { recursive: true, force: true });
   });
 
-  function run(args: string[]): RunResult {
+  function run(args: string[], env: NodeJS.ProcessEnv = {}): RunResult {
     const result = spawnSync(process.execPath, [CLI, ...args], {
       cwd: ROOT,
       encoding: 'utf8',
       timeout: 20_000,
-      env: { ...process.env, NO_COLOR: '1', MM_CONFIG: configPath },
+      env: { ...process.env, NO_COLOR: '1', MM_CONFIG: configPath, ...env },
     });
 
     return {
@@ -140,6 +140,27 @@ describe('mm (e2e, binario compilado)', () => {
       count: 1,
       results: [{ title: 'Severance', year: 2022 }],
     });
+  });
+
+  it('--verbose escribe logs estructurados en stderr sin contaminar stdout', () => {
+    const result = run(['search', 'sever', '--json', '--verbose']);
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({ count: 1 });
+    expect(result.stderr).toContain('search.completed');
+    expect(result.stderr).toContain('durationMs=');
+  });
+
+  it('MM_LOG_FORMAT=json emite una línea JSON por evento', () => {
+    const result = run(['search', 'sever', '--verbose'], { MM_LOG_FORMAT: 'json' });
+
+    expect(result.status).toBe(0);
+    const events = result.stderr
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as { level: string; event: string });
+    expect(events.some((event) => event.event === 'search.completed')).toBe(true);
+    expect(events.every((event) => event.level === 'debug')).toBe(true);
   });
 
   it('muestra el detalle de un título y de sus ficheros', () => {
@@ -247,11 +268,29 @@ describe('mm (e2e, binario compilado)', () => {
     });
   });
 
+  it('optimiza y compacta la base desde la CLI', () => {
+    const result = run(['db', 'optimize', '--vacuum', '--json']);
+
+    expect(result.status).toBe(0);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      optimized: true,
+      vacuum: true,
+    });
+  });
+
   it('devuelve 1 y un mensaje accionable si el título no existe', () => {
     const result = run(['show', 'no-existe']);
 
     expect(result.status).toBe(1);
+    expect(result.stderr).toContain('[NOT_FOUND]');
     expect(result.stderr).toContain('No hay ningún título que coincida');
+  });
+
+  it('con --verbose añade la pila del error a stderr', () => {
+    const result = run(['show', 'no-existe', '--verbose']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('NotFoundError');
   });
 });
 

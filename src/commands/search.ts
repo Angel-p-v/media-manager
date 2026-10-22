@@ -16,10 +16,17 @@ export async function runSearchCommand(
   query: string,
   options: SearchCommandOptions,
 ): Promise<void> {
-  await withCommandContext(options, ({ library }) => {
+  await withCommandContext(options, ({ library, logger }) => {
+    const startedAt = performance.now();
     const results = library.search(query, {
       ...(options.type === undefined ? {} : { type: options.type }),
       ...(options.limit === undefined ? {} : { limit: options.limit }),
+    });
+    logger.debug('search.completed', {
+      query,
+      type: options.type ?? null,
+      results: results.length,
+      durationMs: Math.round(performance.now() - startedAt),
     });
 
     if (options.json) {

@@ -9,6 +9,9 @@ export default defineConfig({
           include: ['tests/unit/**/*.test.ts'],
           environment: 'node',
           restoreMocks: true,
+          // Los benchmarks viven en una variante `unit (bench)` que Vitest crea
+          // automáticamente al ejecutar `npm run bench`; no entran en `npm test`.
+          benchmark: { include: ['tests/bench/**/*.bench.ts'] },
         },
       },
       {
@@ -18,6 +21,7 @@ export default defineConfig({
           environment: 'node',
           testTimeout: 15_000,
           restoreMocks: true,
+          benchmark: { include: [] },
         },
       },
       {
@@ -28,6 +32,7 @@ export default defineConfig({
           testTimeout: 30_000,
           hookTimeout: 30_000,
           restoreMocks: true,
+          benchmark: { include: [] },
         },
       },
     ],

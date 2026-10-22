@@ -58,6 +58,13 @@ ui:
   sort: title
   showDetails: true
 
+logging:
+  # silent · error · warn · info · debug. Con `--verbose` se fuerza debug.
+  level: warn
+  # text: legible para personas · json: una línea por evento.
+  # Los logs van siempre a stderr; stdout queda para la salida de usuario y --json.
+  format: text
+
 # Atajos de teclado de la interfaz. Cualquier tecla o secuencia puede reasignarse.
 keybindings:
   quit: q

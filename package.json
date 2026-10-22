@@ -14,6 +14,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
+    "bench": "vitest bench --reporter=verbose",
     "build": "tsc -p tsconfig.build.json",
     "coverage": "vitest run --coverage",
     "dev": "tsx watch src/cli.tsx",

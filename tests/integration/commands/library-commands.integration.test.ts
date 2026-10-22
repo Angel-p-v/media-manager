@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { runDbStatsCommand } from '../../../src/commands/db.js';
+import { runDbOptimizeCommand, runDbStatsCommand } from '../../../src/commands/db.js';
 import { runIndexCommand } from '../../../src/commands/index.js';
 import { runListCommand } from '../../../src/commands/list.js';
 import { runSearchCommand } from '../../../src/commands/search.js';
@@ -212,6 +212,32 @@ describe('comandos de consulta (integración)', () => {
       filesSeen: 8,
       filesAdded: 8,
     });
+  });
+
+  it('optimiza y compacta la base de datos', async () => {
+    const json = await capture(() =>
+      runDbOptimizeCommand({ config: configPath, vacuum: true, json: true }),
+    );
+    const payload = JSON.parse(json) as {
+      optimized: boolean;
+      vacuum: boolean;
+      beforeBytes: number;
+      afterBytes: number;
+      durationMs: number;
+    };
+
+    expect(payload.optimized).toBe(true);
+    expect(payload.vacuum).toBe(true);
+    expect(payload.beforeBytes).toBeGreaterThan(0);
+    expect(payload.afterBytes).toBeGreaterThan(0);
+    expect(payload.durationMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('muestra el resultado de optimizar en texto', async () => {
+    const output = await capture(() => runDbOptimizeCommand({ config: configPath }));
+
+    expect(output).toContain('Base de datos optimizada');
+    expect(output).toContain('PRAGMA optimize');
   });
 });
 

@@ -69,4 +69,17 @@ END;
  * `.sql`) para que viajen compiladas en `dist/` y no dependan de rutas en disco
  * al ejecutar el paquete instalado.
  */
-export const migrations: readonly Migration[] = [{ version: 1, name: 'init', sql: initSql }];
+
+// v2: índices de apoyo para los listados ordenados y para el mantenimiento. La
+// migración es solo de rendimiento; no cambia datos ni el contrato de las tablas.
+const performanceIndexesSql = `
+CREATE INDEX IF NOT EXISTS idx_media_type_sort_title ON media(type, sort_title);
+CREATE INDEX IF NOT EXISTS idx_media_created_at ON media(created_at);
+CREATE INDEX IF NOT EXISTS idx_media_updated_at ON media(updated_at);
+CREATE INDEX IF NOT EXISTS idx_index_runs_started_at ON index_runs(started_at);
+`;
+
+export const migrations: readonly Migration[] = [
+  { version: 1, name: 'init', sql: initSql },
+  { version: 2, name: 'performance-indexes', sql: performanceIndexesSql },
+];
