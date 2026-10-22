@@ -66,7 +66,7 @@ export function printMediaList(rows: readonly MediaRow[]): void {
 
 /** Formatea la temporada y el episodio de un fichero para mostrarlos al usuario. */
 export function formatEpisode(file: Pick<MediaFileRow, 'season' | 'episode'>): string {
-  if (file.episode === null) return pc.dim('—');
+  if (file.episode === null) return '—';
   const episode = `E${String(file.episode).padStart(2, '0')}`;
   return file.season === null ? episode : `T${String(file.season).padStart(2, '0')}${episode}`;
 }
