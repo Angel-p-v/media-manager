@@ -1,0 +1,65 @@
+export type ErrorCode =
+  'APP_ERROR' | 'CONFIG_ERROR' | 'DB_ERROR' | 'INDEX_ERROR' | 'PLAYER_ERROR' | 'NOT_FOUND';
+
+/**
+ * Error base de la aplicación. Todos los errores que llegan a la capa de
+ * presentación deberían heredar de aquí para poder mostrar un mensaje útil.
+ */
+export class AppError extends Error {
+  readonly code: ErrorCode;
+
+  constructor(message: string, code: ErrorCode = 'APP_ERROR', options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = new.target.name;
+    this.code = code;
+  }
+}
+
+/** Error de configuración: el archivo no existe, no es YAML válido o no cumple el esquema. */
+export class ConfigError extends AppError {
+  readonly filePath: string | undefined;
+
+  constructor(message: string, filePath?: string, options?: { cause?: unknown }) {
+    super(message, 'CONFIG_ERROR', options);
+    this.filePath = filePath;
+  }
+}
+
+/** Error de la capa de persistencia. */
+export class DbError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'DB_ERROR', options);
+  }
+}
+
+/** Error durante la indexación de la biblioteca. */
+export class IndexError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'INDEX_ERROR', options);
+  }
+}
+
+/** Error al lanzar o configurar un reproductor externo. */
+export class PlayerError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'PLAYER_ERROR', options);
+  }
+}
+
+/** Recurso solicitado inexistente (título, fichero, reproductor...). */
+export class NotFoundError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'NOT_FOUND', options);
+  }
+}
+
+/** Convierte cualquier valor lanzado en un mensaje legible para el usuario. */
+export function formatError(error: unknown): string {
+  if (error instanceof AppError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}

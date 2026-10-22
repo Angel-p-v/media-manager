@@ -1,0 +1,48 @@
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    projects: [
+      {
+        test: {
+          name: 'unit',
+          include: ['tests/unit/**/*.test.ts'],
+          environment: 'node',
+          restoreMocks: true,
+        },
+      },
+      {
+        test: {
+          name: 'integration',
+          include: ['tests/integration/**/*.test.ts'],
+          environment: 'node',
+          testTimeout: 15_000,
+          restoreMocks: true,
+        },
+      },
+      {
+        test: {
+          name: 'e2e',
+          include: ['tests/e2e/**/*.test.ts'],
+          environment: 'node',
+          testTimeout: 30_000,
+          hookTimeout: 30_000,
+          restoreMocks: true,
+        },
+      },
+    ],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'html', 'json-summary'],
+      reportsDirectory: 'coverage',
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: ['src/**/*.d.ts', 'src/cli.tsx', 'src/ui/**'],
+      thresholds: {
+        lines: 85,
+        functions: 85,
+        branches: 80,
+        statements: 85,
+      },
+    },
+  },
+});
