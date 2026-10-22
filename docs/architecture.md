@@ -62,7 +62,16 @@ Hito M6.
 
 ### `src/ui/`
 
-Interfaz de terminal con Ink: componentes, vistas y hooks. Hito M5.
+Interfaz de terminal con Ink implementada en el hito M5:
+
+- `App.tsx` mantiene el estado local de navegación (vista, sección, selección y búsqueda)
+  y recibe un `LibraryService`; no conoce SQLite.
+- `hooks/` resuelve la configuración y los atajos (`useConfig`), consulta la biblioteca
+  (`useLibrary`, `useMediaDetails`) y despacha el teclado (`useKeymap`).
+- `components/` y `views/` son presentacionales: `Library`, `Search` y `Settings` componen
+  la cabecera, la barra lateral, la lista, el detalle, la barra de estado y la ayuda.
+- `screen.ts` entra y sale de la pantalla alternativa; `run.tsx` abre la biblioteca, monta
+  la TUI y garantiza que la conexión se cierra al salir.
 
 ### `src/commands/`
 

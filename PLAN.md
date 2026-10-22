@@ -202,7 +202,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅     | 5/5      |
 | M3   | Indexación y parseo (scanner + parsers)               | ✅     | 9/9      |
 | M4   | CLI _headless_ + búsqueda                             | ✅     | 10/10    |
-| M5   | TUI (Ink)                                             | ☐      | 0/7      |
+| M5   | TUI (Ink)                                             | ✅     | 7/7      |
 | M6   | Reproductor + modo _watch_                            | ☐      | 0/6      |
 | M7   | Robustez y rendimiento                                | ☐      | 0/6      |
 | M8   | Release `v1.0.0`                                      | ☐      | 0/7      |
@@ -357,17 +357,17 @@ resolución por id/título y estadísticas; comandos `mm list|search|show|db sta
 
 ---
 
-### M5 — TUI (Ink) · `0.5.0`
+### M5 — TUI (Ink) · `0.5.0` ✅
 
 **Tareas**
 
-- [ ] `App.tsx`, `theme.ts` y `screen.ts` (alternate screen)
-- [ ] Hooks `useLibrary`, `useKeymap` y `useConfig`
-- [ ] Componentes `Header`, `Sidebar`, `MediaList`, `MediaDetails`, `StatusBar` y `HelpOverlay`
-- [ ] Vistas `Library`, `Search` y `Settings`
-- [ ] Keybindings configurables desde YAML
-- [ ] Tests de render con `ink-testing-library` y test de arquitectura
-- [ ] Arranque en < 300 ms con 10 000 elementos
+- [x] `App.tsx`, `theme.ts` y `screen.ts` (alternate screen)
+- [x] Hooks `useLibrary`, `useKeymap` y `useConfig`
+- [x] Componentes `Header`, `Sidebar`, `MediaList`, `MediaDetails`, `StatusBar` y `HelpOverlay`
+- [x] Vistas `Library`, `Search` y `Settings`
+- [x] Keybindings configurables desde YAML
+- [x] Tests de render con `ink-testing-library` y test de arquitectura
+- [x] Arranque en < 300 ms con 10 000 elementos
 
 **Alcance:** `src/ui/` con `App.tsx`, `theme.ts`, `screen.ts` (alternate screen `?1049h`),
 hooks (`useLibrary`, `useKeymap`, `useConfig`), componentes (`Header`, `Sidebar`,
@@ -382,6 +382,11 @@ hooks (`useLibrary`, `useKeymap`, `useConfig`), componentes (`Header`, `Sidebar`
 
 **DoD:** ningún componente de UI accede al dominio directamente (usa casos de uso) · la TUI
 arranca en < 300 ms con 10 000 elementos.
+
+**Estado:** implementado en `feat/tui`. Pantalla alternativa, navegación por secciones,
+buscador con `TextInput`, panel de detalles, ayuda modal y ajustes de solo lectura. La
+selección se mueve con flechas y los atajos se fusionan con `defaultConfig`. Tests de render
+con `ink-testing-library`, test de arquitectura y presupuesto de arranque verificado.
 
 ---
 
