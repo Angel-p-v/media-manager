@@ -51,13 +51,39 @@ ui/  commands/  ──▶  core/  ──▶  shared/
    `test`, `release`):
    `feat(indexer): soporta el patrón 1x02`
 3. `npm run verify` **debe pasar** antes de hacer push (lo comprueba el hook de
-   pre-commit y el de pre-push).
+   pre-push; el de pre-commit ejecuta lint-staged y typecheck).
 4. `git push -u origin <rama>` y **PR a `main`** con `gh pr create`.
 5. Revisar que la CI de la PR está en verde y **mergear con squash**:
    `gh pr merge <n> --squash --delete-branch`.
 6. `main` queda siempre desplegable: cada commit compila, pasa lint y tiene tests.
 
 **Nunca se commitea directamente en `main`.**
+
+### Política de commits pequeños y atómicos
+
+Un commit debe representar **una sola intención revisable**, no el trabajo acumulado de
+varias sesiones.
+
+- **Objetivo:** cerrar un commit cada **5–10 archivos** o **200–300 líneas** de un mismo
+  cambio coherente, en cuanto sus tests estén en verde. No esperes a terminar la feature
+  completa.
+- **Límite:** no superes **15 archivos ni 500 líneas modificadas** por commit. Si el
+  cambio previsto los supera, párate y divídelo antes de seguir.
+- El código y los tests del mismo comportamiento van juntos. La documentación, el
+  _formatting_ masivo y las dependencias van en commits separados.
+- Separa siempre que sea posible:
+  - refactor mecánico (renombres, extracciones) sin cambio de comportamiento;
+  - cambio funcional;
+  - tests adicionales que no cubren el cambio principal;
+  - documentación;
+  - dependencias y lockfile;
+  - formato o movimiento masivo de archivos.
+- Los cambios masivos inevitables (movimientos, migraciones, lockfile, formato) se
+  aíslan en su propio commit y se justifican en el cuerpo.
+- Antes de commitear revisa `git diff --stat`, `git diff --check` y `git status`. Usa
+  `git add <rutas>` o `git add -p`; evita `git add -A` si hay cambios mezclados.
+- Si aparecen cambios no relacionados, no los mezcles: commitéalos aparte o déjalos sin
+  _stage_. Cada commit debe dejar el árbol compilando y los tests relevantes en verde.
 
 ## Comandos
 
@@ -159,5 +185,7 @@ el tag `v1.0.0` y publicar la GitHub Release. Instrucciones en `docs/guides/rele
 - Si hay que tomar una decisión con más de un camino válido, escribe un ADR en
   `docs/adr/` y anótala en el `PLAN.md`.
 - No amplíes el alcance del hito en curso sin avisar; es un proyecto por hitos.
+- Trocea el trabajo según la política de commits pequeños; no acumules cambios para un
+  único commit final.
 - Al terminar un hito: `npm run verify`, commit, push, PR, merge, y actualizar la
   tabla de estado de `PLAN.md` y del `README.md`.
