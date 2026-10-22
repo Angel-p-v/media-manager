@@ -1,0 +1,93 @@
+import { z } from 'zod';
+
+/** Tipos de contenido que la biblioteca puede contener. */
+export const mediaTypeSchema = z.enum(['series', 'anime', 'movie']);
+
+export type MediaType = z.infer<typeof mediaTypeSchema>;
+
+/** Una carpeta raíz de la biblioteca, con el tipo de contenido que contiene. */
+export const libraryRootSchema = z.object({
+  path: z.string().min(1, 'la ruta no puede estar vacía'),
+  type: mediaTypeSchema,
+  label: z.string().min(1).optional(),
+});
+
+export type LibraryRoot = z.infer<typeof libraryRootSchema>;
+
+/** Configuración de escaneo. */
+export const scanOptionsSchema = z.object({
+  followSymlinks: z.boolean().default(false),
+  maxDepth: z.number().int().min(1).max(12).default(4),
+  minSizeBytes: z.number().int().min(0).default(0),
+});
+
+export type ScanOptions = z.infer<typeof scanOptionsSchema>;
+
+/** Definición de un reproductor externo. */
+export const playerDefinitionSchema = z.object({
+  command: z.string().min(1, 'el comando no puede estar vacío'),
+  args: z.array(z.string()).default([]),
+  env: z.record(z.string(), z.string()).optional(),
+});
+
+export type PlayerDefinition = z.infer<typeof playerDefinitionSchema>;
+
+/** Reproductores que la aplicación conoce de fábrica. */
+export const defaultPlayers: Record<string, PlayerDefinition> = {
+  mpv: {
+    command: 'mpv',
+    args: ['--force-window=immediate', '--image-display-duration=inf', '{file}'],
+  },
+  vlc: {
+    command: 'vlc',
+    args: ['--started-from-file', '{file}'],
+  },
+};
+
+/** Reproductores disponibles y política de lanzamiento. */
+export const playerConfigSchema = z.object({
+  default: z.string().min(1, 'debe indicarse un reproductor por defecto').default('mpv'),
+  onLaunch: z.enum(['detach', 'foreground']).default('detach'),
+  players: z.record(z.string(), playerDefinitionSchema).default(defaultPlayers),
+});
+
+export type PlayerConfig = z.infer<typeof playerConfigSchema>;
+
+/** Preferencias de la interfaz de terminal. */
+export const uiConfigSchema = z.object({
+  theme: z.enum(['default', 'dark', 'light']).default('default'),
+  layout: z.enum(['split', 'list']).default('split'),
+  sort: z.enum(['title', 'recent', 'added']).default('title'),
+  showDetails: z.boolean().default(true),
+});
+
+export type UiConfig = z.infer<typeof uiConfigSchema>;
+
+/** Esquema completo del archivo de configuración. */
+export const configSchema = z.object({
+  version: z.literal(1).default(1),
+  library: z
+    .object({
+      roots: z.array(libraryRootSchema).default([]),
+      exclude: z
+        .array(z.string())
+        .default(['**/*.sample.*', '**/sample/**', '**/.hidden/**', '**/@eaDir/**']),
+      scan: scanOptionsSchema.prefault({}),
+    })
+    .prefault({}),
+  database: z
+    .object({
+      path: z.string().min(1).default('~/.local/share/media-manager/library.db'),
+    })
+    .prefault({}),
+  player: playerConfigSchema.prefault({}),
+  ui: uiConfigSchema.prefault({}),
+  keybindings: z.record(z.string(), z.string()).default({}),
+});
+
+export type AppConfig = z.infer<typeof configSchema>;
+
+/** Extrae el esquema en JSON Schema para documentarlo o generarlo desde el código. */
+export function toJsonSchema(): Record<string, unknown> {
+  return z.toJSONSchema(configSchema, { io: 'input' });
+}
