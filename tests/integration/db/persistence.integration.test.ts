@@ -269,6 +269,22 @@ describe('capa de persistencia (integración)', () => {
 
       expect(repo.listFolders()).toEqual(['/media/akira']);
     });
+
+    it('elimina los títulos que se quedan sin ficheros', () => {
+      const mediaRepo = createMediaRepository(db);
+      const fileRepo = createFileRepository(db);
+      const withFile = mediaRepo.upsert({
+        type: 'series',
+        title: 'Severance',
+        folderPath: '/media/sev',
+      });
+      mediaRepo.upsert({ type: 'movie', title: 'Alien', folderPath: '/media/alien' });
+      fileRepo.upsertMany([{ mediaId: withFile.id, filePath: '/media/sev/s01e01.mkv' }]);
+
+      expect(mediaRepo.removeEmpty()).toBe(1);
+      expect(mediaRepo.count()).toBe(1);
+      expect(mediaRepo.removeEmpty()).toBe(0);
+    });
   });
 
   describe('repositorio de ejecuciones', () => {
