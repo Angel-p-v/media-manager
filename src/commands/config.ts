@@ -8,11 +8,15 @@ export type ConfigCommandOptions = {
   path?: boolean;
   validate?: boolean;
   json?: boolean;
+  config?: string;
 };
 
 /** Implementa `mm config`. */
 export async function runConfigCommand(options: ConfigCommandOptions): Promise<void> {
-  const configPath = resolveConfigPath();
+  const configPath =
+    options.config === undefined
+      ? resolveConfigPath()
+      : resolveConfigPath({ configPath: options.config });
 
   if (options.path) {
     console.log(configPath);

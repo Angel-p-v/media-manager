@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -217,6 +217,58 @@ describe('capa de persistencia (integración)', () => {
 
       expect(fileRepo.removeMissing(new Set(['/media/sev/s01e01.mkv']))).toBe(0);
     });
+
+    it('lista los ficheros de un título y todos los títulos', () => {
+      const mediaRepo = createMediaRepository(db);
+      const fileRepo = createFileRepository(db);
+      const media = mediaRepo.upsert({
+        type: 'series',
+        title: 'Severance',
+        folderPath: '/media/sev',
+      });
+      fileRepo.upsertMany([
+        { mediaId: media.id, filePath: '/media/sev/s01e01.mkv', season: 1, episode: 1 },
+        { mediaId: media.id, filePath: '/media/sev/s01e02.mkv', season: 1, episode: 2 },
+      ]);
+
+      expect(fileRepo.listByMedia(media.id)).toHaveLength(2);
+      expect(fileRepo.listAllPaths()).toHaveLength(2);
+      expect(fileRepo.count()).toBe(2);
+      expect(fileRepo.count(media.id)).toBe(2);
+    });
+
+    it('elimina los ficheros de un título', () => {
+      const mediaRepo = createMediaRepository(db);
+      const fileRepo = createFileRepository(db);
+      const media = mediaRepo.upsert({
+        type: 'series',
+        title: 'Severance',
+        folderPath: '/media/sev',
+      });
+      fileRepo.upsertMany([{ mediaId: media.id, filePath: '/media/sev/s01e01.mkv' }]);
+
+      expect(fileRepo.removeByMedia(media.id)).toBe(1);
+      expect(fileRepo.count()).toBe(0);
+    });
+  });
+
+  describe('repositorio de títulos: conteo y carpetas', () => {
+    it('cuenta por tipo y en total', () => {
+      const repo = createMediaRepository(db);
+      repo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/akira' });
+      repo.upsert({ type: 'movie', title: 'Alien', folderPath: '/media/alien' });
+
+      expect(repo.count('anime')).toBe(1);
+      expect(repo.count('movie')).toBe(1);
+      expect(repo.count()).toBe(2);
+    });
+
+    it('lista las carpetas de la biblioteca', () => {
+      const repo = createMediaRepository(db);
+      repo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/akira' });
+
+      expect(repo.listFolders()).toEqual(['/media/akira']);
+    });
   });
 
   describe('repositorio de ejecuciones', () => {
@@ -265,5 +317,34 @@ describe('openDatabase', () => {
     expect(() => openDatabase(path.join(blocker, 'library.db'))).toThrow(DbError);
 
     await rm(dir, { recursive: true, force: true });
+  });
+
+  it('lanza DbError si la base de datos no se puede abrir', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'mm-db-'));
+    // Una carpeta no es un fichero de base de datos válido.
+    const asDirectory = path.join(dir, 'carpeta.db');
+    await mkdir(asDirectory, { recursive: true });
+
+    expect(() => openDatabase(asDirectory)).toThrow(DbError);
+
+    await rm(dir, { recursive: true, force: true });
+  });
+});
+
+describe('runMigrations', () => {
+  it('lanza DbError si una migración falla', () => {
+    const db = openDatabase(':memory:');
+
+    expect(() =>
+      runMigrations(db, [{ version: 99, name: 'rota', sql: 'esto no es SQL válido;' }]),
+    ).toThrow(DbError);
+
+    // La migración fallida no queda registrada, así que se puede reintentar.
+    const applied = db
+      .prepare<[], { total: number }>('SELECT COUNT(*) AS total FROM schema_migrations')
+      .get();
+    expect(applied?.total).toBe(migrations.length);
+
+    closeDatabase(db);
   });
 });
