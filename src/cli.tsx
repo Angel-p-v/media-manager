@@ -1,10 +1,20 @@
 #!/usr/bin/env node
 import process from 'node:process';
 
-import { Command } from 'commander';
+import { Command, CommanderError } from 'commander';
 
 import { runConfigCommand } from './commands/config.js';
+import { runDbStatsCommand } from './commands/db.js';
 import { runIndexCommand } from './commands/index.js';
+import { runListCommand } from './commands/list.js';
+import {
+  parseMediaType,
+  parseNonNegativeInteger,
+  parsePositiveInteger,
+  parseSortOrder,
+} from './commands/options.js';
+import { runSearchCommand } from './commands/search.js';
+import { runShowCommand } from './commands/show.js';
 import { loadConfig } from './core/config/loader.js';
 import { formatError } from './shared/errors.js';
 import { getVersion } from './shared/version.js';
@@ -14,7 +24,12 @@ const program = new Command()
   .name('mm')
   .description('Media Manager — gestor de contenido multimedia para terminal')
   .version(getVersion(), '-V, --version', 'muestra la versión')
-  .showHelpAfterError();
+  .showHelpAfterError()
+  .addHelpText(
+    'after',
+    '\nCódigos de salida:\n  0  éxito\n  1  error de ejecución\n  2  uso incorrecto',
+  )
+  .exitOverride();
 
 program
   .command('config')
@@ -34,6 +49,44 @@ program
   .option('--json', 'salida en formato JSON')
   .action(runIndexCommand);
 
+program
+  .command('list')
+  .description('enumera los títulos de la biblioteca')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-t, --type <tipo>', 'filtra por tipo (series, anime, movie)', parseMediaType)
+  .option('--sort <orden>', 'ordena por title, added o recent', parseSortOrder)
+  .option('--limit <n>', 'número máximo de resultados', parsePositiveInteger)
+  .option('--offset <n>', 'resultados a saltar', parseNonNegativeInteger)
+  .option('--json', 'salida en formato JSON')
+  .action(runListCommand);
+
+program
+  .command('search')
+  .description('busca títulos por texto')
+  .argument('<consulta>', 'texto a buscar')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-t, --type <tipo>', 'filtra por tipo (series, anime, movie)', parseMediaType)
+  .option('--limit <n>', 'número máximo de resultados', parsePositiveInteger)
+  .option('--json', 'salida en formato JSON')
+  .action(runSearchCommand);
+
+program
+  .command('show')
+  .description('muestra el detalle de un título')
+  .argument('<id-o-titulo>', 'id numérico o título a consultar')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--json', 'salida en formato JSON')
+  .action(runShowCommand);
+
+const dbCommand = program.command('db').description('operaciones sobre la base de datos local');
+
+dbCommand
+  .command('stats')
+  .description('muestra el tamaño y el contenido del índice')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--json', 'salida en formato JSON')
+  .action(runDbStatsCommand);
+
 async function main(): Promise<void> {
   // Sin subcomando se abre la interfaz interactiva; con subcomando, la CLI headless.
   if (process.argv.length <= 2) {
@@ -42,7 +95,17 @@ async function main(): Promise<void> {
     return;
   }
 
-  await program.parseAsync(process.argv);
+  try {
+    await program.parseAsync(process.argv);
+  } catch (error) {
+    // Commander ya ha impreso la ayuda, la versión o el error de uso. Solo `help`
+    // y `--version` salen con 0; el resto son errores de uso (2).
+    if (error instanceof CommanderError) {
+      process.exitCode = error.exitCode === 0 ? 0 : 2;
+      return;
+    }
+    throw error;
+  }
 }
 
 main().catch((error: unknown) => {

@@ -1,15 +1,10 @@
 import pc from 'picocolors';
 
-import { loadConfig } from '../core/config/loader.js';
-import { closeDatabase, openDatabase } from '../core/db/connection.js';
-import { createFileRepository } from '../core/db/repositories/fileRepo.js';
-import { createIndexRunRepository } from '../core/db/repositories/indexRunRepo.js';
-import { createMediaRepository } from '../core/db/repositories/mediaRepo.js';
+import { withCommandContext, type CommandOptions } from './context.js';
 import { indexLibrary, type IndexStats } from '../core/indexer/service.js';
 import { createLogger } from '../shared/logger.js';
 
-export type IndexCommandOptions = {
-  config?: string;
+export type IndexCommandOptions = CommandOptions & {
   dryRun?: boolean;
   root?: string;
   json?: boolean;
@@ -17,24 +12,11 @@ export type IndexCommandOptions = {
 
 /** Implementa `mm index`: indexa la biblioteca configurada. */
 export async function runIndexCommand(options: IndexCommandOptions): Promise<void> {
-  const config = await loadConfig(
-    options.config === undefined ? {} : { configPath: options.config },
-  );
-
-  const db = openDatabase(config.database.path);
-  try {
-    const stats = await indexLibrary(
-      {
-        mediaRepo: createMediaRepository(db),
-        fileRepo: createFileRepository(db),
-        indexRunRepo: createIndexRunRepository(db),
-      },
-      config.library,
-      {
-        ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
-        ...(options.root === undefined ? {} : { rootPath: options.root }),
-      },
-    );
+  await withCommandContext(options, async ({ config, repositories }) => {
+    const stats = await indexLibrary(repositories, config.library, {
+      ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
+      ...(options.root === undefined ? {} : { rootPath: options.root }),
+    });
 
     const logger = createLogger('warn');
     for (const warning of stats.warnings) logger.warn(warning);
@@ -45,9 +27,7 @@ export async function runIndexCommand(options: IndexCommandOptions): Promise<voi
     }
 
     printSummary(stats);
-  } finally {
-    closeDatabase(db);
-  }
+  });
 }
 
 /** Resume la ejecución en lenguaje natural. */
