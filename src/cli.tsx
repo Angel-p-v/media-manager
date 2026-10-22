@@ -13,8 +13,10 @@ import {
   parsePositiveInteger,
   parseSortOrder,
 } from './commands/options.js';
+import { runPlayCommand } from './commands/play.js';
 import { runSearchCommand } from './commands/search.js';
 import { runShowCommand } from './commands/show.js';
+import { runWatchCommand } from './commands/watch.js';
 import { loadConfig } from './core/config/loader.js';
 import { formatError } from './shared/errors.js';
 import { getVersion } from './shared/version.js';
@@ -77,6 +79,24 @@ program
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--json', 'salida en formato JSON')
   .action(runShowCommand);
+
+program
+  .command('play')
+  .description('reproduce un título con el reproductor configurado')
+  .argument('<id-o-titulo>', 'id numérico o título a reproducir')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-f, --file <id>', 'id del fichero a reproducir', parsePositiveInteger)
+  .option('-p, --player <nombre>', 'reproductor alternativo al configurado')
+  .option('--foreground', 'espera a que el reproductor termine')
+  .option('--dry-run', 'muestra el comando sin lanzar el reproductor')
+  .option('--json', 'salida en formato JSON')
+  .action(runPlayCommand);
+
+program
+  .command('watch')
+  .description('vigila las raíces y reindexa al detectar cambios')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .action(runWatchCommand);
 
 const dbCommand = program.command('db').description('operaciones sobre la base de datos local');
 

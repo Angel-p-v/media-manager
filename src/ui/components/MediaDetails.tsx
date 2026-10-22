@@ -49,7 +49,8 @@ export function MediaDetails({ details }: MediaDetailsProps): React.JSX.Element 
           return (
             <Text key={file.id}>
               {'  '}
-              {theme.primary(label.padEnd(6))} {shortenPath(file.filePath, 64)}
+              {theme.muted(`#${file.id}`)} {theme.primary(label.padEnd(6))}{' '}
+              {shortenPath(file.filePath, 64)}
             </Text>
           );
         })

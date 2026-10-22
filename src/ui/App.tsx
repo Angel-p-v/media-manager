@@ -12,16 +12,23 @@ import { theme } from './theme.js';
 import { LibraryView } from './views/Library.js';
 import { SearchView } from './views/Search.js';
 import { SettingsView } from './views/Settings.js';
+import { createLaunchPlan, launchPlayer as spawnPlayer } from '../core/player/launcher.js';
+import { selectMediaFile } from '../core/player/selection.js';
+import { formatError } from '../shared/errors.js';
 
 import type { Counts, Section, ViewName } from './types.js';
 import type { AppConfig } from '../core/config/schema.js';
+import type { MediaFileRow } from '../core/db/types.js';
 import type { LibraryService } from '../core/library/service.js';
+import type { LaunchPlayerFn } from '../core/player/launcher.js';
 
 export type AppProps = {
   config: AppConfig;
   library: LibraryService;
   /** Solo para tests: sustituye al cierre real de Ink. */
   onQuit?: () => void;
+  /** Solo para tests: permite observar o simular el lanzamiento del reproductor. */
+  launchPlayer?: LaunchPlayerFn;
 };
 
 const SECTION_ORDER: readonly Section[] = ['all', 'series', 'anime', 'movie'];
@@ -38,7 +45,12 @@ const VIEW_TITLE: Record<ViewName, string> = {
  * Mantiene el estado de navegación local (vista, sección, selección y búsqueda) y
  * delega todas las consultas en `LibraryService`. No escribe SQL ni conoce SQLite.
  */
-export function App({ config, library, onQuit }: AppProps): React.JSX.Element {
+export function App({
+  config,
+  library,
+  onQuit,
+  launchPlayer = spawnPlayer,
+}: AppProps): React.JSX.Element {
   const { keybindings } = useConfig(config);
   const { exit } = useApp();
   const [view, setView] = useState<ViewName>('library');
@@ -108,7 +120,34 @@ export function App({ config, library, onQuit }: AppProps): React.JSX.Element {
 
   const handlePlay = (): void => {
     if (view !== 'library') return;
-    setStatus('La reproducción con mpv/vlc llegará en el hito M6.');
+
+    if (details === null) {
+      setStatus('Selecciona un título para reproducirlo.');
+      return;
+    }
+
+    try {
+      const file = selectMediaFile(details.files);
+      // La TUI nunca espera al reproductor: el hijo se desacopla y sigue vivo
+      // aunque el usuario cierre Ink justo después.
+      const plan = createLaunchPlan({
+        playerConfig: config.player,
+        filePath: file.filePath,
+        mode: 'detach',
+      });
+      const label = playbackLabel(details.media.title, file);
+      setStatus(`Abriendo ${label} en ${plan.player}…`);
+
+      void launchPlayer(plan)
+        .then(() => {
+          setStatus(`▶ ${label} · ${plan.player}`);
+        })
+        .catch((error: unknown) => {
+          setStatus(formatError(error));
+        });
+    } catch (error) {
+      setStatus(formatError(error));
+    }
   };
 
   const handleNextSection = (): void => {
@@ -210,4 +249,13 @@ export function App({ config, library, onQuit }: AppProps): React.JSX.Element {
       <StatusBar bindings={keybindings} message={status} />
     </Box>
   );
+}
+
+/** Etiqueta corta del fichero para la barra de estado. */
+function playbackLabel(title: string, file: MediaFileRow): string {
+  if (file.episode === null) return title;
+
+  const season = file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
+  const episode = `E${String(file.episode).padStart(2, '0')}`;
+  return `${title} · ${season}${episode}`;
 }
