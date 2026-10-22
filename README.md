@@ -6,7 +6,7 @@
 
 [![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%28M4%29-orange)](#estado-del-proyecto)
+[![Status](https://img.shields.io/badge/status-alpha%20%28M5%29-orange)](#estado-del-proyecto)
 
 ---
 
@@ -44,7 +44,7 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 
 | Capacidad                                                    | Estado |
 | ------------------------------------------------------------ | ------ |
-| TUI navegable (Ink + React)                                  | 🔜 M5  |
+| TUI navegable (Ink + React)                                  | ✅ M5  |
 | Índice local en SQLite con FTS5                              | ✅ M2  |
 | Indexación recursiva + incremental                           | ✅ M3  |
 | Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅ M3  |
@@ -56,8 +56,8 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 
 ## Estado del proyecto
 
-**Alpha — M4 completado; siguiente M5 (TUI con Ink).** El plan de desarrollo completo,
-con hitos, criterios de aceptación y estrategia de pruebas, vive en
+**Alpha — M5 completado; siguiente M6 (reproductor y modo _watch_).** El plan de
+desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
 | Hito | Contenido                     | Versión    |
@@ -67,7 +67,7 @@ con hitos, criterios de aceptación y estrategia de pruebas, vive en
 | M2   | Persistencia SQLite           | `0.2.0` ✅ |
 | M3   | Indexación y parseo           | `0.3.0` ✅ |
 | M4   | CLI _headless_ + búsqueda     | `0.4.0` ✅ |
-| M5   | TUI (Ink)                     | `0.5.0`    |
+| M5   | TUI (Ink)                     | `0.5.0` ✅ |
 | M6   | Reproductor + modo watch      | `0.6.0`    |
 | M7   | Robustez y rendimiento        | `0.7.0`    |
 | M8   | Publicación `v1.0.0`          | `1.0.0`    |
@@ -121,6 +121,21 @@ mm db stats               # tamaño de la biblioteca y del índice
 
 La salida `--json` es el contrato estable para scripts: un único objeto JSON por
 `stdout`, sin colores. Los errores se escriben en `stderr`.
+
+### TUI
+
+`mm` sin argumentos abre la interfaz a pantalla completa. Atajos por defecto (todos se
+pueden cambiar en `keybindings` de la configuración):
+
+| Tecla   | Acción                                   |
+| ------- | ---------------------------------------- |
+| `q`     | salir (también `Ctrl+C`)                 |
+| `Tab`   | siguiente sección (todo, series, anime…) |
+| `↑` `↓` | mover la selección                       |
+| `/`     | abrir el buscador; `Esc` vuelve          |
+| `s`     | ver la configuración efectiva            |
+| `?`     | ayuda con los atajos                     |
+| `p`     | reproducir (llega en el hito M6)         |
 
 ## Configuración
 

@@ -14,7 +14,7 @@ export default defineConfig({
       {
         test: {
           name: 'integration',
-          include: ['tests/integration/**/*.test.ts'],
+          include: ['tests/integration/**/*.test.{ts,tsx}'],
           environment: 'node',
           testTimeout: 15_000,
           restoreMocks: true,

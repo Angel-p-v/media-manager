@@ -1,0 +1,43 @@
+import { Box } from 'ink';
+import React from 'react';
+
+import { MediaDetails } from '../components/MediaDetails.js';
+import { MediaList } from '../components/MediaList.js';
+import { Sidebar } from '../components/Sidebar.js';
+
+import type { MediaRow } from '../../core/db/types.js';
+import type { MediaDetails as Details } from '../../core/library/service.js';
+import type { Counts, Section } from '../types.js';
+
+export type LibraryViewProps = {
+  items: readonly MediaRow[];
+  selected: number;
+  section: Section;
+  counts: Counts;
+  details: Details | null;
+  showDetails: boolean;
+};
+
+/** Vista principal: navegación por secciones, listado y panel de detalle. */
+export function LibraryView({
+  items,
+  selected,
+  section,
+  counts,
+  details,
+  showDetails,
+}: LibraryViewProps): React.JSX.Element {
+  return (
+    <Box flexGrow={1} flexDirection="row">
+      <Sidebar section={section} counts={counts} />
+      <Box flexDirection="column" flexGrow={1}>
+        <MediaList
+          items={items}
+          selected={selected}
+          emptyMessage="No hay títulos en esta sección. Ejecuta «mm index» para escanear tus carpetas."
+        />
+        {showDetails ? <MediaDetails details={details} /> : null}
+      </Box>
+    </Box>
+  );
+}

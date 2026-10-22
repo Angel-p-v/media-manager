@@ -116,8 +116,8 @@ Hitos del plan (ver `PLAN.md` §7):
 | M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
 | M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
 | M4   | CLI headless + búsqueda                               | ✅ hecho    |
-| M5   | TUI (Ink)                                             | ☐ siguiente |
-| M6   | Reproductor mpv/vlc + modo watch                      | ☐           |
+| M5   | TUI (Ink)                                             | ✅ hecho    |
+| M6   | Reproductor mpv/vlc + modo watch                      | ☐ siguiente |
 | M7   | Robustez y rendimiento                                | ☐           |
 | M8   | Release v1.0.0                                        | ☐           |
 
