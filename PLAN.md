@@ -201,7 +201,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M1   | Núcleo de configuración (YAML + Zod)                  | ✅     | 5/5      |
 | M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅     | 5/5      |
 | M3   | Indexación y parseo (scanner + parsers)               | ✅     | 9/9      |
-| M4   | CLI _headless_ + búsqueda                             | ☐      | 0/10     |
+| M4   | CLI _headless_ + búsqueda                             | ✅     | 10/10    |
 | M5   | TUI (Ink)                                             | ☐      | 0/7      |
 | M6   | Reproductor + modo _watch_                            | ☐      | 0/6      |
 | M7   | Robustez y rendimiento                                | ☐      | 0/6      |
@@ -324,20 +324,20 @@ y `mm index --dry-run|--root|--json` con estadísticas de ejecución.
 
 ---
 
-### M4 — CLI _headless_ + búsqueda · `0.4.0`
+### M4 — CLI _headless_ + búsqueda · `0.4.0` ✅
 
 **Tareas**
 
-- [ ] Casos de uso en `src/core/library/` (listar, buscar, resolver, estadísticas)
-- [ ] `mm list` con filtros de tipo, orden y paginación
-- [ ] `mm search` con FTS5 y filtro de tipo
-- [ ] `mm show` por id o título, con sus ficheros
-- [ ] `mm db stats`
-- [ ] Códigos de salida 0/1/2 documentados
-- [ ] `--json` estable con _snapshots_
-- [ ] E2E del binario compilado (argv, stdout, stderr y `exitCode`)
-- [ ] Integración FTS5 vs `LIKE` comparando planes con `EXPLAIN QUERY PLAN`
-- [ ] README, arquitectura y `AGENTS.md` actualizados
+- [x] Casos de uso en `src/core/library/` (listar, buscar, resolver, estadísticas)
+- [x] `mm list` con filtros de tipo, orden y paginación
+- [x] `mm search` con FTS5 y filtro de tipo
+- [x] `mm show` por id o título, con sus ficheros
+- [x] `mm db stats`
+- [x] Códigos de salida 0/1/2 documentados
+- [x] `--json` estable con _snapshots_
+- [x] E2E del binario compilado (argv, stdout, stderr y `exitCode`)
+- [x] Integración FTS5 vs `LIKE` comparando planes con `EXPLAIN QUERY PLAN`
+- [x] README, arquitectura y `AGENTS.md` actualizados
 
 **Alcance:** `src/cli.tsx` con Commander · subcomandos `index|search|show|list|db|config` ·
 códigos de salida documentados (0 ok · 1 error · 2 uso incorrecto) · salida `--json` estable.
@@ -350,6 +350,10 @@ códigos de salida documentados (0 ok · 1 error · 2 uso incorrecto) · salida 
   `EXPLAIN QUERY PLAN`.
 
 **DoD:** `--json` estable con snapshot tests · ayuda de cada subcomando completa y coherente.
+
+**Estado:** implementado en `feat/cli-library`. `LibraryService` con listado, búsqueda FTS5,
+resolución por id/título y estadísticas; comandos `mm list|search|show|db stats` con
+`--json`; códigos de salida 0/1/2; ADR 0004; suite E2E contra `dist/cli.js`.
 
 ---
 

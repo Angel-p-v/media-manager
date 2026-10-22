@@ -20,12 +20,17 @@ export type ListMediaOptions = {
   orderBy?: 'title' | 'added' | 'recent';
 };
 
+export type SearchMediaOptions = {
+  type?: MediaType;
+  limit?: number;
+};
+
 export type MediaRepository = {
   upsert(input: MediaInput): MediaRow;
   findById(id: number): MediaRow | undefined;
   findByFolderPath(folderPath: string): MediaRow | undefined;
   list(options?: ListMediaOptions): MediaRow[];
-  search(query: string, limit?: number): MediaRow[];
+  search(query: string, options?: SearchMediaOptions): MediaRow[];
   remove(id: number): boolean;
   removeEmpty(): number;
   count(type?: MediaType): number;
@@ -84,10 +89,14 @@ export function createMediaRepository(db: Db): MediaRepository {
     `),
   };
 
-  const searchStatement = db.prepare<{ query: string; limit: number }, MediaDbRow>(`
+  const searchStatement = db.prepare<
+    { query: string; limit: number; type: MediaType | null },
+    MediaDbRow
+  >(`
     SELECT m.* FROM media m
     JOIN media_fts f ON f.rowid = m.id
     WHERE media_fts MATCH @query
+      AND (@type IS NULL OR m.type = @type)
     ORDER BY bm25(media_fts), m.sort_title
     LIMIT @limit
   `);
@@ -129,10 +138,14 @@ export function createMediaRepository(db: Db): MediaRepository {
       return rows.map(toMediaRow);
     },
 
-    search(query: string, limit = 20): MediaRow[] {
+    search(query: string, options: SearchMediaOptions = {}): MediaRow[] {
       const match = toFtsQuery(query);
       if (!match) return [];
-      const rows = searchStatement.all({ query: match, limit });
+      const rows = searchStatement.all({
+        query: match,
+        limit: options.limit ?? 20,
+        type: options.type ?? null,
+      });
       return rows.map(toMediaRow);
     },
 

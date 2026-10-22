@@ -1,5 +1,11 @@
 export type ErrorCode =
-  'APP_ERROR' | 'CONFIG_ERROR' | 'DB_ERROR' | 'INDEX_ERROR' | 'PLAYER_ERROR' | 'NOT_FOUND';
+  | 'APP_ERROR'
+  | 'CONFIG_ERROR'
+  | 'DB_ERROR'
+  | 'INDEX_ERROR'
+  | 'PLAYER_ERROR'
+  | 'NOT_FOUND'
+  | 'AMBIGUOUS';
 
 /**
  * Error base de la aplicación. Todos los errores que llegan a la capa de
@@ -50,6 +56,13 @@ export class PlayerError extends AppError {
 export class NotFoundError extends AppError {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, 'NOT_FOUND', options);
+  }
+}
+
+/** Varios recursos coinciden con la consulta y hace falta desambiguar. */
+export class AmbiguousError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'AMBIGUOUS', options);
   }
 }
 

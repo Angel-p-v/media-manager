@@ -6,7 +6,7 @@
 
 [![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha%20%28M3%29-orange)](#estado-del-proyecto)
+[![Status](https://img.shields.io/badge/status-alpha%20%28M4%29-orange)](#estado-del-proyecto)
 
 ---
 
@@ -48,16 +48,16 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Índice local en SQLite con FTS5                              | ✅ M2  |
 | Indexación recursiva + incremental                           | ✅ M3  |
 | Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅ M3  |
-| Búsqueda instantánea en línea de comandos                    | 🔜 M4  |
+| Búsqueda instantánea en línea de comandos                    | ✅ M4  |
 | Reproducción con `mpv` / `vlc`                               | 🔜 M6  |
 | Configuración YAML validada con Zod                          | ✅ M1  |
 | Modo _watch_ (reindexado automático)                         | 🔜 M6  |
-| Salida `--json` para scripts                                 | 🔜 M4  |
+| Salida `--json` para scripts                                 | ✅ M4  |
 
 ## Estado del proyecto
 
-**Alpha — M3 completado; siguiente M4 (CLI _headless_ y búsqueda).** El plan de
-desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
+**Alpha — M4 completado; siguiente M5 (TUI con Ink).** El plan de desarrollo completo,
+con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
 | Hito | Contenido                     | Versión    |
@@ -66,7 +66,7 @@ desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas
 | M1   | Núcleo de configuración       | `0.1.0` ✅ |
 | M2   | Persistencia SQLite           | `0.2.0` ✅ |
 | M3   | Indexación y parseo           | `0.3.0` ✅ |
-| M4   | CLI _headless_ + búsqueda     | `0.4.0`    |
+| M4   | CLI _headless_ + búsqueda     | `0.4.0` ✅ |
 | M5   | TUI (Ink)                     | `0.5.0`    |
 | M6   | Reproductor + modo watch      | `0.6.0`    |
 | M7   | Robustez y rendimiento        | `0.7.0`    |
@@ -102,6 +102,7 @@ mm --help
 mm                       # interfaz TUI a pantalla completa
 mm index                 # escanea las raíces configuradas y actualiza el índice
 mm index --dry-run       # simula el escaneo sin tocar la base de datos
+mm list                  # enumera la biblioteca
 mm search "cowboy bebop" # búsqueda por título
 mm search "akira" --json # salida para scripts
 mm show "cowboy bebop"   # detalle de un título (temporadas, episodios, rutas)
@@ -109,6 +110,17 @@ mm play "cowboy bebop"   # lanza el siguiente episodio sin ver en mpv/vlc
 mm config --path          # ruta del archivo de configuración en uso
 mm db stats               # tamaño de la biblioteca y del índice
 ```
+
+### Códigos de salida
+
+| Código | Significado                                                       |
+| ------ | ----------------------------------------------------------------- |
+| `0`    | Éxito                                                             |
+| `1`    | Error de ejecución (configuración, base de datos, título ausente) |
+| `2`    | Uso incorrecto (comando u opción inválidos, falta un argumento)   |
+
+La salida `--json` es el contrato estable para scripts: un único objeto JSON por
+`stdout`, sin colores. Los errores se escriben en `stderr`.
 
 ## Configuración
 

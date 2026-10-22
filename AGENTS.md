@@ -115,8 +115,8 @@ Hitos del plan (ver `PLAN.md` §7):
 | M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
 | M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
 | M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
-| M4   | CLI headless + búsqueda                               | ☐ siguiente |
-| M5   | TUI (Ink)                                             | ☐           |
+| M4   | CLI headless + búsqueda                               | ✅ hecho    |
+| M5   | TUI (Ink)                                             | ☐ siguiente |
 | M6   | Reproductor mpv/vlc + modo watch                      | ☐           |
 | M7   | Robustez y rendimiento                                | ☐           |
 | M8   | Release v1.0.0                                        | ☐           |
