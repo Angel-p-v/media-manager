@@ -8,7 +8,7 @@ import { type z } from 'zod';
 import { defaultConfig } from './defaults.js';
 import { mergeDeep, isPlainObject } from './merge.js';
 import { defaultConfigPath } from './paths.js';
-import { configSchema, type AppConfig } from './schema.js';
+import { configSchema, logFormatSchema, logLevelSchema, type AppConfig } from './schema.js';
 import { ConfigError } from '../../shared/errors.js';
 import { resolvePath } from '../../shared/paths.js';
 
@@ -101,6 +101,22 @@ export function applyEnvOverrides(config: AppConfig, env: NodeJS.ProcessEnv): Ap
   }
   if (env.MM_PLAYER) {
     next.player.default = env.MM_PLAYER;
+  }
+  if (env.MM_LOG_LEVEL) {
+    const level = logLevelSchema.safeParse(env.MM_LOG_LEVEL);
+    if (!level.success) {
+      throw new ConfigError(
+        `MM_LOG_LEVEL inválido: «${env.MM_LOG_LEVEL}». Valores: silent, error, warn, info, debug.`,
+      );
+    }
+    next.logging.level = level.data;
+  }
+  if (env.MM_LOG_FORMAT) {
+    const format = logFormatSchema.safeParse(env.MM_LOG_FORMAT);
+    if (!format.success) {
+      throw new ConfigError(`MM_LOG_FORMAT inválido: «${env.MM_LOG_FORMAT}». Valores: text, json.`);
+    }
+    next.logging.format = format.data;
   }
 
   return next;

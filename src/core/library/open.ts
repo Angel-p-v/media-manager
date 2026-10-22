@@ -1,5 +1,6 @@
 import { createLibraryService, type LibraryRepositories, type LibraryService } from './service.js';
 import { closeDatabase, openDatabase } from '../db/connection.js';
+import { createDatabaseMaintenance, type DatabaseMaintenance } from '../db/maintenance.js';
 import { createFileRepository } from '../db/repositories/fileRepo.js';
 import { createIndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import { createMediaRepository } from '../db/repositories/mediaRepo.js';
@@ -8,6 +9,7 @@ import { createMediaRepository } from '../db/repositories/mediaRepo.js';
 export type OpenedLibrary = {
   repositories: LibraryRepositories;
   library: LibraryService;
+  maintenance: DatabaseMaintenance;
   close: () => void;
 };
 
@@ -28,6 +30,7 @@ export function openLibrary(databasePath: string): OpenedLibrary {
   return {
     repositories,
     library: createLibraryService(repositories),
+    maintenance: createDatabaseMaintenance(db),
     close: () => closeDatabase(db),
   };
 }

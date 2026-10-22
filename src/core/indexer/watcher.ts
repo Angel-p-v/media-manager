@@ -4,12 +4,14 @@ import { indexLibrary } from './service.js';
 import { isVideoFile } from './video.js';
 
 import type { IndexLibraryConfig, IndexingRepositories, IndexStats } from './service.js';
+import type { Logger } from '../../shared/logger.js';
 
 export type WatchLibraryOptions = {
   repositories: IndexingRepositories;
   library: IndexLibraryConfig;
   /** Tiempo de espera para agrupar ráfagas de eventos (copias, renombrados...). */
   debounceMs?: number;
+  logger?: Logger;
   onIndexed?: (stats: IndexStats) => void;
   onError?: (error: unknown) => void;
 };
@@ -55,9 +57,14 @@ export function watchLibrary(options: WatchLibraryOptions): LibraryWatcher {
 
     running = (async (): Promise<void> => {
       try {
-        const stats = await indexLibrary(options.repositories, options.library);
+        options.logger?.debug('watch.index.start');
+        const stats = await indexLibrary(options.repositories, options.library, {
+          ...(options.logger === undefined ? {} : { logger: options.logger }),
+        });
+        options.logger?.debug('watch.index.completed', { ...stats });
         options.onIndexed?.(stats);
       } catch (error) {
+        options.logger?.debug('watch.index.failed', { error });
         options.onError?.(error);
       } finally {
         running = null;
@@ -81,11 +88,13 @@ export function watchLibrary(options: WatchLibraryOptions): LibraryWatcher {
   const onEvent = (event: string, filePath: string): void => {
     if (closed) return;
     if (event === 'unlinkDir') {
+      options.logger?.debug('watch.event', { event, path: filePath });
       schedule();
       return;
     }
     if (event !== 'add' && event !== 'change' && event !== 'unlink') return;
     if (!isVideoFile(filePath)) return;
+    options.logger?.debug('watch.event', { event, path: filePath });
     schedule();
   };
 

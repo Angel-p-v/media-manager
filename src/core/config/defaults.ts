@@ -31,6 +31,10 @@ export const defaultConfig: AppConfig = {
     sort: 'title',
     showDetails: true,
   },
+  logging: {
+    level: 'warn',
+    format: 'text',
+  },
   keybindings: {
     quit: 'q',
     help: '?',

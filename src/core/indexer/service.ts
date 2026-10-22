@@ -5,6 +5,7 @@ import { scanLibrary } from './scanner.js';
 import { IndexError } from '../../shared/errors.js';
 import { resolvePath } from '../../shared/paths.js';
 
+import type { Logger } from '../../shared/logger.js';
 import type { LibraryRoot, ScanOptions } from '../config/schema.js';
 import type { FileRepository } from '../db/repositories/fileRepo.js';
 import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
@@ -30,6 +31,8 @@ export type IndexLibraryOptions = {
   dryRun?: boolean;
   /** Limita la indexación a la raíz configurada con esta ruta. */
   rootPath?: string;
+  /** Logger inyectado; los eventos detallados se emiten a nivel debug. */
+  logger?: Logger;
 };
 
 /** Resultado de una ejecución de indexación. */
@@ -71,6 +74,11 @@ export async function indexLibrary(
   const startedAt = Date.now();
   const dryRun = options.dryRun ?? false;
   const roots = selectRoots(library.roots, options.rootPath);
+  options.logger?.debug('index.start', {
+    dryRun,
+    roots: roots.length,
+    rootPath: options.rootPath ?? null,
+  });
 
   if (roots.length === 0) {
     throw new IndexError(
@@ -98,7 +106,7 @@ export async function indexLibrary(
   }
 
   try {
-    const classified = await scanAndClassify(roots, library, stats);
+    const classified = await scanAndClassify(roots, library, stats, options.logger);
     const knownPaths = new Set(classified.keys());
     const folders = groupByFolder(repositories, classified, stats);
 
@@ -126,9 +134,15 @@ export async function indexLibrary(
       });
     }
 
+    options.logger?.debug('index.completed', { ...stats });
     return stats;
   } catch (error) {
     stats.durationMs = Date.now() - startedAt;
+    options.logger?.debug('index.failed', {
+      durationMs: stats.durationMs,
+      filesSeen: stats.filesSeen,
+      error,
+    });
     if (stats.runId !== null) {
       repositories.indexRunRepo.fail(stats.runId, {
         filesSeen: stats.filesSeen,
@@ -145,6 +159,7 @@ async function scanAndClassify(
   roots: readonly LibraryRoot[],
   library: IndexLibraryConfig,
   stats: IndexStats,
+  logger: Logger | undefined,
 ): Promise<Map<string, ClassifiedFile>> {
   const classified = new Map<string, ClassifiedFile>();
 
@@ -158,6 +173,11 @@ async function scanAndClassify(
 
     stats.rootsScanned += 1;
     stats.filesSeen += files.length;
+    logger?.debug('index.root.scanned', {
+      root: root.path,
+      type: root.type,
+      files: files.length,
+    });
 
     for (const file of files) {
       const entry = classifyFile({ root, ...file });
@@ -175,6 +195,11 @@ async function scanAndClassify(
     }
   }
 
+  logger?.debug('index.classified', {
+    files: classified.size,
+    skipped: stats.skipped,
+    warnings: stats.warnings.length,
+  });
   return classified;
 }
 

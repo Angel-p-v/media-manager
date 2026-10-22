@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import Database from 'better-sqlite3';
 
+import { optimizeDatabase } from './maintenance.js';
 import { migrations, type Migration } from './migrations/index.js';
 import { DbError } from '../../shared/errors.js';
 
@@ -81,5 +82,13 @@ export function runMigrations(db: Db, pending: readonly Migration[] = migrations
 
 /** Cierra la base de datos de forma segura. */
 export function closeDatabase(db: Db): void {
-  if (db.open) db.close();
+  if (!db.open) return;
+  try {
+    // Best effort: un fallo al optimizar no debe impedir cerrar ni ocultar el
+    // error original que estuviera propagándose.
+    optimizeDatabase(db);
+  } catch {
+    // Ignorado deliberadamente.
+  }
+  db.close();
 }

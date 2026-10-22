@@ -68,11 +68,28 @@ export class AmbiguousError extends AppError {
 
 /** Convierte cualquier valor lanzado en un mensaje legible para el usuario. */
 export function formatError(error: unknown): string {
+  return describeError(error).message;
+}
+
+/** Código y mensaje normalizados de un error, sin depender de su clase concreta. */
+export type ErrorInfo = {
+  code: ErrorCode;
+  message: string;
+};
+
+/** Normaliza errores de la aplicación y errores inesperados a un mismo contrato. */
+export function describeError(error: unknown): ErrorInfo {
   if (error instanceof AppError) {
-    return error.message;
+    return { code: error.code, message: error.message };
   }
   if (error instanceof Error) {
-    return error.message;
+    return { code: 'APP_ERROR', message: error.message };
   }
-  return String(error);
+  return { code: 'APP_ERROR', message: String(error) };
+}
+
+/** Mensaje con el código estable delante, útil para soporte y scripts. */
+export function formatErrorWithCode(error: unknown): string {
+  const info = describeError(error);
+  return `[${info.code}] ${info.message}`;
 }

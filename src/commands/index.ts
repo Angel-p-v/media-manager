@@ -2,7 +2,6 @@ import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
 import { indexLibrary, type IndexStats } from '../core/indexer/service.js';
-import { createLogger } from '../shared/logger.js';
 
 export type IndexCommandOptions = CommandOptions & {
   dryRun?: boolean;
@@ -12,13 +11,13 @@ export type IndexCommandOptions = CommandOptions & {
 
 /** Implementa `mm index`: indexa la biblioteca configurada. */
 export async function runIndexCommand(options: IndexCommandOptions): Promise<void> {
-  await withCommandContext(options, async ({ config, repositories }) => {
+  await withCommandContext(options, async ({ config, repositories, logger }) => {
     const stats = await indexLibrary(repositories, config.library, {
       ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
       ...(options.root === undefined ? {} : { rootPath: options.root }),
+      logger,
     });
 
-    const logger = createLogger('warn');
     for (const warning of stats.warnings) logger.warn(warning);
 
     if (options.json) {

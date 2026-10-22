@@ -69,6 +69,7 @@ npm run test:unit      # solo unitarias (rápidas)
 npm run test:integration
 npm run test:e2e
 npm run coverage       # informe de cobertura
+npm run bench          # benchmarks de escaneo, indexado y consultas
 npm run build          # compila a dist/
 npm run lint:fix       # eslint --fix
 npm run format         # prettier --write
@@ -101,7 +102,15 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
   `/proc` en tests; usa un fichero normal como "bloqueo" para provocar `ENOTDIR`.
 - **Migraciones**: se declaran en TypeScript (`src/core/db/migrations/index.ts`), no como
   ficheros `.sql`, para que viajen compiladas en `dist/` y el paquete instalado no
-  dependa de rutas en disco.
+  dependa de rutas en disco. La v2 solo añade índices de rendimiento; su test parte de
+  una base v1 con datos y FTS5.
+- **Logging**: `createLogger({ level, format, stream, bindings, now })` escribe siempre en
+  `stderr`; `text` es para humanos y `json` emite una línea por evento. El valor por
+  defecto es `warn`/`text`. `--verbose` es global y el hook `preAction` lo copia al
+  subcomando: no añadas un flag local duplicado.
+- **Cierre de SQLite**: `closeDatabase()` ejecuta `PRAGMA optimize` como _best effort_ y
+  nunca debe tapar el error original. `VACUUM` solo se lanza con
+  `mm db optimize --vacuum`, porque bloquea y necesita espacio temporal.
 - **`zod` v4**: `.default()` exige el tipo de _salida_; para objetos con subcampos
   opcionales usar `.prefault({})`.
 - **Reproductor**: la plantilla de `players.*.args` debe incluir `{file}`. Se usa
@@ -123,8 +132,8 @@ Hitos del plan (ver `PLAN.md` §7):
 | M4   | CLI headless + búsqueda                               | ✅ hecho    |
 | M5   | TUI (Ink)                                             | ✅ hecho    |
 | M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
-| M7   | Robustez y rendimiento                                | ☐ siguiente |
-| M8   | Release v1.0.0                                        | ☐           |
+| M7   | Robustez y rendimiento                                | ✅ hecho    |
+| M8   | Release v1.0.0                                        | ☐ siguiente |
 
 ## Reglas para el agente
 

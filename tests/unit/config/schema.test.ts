@@ -24,6 +24,13 @@ describe('configSchema', () => {
     expect(result.data.library.scan.maxDepth).toBe(4);
     expect(result.data.ui.layout).toBe('split');
     expect(result.data.player.onLaunch).toBe('detach');
+    expect(result.data.logging).toEqual({ level: 'warn', format: 'text' });
+  });
+
+  it('rechaza un nivel de logging desconocido', () => {
+    const result = configSchema.safeParse({ logging: { level: 'trace' } });
+
+    expect(result.success).toBe(false);
   });
 
   it('rechaza un tipo de medio desconocido', () => {

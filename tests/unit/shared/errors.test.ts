@@ -7,7 +7,9 @@ import {
   IndexError,
   NotFoundError,
   PlayerError,
+  describeError,
   formatError,
+  formatErrorWithCode,
 } from '../../../src/shared/errors.js';
 
 describe('errores de la aplicación', () => {
@@ -41,5 +43,27 @@ describe('formatError', () => {
   it('convierte valores desconocidos en texto', () => {
     expect(formatError('texto')).toBe('texto');
     expect(formatError(42)).toBe('42');
+  });
+});
+
+describe('describeError', () => {
+  it('conserva el código de un AppError', () => {
+    expect(describeError(new NotFoundError('sin título'))).toEqual({
+      code: 'NOT_FOUND',
+      message: 'sin título',
+    });
+  });
+
+  it('marca los errores inesperados como APP_ERROR', () => {
+    expect(describeError(new Error('boom'))).toEqual({
+      code: 'APP_ERROR',
+      message: 'boom',
+    });
+  });
+});
+
+describe('formatErrorWithCode', () => {
+  it('antepone el código estable', () => {
+    expect(formatErrorWithCode(new ConfigError('yaml roto'))).toBe('[CONFIG_ERROR] yaml roto');
   });
 });

@@ -63,6 +63,24 @@ export const uiConfigSchema = z.object({
 
 export type UiConfig = z.infer<typeof uiConfigSchema>;
 
+/** Niveles de logging ordenados de menor a mayor detalle. */
+export const logLevelSchema = z.enum(['silent', 'error', 'warn', 'info', 'debug']);
+
+export type LoggingLevel = z.infer<typeof logLevelSchema>;
+
+/** Formato de los logs: legible para humanos o una línea JSON por evento. */
+export const logFormatSchema = z.enum(['text', 'json']);
+
+export type LoggingFormat = z.infer<typeof logFormatSchema>;
+
+/** Diagnóstico de la aplicación; los logs van siempre a `stderr`. */
+export const loggingConfigSchema = z.object({
+  level: logLevelSchema.default('warn'),
+  format: logFormatSchema.default('text'),
+});
+
+export type LoggingConfig = z.infer<typeof loggingConfigSchema>;
+
 /** Esquema completo del archivo de configuración. */
 export const configSchema = z.object({
   version: z.literal(1).default(1),
@@ -82,6 +100,7 @@ export const configSchema = z.object({
     .prefault({}),
   player: playerConfigSchema.prefault({}),
   ui: uiConfigSchema.prefault({}),
+  logging: loggingConfigSchema.prefault({}),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 

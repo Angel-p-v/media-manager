@@ -4,7 +4,8 @@ import process from 'node:process';
 import { Command, CommanderError } from 'commander';
 
 import { runConfigCommand } from './commands/config.js';
-import { runDbStatsCommand } from './commands/db.js';
+import { runDbOptimizeCommand, runDbStatsCommand } from './commands/db.js';
+import { reportFatalError } from './commands/errorHandler.js';
 import { runIndexCommand } from './commands/index.js';
 import { runListCommand } from './commands/list.js';
 import {
@@ -18,7 +19,6 @@ import { runSearchCommand } from './commands/search.js';
 import { runShowCommand } from './commands/show.js';
 import { runWatchCommand } from './commands/watch.js';
 import { loadConfig } from './core/config/loader.js';
-import { formatError } from './shared/errors.js';
 import { getVersion } from './shared/version.js';
 import { runTui } from './ui/run.js';
 
@@ -26,12 +26,21 @@ const program = new Command()
   .name('mm')
   .description('Media Manager — gestor de contenido multimedia para terminal')
   .version(getVersion(), '-V, --version', 'muestra la versión')
+  .option('-v, --verbose', 'activa logs de depuración y pilas de error')
   .showHelpAfterError()
   .addHelpText(
     'after',
     '\nCódigos de salida:\n  0  éxito\n  1  error de ejecución\n  2  uso incorrecto',
   )
   .exitOverride();
+
+// Commander conserva las opciones globales en el programa; se copian al subcomando
+// para que todos los `run*Command(options)` reciban el mismo `verbose`.
+program.hook('preAction', (thisCommand, actionCommand) => {
+  if (thisCommand.opts().verbose === true) {
+    actionCommand.setOptionValue('verbose', true);
+  }
+});
 
 program
   .command('config')
@@ -107,9 +116,18 @@ dbCommand
   .option('--json', 'salida en formato JSON')
   .action(runDbStatsCommand);
 
+dbCommand
+  .command('optimize')
+  .description('actualiza estadísticas y compacta la base de datos')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--vacuum', 'compacta el fichero (puede tardar)')
+  .option('--json', 'salida en formato JSON')
+  .action(runDbOptimizeCommand);
+
 async function main(): Promise<void> {
   // Sin subcomando se abre la interfaz interactiva; con subcomando, la CLI headless.
-  if (process.argv.length <= 2) {
+  const args = process.argv.slice(2).filter((arg) => arg !== '--verbose' && arg !== '-v');
+  if (args.length === 0) {
     const config = await loadConfig();
     await runTui(config);
     return;
@@ -129,6 +147,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error(formatError(error));
+  reportFatalError(error, { verbose: program.opts().verbose === true });
   process.exitCode = 1;
 });
