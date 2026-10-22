@@ -487,6 +487,11 @@ el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto e
 - [x] _Smoke post-build_ con el tarball (`npm pack` → instalar → ejecutar)
 - [ ] Tag `v1.0.0`, release de GitHub y verificación en los 3 nodos
 
+> **Plan de ejecución (2026-10-22):**
+> [`docs/plans/instaladores-y-seguridad.md`](./docs/plans/instaladores-y-seguridad.md).
+> La publicación en npm se sustituye por GitHub Releases con instaladores y artefactos
+> verificables; el alcance y el DoD de M8 se ajustarán al ejecutar ese plan.
+
 **Alcance:** empaquetado y publicación en npm con _provenance_ · binario standalone
 opcional · `CHANGELOG.md` (release-please) · README con demo · `SECURITY.md` ·
 `CONTRIBUTING.md` · workflow de release.

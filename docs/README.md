@@ -7,6 +7,9 @@ Este directorio reúne la documentación técnica y de mantenimiento del proyect
 - [Publicación y release](./guides/release.md): tags, artefactos, credenciales y rollback.
 - [ADR](./adr/): decisiones de arquitectura registradas.
 - [Planes](./plans/): planes de trabajo y propuestas de evolución.
+  - [Instaladores, distribución y seguridad](./plans/instaladores-y-seguridad.md):
+    plan vigente para sustituir npm por GitHub Releases.
+  - [Distribución sin npm](./plans/distribucion-sin-npm.md): antecedente y contexto.
 - [Demo](./assets/demo.svg): transcripción visual de una sesión de la CLI.
 
 La guía de usuario, la instalación y el contrato de la CLI están en el

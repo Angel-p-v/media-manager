@@ -1,6 +1,6 @@
 # Plan: distribución sin npm mediante instaladores
 
-- **Estado:** propuesta, pendiente de aprobación
+- **Estado:** sustituido por [`instaladores-y-seguridad.md`](./instaladores-y-seguridad.md)
 - **Fecha:** 2026-10-22
 - **Sustituye:** la publicación en npm descrita en el
   [ADR 0008](../adr/0008-publicacion-y-distribucion.md)
