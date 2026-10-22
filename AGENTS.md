@@ -70,6 +70,8 @@ npm run test:integration
 npm run test:e2e
 npm run coverage       # informe de cobertura
 npm run bench          # benchmarks de escaneo, indexado y consultas
+npm run smoke          # npm pack → instalación limpia → smoke de la CLI
+npm run standalone     # distribución portable con Node incluido (opcional)
 npm run build          # compila a dist/
 npm run lint:fix       # eslint --fix
 npm run format         # prettier --write
@@ -118,22 +120,33 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
   `detach` para no bloquearse, aunque `player.onLaunch` sea `foreground`.
 - **Watch**: chokidar v6 no recibe globs; se filtran eventos con `isVideoFile` y se
   reindexa la biblioteca completa (incremental) para que los borrados también se poden.
+- **Paquete npm**: el nombre público es `media-manager-cli` (`media-manager` ya está
+  ocupado) y el binario es `mm`. `files` es una lista blanca: si añades documentación que
+  el README enlace desde npm, inclúyela o el enlace se romperá. `prepack` compila `dist/`
+  y `npm run smoke` prueba el tarball real.
+- **Release**: la primera `v1.0.0` se publica manualmente con tag + GitHub Release;
+  `release.yml` delega en `publish.yml`, que exige `NPM_TOKEN` y usa provenance. Después,
+  release-please gestiona `CHANGELOG.md` y el tag y llama a `publish.yml` en el mismo run.
+  No muevas un tag ya publicado; ver `docs/release.md`.
 
 ## Estado actual y siguiente paso
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado      |
-| ---- | ----------------------------------------------------- | ----------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho    |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
-| M4   | CLI headless + búsqueda                               | ✅ hecho    |
-| M5   | TUI (Ink)                                             | ✅ hecho    |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
-| M7   | Robustez y rendimiento                                | ✅ hecho    |
-| M8   | Release v1.0.0                                        | ☐ siguiente |
+| Hito | Contenido                                             | Estado         |
+| ---- | ----------------------------------------------------- | -------------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho       |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho       |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho       |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho       |
+| M4   | CLI headless + búsqueda                               | ✅ hecho       |
+| M5   | TUI (Ink)                                             | ✅ hecho       |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho       |
+| M7   | Robustez y rendimiento                                | ✅ hecho       |
+| M8   | Release v1.0.0                                        | 🟡 preparación |
+
+La preparación de M8 está cerrada salvo la publicación: falta añadir `NPM_TOKEN`, crear
+el tag `v1.0.0` y publicar la GitHub Release. Instrucciones en `docs/release.md`.
 
 ## Reglas para el agente
 

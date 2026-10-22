@@ -55,7 +55,7 @@
 ```
 media-manager/
 ├─ .github/
-│  ├─ workflows/{ci.yml,release.yml}
+│  ├─ workflows/{ci.yml,publish.yml,release.yml,release-please.yml}
 │  ├─ dependabot.yml
 │  ├─ ISSUE_TEMPLATE/{bug_report.yml,feature_request.yml}
 │  └─ pull_request_template.md
@@ -161,14 +161,25 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 
 - Job `verify`: matriz Node 22 / 24 / 26 → `npm ci` → lint → format:check → typecheck →
   build → test. Artefacto `dist` en Node 24.
+- Job `smoke`: instala el tarball real con `npm run smoke` en Node 24.
 - Job `coverage`: `npm run coverage` → subida a Codecov (no bloquea si el token no está).
 - `concurrency` con `cancel-in-progress` para no gastar minutos en pushes seguidos.
 - `permissions: contents: read` (mínimo privilegio).
 
-### `release.yml`
+### `release.yml` + `publish.yml`
 
-- Se dispara con `release: published` (GitHub Release manual desde un tag SemVer).
+- `release.yml` se dispara con `release: published` y delega en el workflow reutilizable
+  `publish.yml` con el tag de la release.
+- `publish.yml` comprueba que el tag coincide con `package.json`, ejecuta `verify` y el
+  smoke del tarball, y exige `NPM_TOKEN`.
 - `npm publish --provenance --access public` con `NODE_AUTH_TOKEN` y `id-token: write`.
+
+### `release-please.yml`
+
+- Observa los pushes a `main` y abre la PR de release con `CHANGELOG` y bump de versión.
+- La configuración vive en `release-please-config.json` y `.release-please-manifest.json`.
+- Si la release se crea, invoca `publish.yml` como workflow reutilizable para publicar en
+  el mismo run (los eventos de `GITHUB_TOKEN` no disparan otros workflows).
 
 ### Dependabot
 
@@ -205,7 +216,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M5   | TUI (Ink)                                             | ✅     | 7/7      |
 | M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
 | M7   | Robustez y rendimiento                                | ✅     | 6/6      |
-| M8   | Release `v1.0.0`                                      | ☐      | 0/7      |
+| M8   | Release `v1.0.0`                                      | 🟡     | 5/7      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -463,12 +474,12 @@ el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto e
 
 **Tareas**
 
-- [ ] Empaquetado y publicación en npm con _provenance_
-- [ ] Binario standalone opcional
-- [ ] `CHANGELOG.md` con release-please
-- [ ] README con demo, `SECURITY.md` y `CONTRIBUTING.md`
-- [ ] Workflow de release
-- [ ] _Smoke post-build_ con el tarball (`npm pack` → instalar → ejecutar)
+- [ ] Empaquetado y publicación en npm con _provenance_ (empaquetado listo; falta `NPM_TOKEN`)
+- [x] Binario standalone opcional
+- [x] `CHANGELOG.md` con release-please
+- [x] README con demo, `SECURITY.md` y `CONTRIBUTING.md`
+- [x] Workflow de release
+- [x] _Smoke post-build_ con el tarball (`npm pack` → instalar → ejecutar)
 - [ ] Tag `v1.0.0`, release de GitHub y verificación en los 3 nodos
 
 **Alcance:** empaquetado y publicación en npm con _provenance_ · binario standalone
@@ -481,6 +492,16 @@ temporal → ejecutar `--version`, `config --validate` e `index --dry-run`.
 **DoD:** tag `v1.0.0` · release de GitHub con notas · paquete publicado y verificado ·
 `npm run verify` verde en los 3 nodos.
 
+**Estado:** preparación completada en `feat/release-v1`; la publicación sigue bloqueada
+porque no hay `NPM_TOKEN` en el repositorio ni sesión de npm en la máquina. El paquete se
+llama `media-manager-cli` (el nombre `media-manager` está ocupado) y el binario sigue
+siendo `mm`. Incluye `files`/`prepack`, smoke del tarball en CI, distribución portable
+opcional, release-please, `CHANGELOG.md`, demo, `SECURITY.md`, `CONTRIBUTING.md` y
+[`docs/release.md`](./docs/release.md). Decisiones en el
+[ADR 0008](./docs/adr/0008-publicacion-y-distribucion.md). Al añadir el token: crear el tag
+`v1.0.0`, publicar la GitHub Release y dejar que `.github/workflows/publish.yml` publique
+con provenance.
+
 ## 8. Comandos de inicialización
 
 ```bash
@@ -488,7 +509,7 @@ mkdir -p ~/Projects/media-manager && cd ~/Projects/media-manager
 git init -b main
 
 npm init -y
-npm pkg set name="media-manager" version="0.0.1" type="module" license="MIT" \
+npm pkg set name="media-manager-cli" version="1.0.0" type="module" license="MIT" \
   description="Gestor de contenido multimedia para terminal" engines.node=">=22" \
   bin.mm="./dist/cli.js"
 
@@ -528,19 +549,21 @@ main (protegida)  ←  squash merge  ←  PR (CI verde)  ←  feat/xyz | fix/xyz
 - PR: descripción con _qué_ y _por qué_, checklist de verificación, referencia a la issue.
 - Commits en la rama: un commit = un cambio conceptual; el squash mantiene el historial legible.
 - `main` recibe mensajes Conventional validados (rama protegida + hook).
-- Release: `npm version <major|minor|patch>` → tag `vX.Y.Z` → GitHub Release → CI publica.
+- Release: release-please abre la PR con `CHANGELOG` y el bump; al mergear, tag `vX.Y.Z`
+  → GitHub Release → `release.yml` publica. La primera `v1.0.0` se prepara a mano
+  siguiendo [`docs/release.md`](./docs/release.md).
 
 ## 10. Decisiones pendientes
 
-| #   | Decisión                     | Propuesta                                                    | Estado |
-| --- | ---------------------------- | ------------------------------------------------------------ | ------ |
-| 1   | Nombre del paquete / binario | `media-manager` + bin `mm`                                   | ☐      |
-| 2   | Versionado de TypeScript     | `~6.0.3` mientras typescript-eslint no soporte TS7           | ☐      |
-| 3   | Estructura del repositorio   | Monomodular (extraer a workspaces si aparecen plugins)       | ☐      |
-| 4   | E2E interactivo              | `node-pty` para TTY real, o headless + `ink-testing-library` | ☐      |
-| 5   | Licencia                     | MIT                                                          | ☐      |
-| 6   | Proveedor de changelog       | release-please vs manual                                     | ☐      |
-| 7   | Codecov                      | integration vía OIDC (sin secreto)                           | ☐      |
+| #   | Decisión                     | Propuesta                                                     | Estado |
+| --- | ---------------------------- | ------------------------------------------------------------- | ------ |
+| 1   | Nombre del paquete / binario | `media-manager-cli` + bin `mm` (npm ya tiene `media-manager`) | ✅     |
+| 2   | Versionado de TypeScript     | `~6.0.3` mientras typescript-eslint no soporte TS7            | ☐      |
+| 3   | Estructura del repositorio   | Monomodular (extraer a workspaces si aparecen plugins)        | ☐      |
+| 4   | E2E interactivo              | `node-pty` para TTY real, o headless + `ink-testing-library`  | ☐      |
+| 5   | Licencia                     | MIT                                                           | ☐      |
+| 6   | Proveedor de changelog       | release-please (primera release manual)                       | ✅     |
+| 7   | Codecov                      | integration vía OIDC (sin secreto)                            | ☐      |
 
 ## 11. Cómo evoluciona este plan
 
