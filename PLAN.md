@@ -221,7 +221,7 @@ errores accionables con ruta y campo; `mm config [--path|--validate|--json]`.
 
 ---
 
-### M2 — Persistencia SQLite · `0.2.0`
+### M2 — Persistencia SQLite · `0.2.0` ✅ _implementado en `feat/db-persistence`_
 
 **Alcance:** `src/core/db/` con `connection.ts` (WAL, `foreign_keys`, `busy_timeout`),
 migraciones versionadas, repositorios `mediaRepo`/`fileRepo`, tabla FTS5 para búsqueda,
@@ -236,6 +236,10 @@ migraciones versionadas, repositorios `mediaRepo`/`fileRepo`, tabla FTS5 para b�
 
 **DoD:** la `Database` se inyecta (DIP), sin singleton global · migraciones idempotentes ·
 cobertura ≥ 85 %.
+
+**Estado:** implementado. Migraciones declaradas en TypeScript (viajan compiladas en
+`dist/`), repositorios `mediaRepo`/`fileRepo`/`indexRunRepo` con la `Database` inyectada,
+búsqueda FTS5 con disparadores y 22 tests de integración sobre SQLite real.
 
 ---
 

@@ -45,31 +45,31 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Capacidad                                                    | Estado |
 | ------------------------------------------------------------ | ------ |
 | TUI navegable (Ink + React)                                  | 🔜 M5  |
-| Índice local en SQLite con FTS5                              | 🔜 M2  |
+| Índice local en SQLite con FTS5                              | ✅ M2  |
 | Indexación recursiva + incremental                           | 🔜 M3  |
 | Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | 🔜 M3  |
 | Búsqueda instantánea en línea de comandos                    | 🔜 M4  |
 | Reproducción con `mpv` / `vlc`                               | 🔜 M6  |
-| Configuración YAML validada con Zod                          | 🔜 M1  |
+| Configuración YAML validada con Zod                          | ✅ M1  |
 | Modo _watch_ (reindexado automático)                         | 🔜 M6  |
 | Salida `--json` para scripts                                 | 🔜 M4  |
 
 ## Estado del proyecto
 
-**Alpha — en la fase M0 (cimientos del repositorio).** El plan de desarrollo completo, con
+**Alpha — en la fase M3 (indexación y parseo).** El plan de desarrollo completo, con
 hitos, criterios de aceptación y estrategia de pruebas, vive en [`PLAN.md`](./PLAN.md).
 
-| Hito | Contenido                     | Versión |
-| ---- | ----------------------------- | ------- |
-| M0   | Cimientos: tooling, hooks, CI | `0.0.1` |
-| M1   | Núcleo de configuración       | `0.1.0` |
-| M2   | Persistencia SQLite           | `0.2.0` |
-| M3   | Indexación y parseo           | `0.3.0` |
-| M4   | CLI _headless_ + búsqueda     | `0.4.0` |
-| M5   | TUI (Ink)                     | `0.5.0` |
-| M6   | Reproductor + modo watch      | `0.6.0` |
-| M7   | Robustez y rendimiento        | `0.7.0` |
-| M8   | Publicación `v1.0.0`          | `1.0.0` |
+| Hito | Contenido                     | Versión    |
+| ---- | ----------------------------- | ---------- |
+| M0   | Cimientos: tooling, hooks, CI | `0.0.1` ✅ |
+| M1   | Núcleo de configuración       | `0.1.0` ✅ |
+| M2   | Persistencia SQLite           | `0.2.0` ✅ |
+| M3   | Indexación y parseo           | `0.3.0`    |
+| M4   | CLI _headless_ + búsqueda     | `0.4.0`    |
+| M5   | TUI (Ink)                     | `0.5.0`    |
+| M6   | Reproductor + modo watch      | `0.6.0`    |
+| M7   | Robustez y rendimiento        | `0.7.0`    |
+| M8   | Publicación `v1.0.0`          | `1.0.0`    |
 
 ## Requisitos
 
