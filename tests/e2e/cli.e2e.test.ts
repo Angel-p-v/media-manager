@@ -1,8 +1,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -79,7 +79,7 @@ describe('mm (e2e, binario compilado)', () => {
     const result = run(['--help']);
 
     expect(result.status).toBe(0);
-    for (const command of ['index', 'list', 'search', 'show', 'db', 'config']) {
+    for (const command of ['index', 'list', 'search', 'show', 'play', 'watch', 'db', 'config']) {
       expect(result.stdout).toContain(command);
     }
     expect(result.stdout).toContain('Códigos de salida');
@@ -157,6 +157,80 @@ describe('mm (e2e, binario compilado)', () => {
     });
   });
 
+  it('mm play --dry-run produce el comando sin lanzar el reproductor', () => {
+    const result = run(['play', 'severance', '--dry-run', '--json']);
+
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout) as {
+      player: string;
+      command: string;
+      args: string[];
+      mode: string;
+      file: { filePath: string; season: number | null; episode: number | null };
+      pid: null;
+    };
+    expect(payload).toMatchObject({
+      player: 'mpv',
+      command: 'mpv',
+      mode: 'detach',
+      pid: null,
+      file: { season: 1, episode: 1 },
+    });
+    expect(payload.args).toContain(payload.file.filePath);
+    expect(result.stdout).not.toContain('\u001b[');
+  });
+
+  it('mm play falla con un mensaje accionable si el título no existe', () => {
+    const result = run(['play', 'no-existe', '--dry-run']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('No hay ningún título que coincida');
+  });
+
+  it('el reproductor desacoplado sobrevive al proceso que lo lanzó', async () => {
+    const playerScript = path.join(workDir, 'detached-player.sh');
+    const markerPath = path.join(workDir, 'detached-player.txt');
+    await writeFile(
+      playerScript,
+      '#!/bin/sh\nsleep 0.4\nprintf done > "$MM_SURVIVOR_OUTPUT"\n',
+      'utf8',
+    );
+    await chmod(playerScript, 0o755);
+
+    const launcherUrl = pathToFileURL(
+      path.join(ROOT, 'dist', 'core', 'player', 'launcher.js'),
+    ).href;
+    const parentScript = path.join(workDir, 'launch-parent.mjs');
+    await writeFile(
+      parentScript,
+      [
+        `import { createLaunchPlan, launchPlayer } from ${JSON.stringify(launcherUrl)};`,
+        'const plan = createLaunchPlan({',
+        "  playerConfig: { default: 'fake', onLaunch: 'detach', players: {",
+        "    fake: { command: process.argv[2], args: ['{file}'] },",
+        '  } },',
+        "  filePath: '/media/movie.mkv',",
+        '});',
+        'const handle = await launchPlayer(plan);',
+        'console.log(`pid=${String(handle.pid)}`);',
+        'process.exit(0);',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const parent = spawnSync(process.execPath, [parentScript, playerScript], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      timeout: 10_000,
+      env: { ...process.env, MM_SURVIVOR_OUTPUT: markerPath },
+    });
+
+    expect(parent.status, parent.stderr).toBe(0);
+    expect(parent.stdout).toContain('pid=');
+    await expect(waitForFile(markerPath, 5_000)).resolves.toBe('done');
+  });
+
   it('resume el contenido del índice', () => {
     const result = run(['db', 'stats', '--json']);
 
@@ -180,3 +254,17 @@ describe('mm (e2e, binario compilado)', () => {
     expect(result.stderr).toContain('No hay ningún título que coincida');
   });
 });
+
+/** Espera a que exista un fichero y devuelve su contenido. */
+async function waitForFile(filePath: string, timeoutMs: number): Promise<string> {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    try {
+      return await readFile(filePath, 'utf8');
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
+  throw new Error(`No apareció ${filePath} en ${timeoutMs} ms`);
+}

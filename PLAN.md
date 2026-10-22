@@ -203,7 +203,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M3   | Indexación y parseo (scanner + parsers)               | ✅     | 9/9      |
 | M4   | CLI _headless_ + búsqueda                             | ✅     | 10/10    |
 | M5   | TUI (Ink)                                             | ✅     | 7/7      |
-| M6   | Reproductor + modo _watch_                            | ☐      | 0/6      |
+| M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
 | M7   | Robustez y rendimiento                                | ☐      | 0/6      |
 | M8   | Release `v1.0.0`                                      | ☐      | 0/7      |
 
@@ -390,16 +390,16 @@ con `ink-testing-library`, test de arquitectura y presupuesto de arranque verifi
 
 ---
 
-### M6 — Reproductor + modo _watch_ · `0.6.0`
+### M6 — Reproductor + modo _watch_ · `0.6.0` ✅
 
 **Tareas**
 
-- [ ] Launcher con plantilla `{file}`, `detach`/`foreground` y `spawn` sin `shell`
-- [ ] Reproductores `mpv`/`vlc` configurables
-- [ ] `mm play`
-- [ ] `mm watch` con `chokidar` y reindexado incremental
-- [ ] Tests con reproductor _fake_ y E2E de `mm play --dry-run`
-- [ ] UI no bloqueante y proceso hijo que sobrevive al cierre de la TUI
+- [x] Launcher con plantilla `{file}`, `detach`/`foreground` y `spawn` sin `shell`
+- [x] Reproductores `mpv`/`vlc` configurables
+- [x] `mm play`
+- [x] `mm watch` con `chokidar` y reindexado incremental
+- [x] Tests con reproductor _fake_ y E2E de `mm play --dry-run`
+- [x] UI no bloqueante y proceso hijo que sobrevive al cierre de la TUI
 
 **Alcance:** `src/core/player/launcher.ts` (plantilla de args con `{file}`, `detach` /
 `foreground`, `spawn` sin `shell`), reproductores `mpv`/`vlc` configurables, `mm play`, y
@@ -415,6 +415,14 @@ con `ink-testing-library`, test de arquitectura y presupuesto de arranque verifi
 
 **DoD:** la UI no se bloquea al lanzar · el proceso hijo sobrevive al cierre de la TUI ·
 nunca se usa `shell: true`.
+
+**Estado:** implementado en `feat/player-watch`. El launcher valida el binario antes de
+lanzar, sustituye `{file}` en cada argumento y usa `spawn` con `shell: false`. `mm play`
+elige el primer fichero ordenado o el indicado con `--file`, admite `--player`,
+`--foreground` y `--dry-run`. La TUI siempre lanza en `detach` para no bloquearse. `mm
+watch` agrupa eventos con debounce y reindexa de forma incremental, incluyendo borrados.
+Tests con scripts `sh` reales, E2E del binario y prueba de supervivencia del hijo
+desacoplado.
 
 ---
 

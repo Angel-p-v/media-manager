@@ -39,7 +39,7 @@ export async function runShowCommand(query: string, options: ShowCommandOptions)
 
     console.log(pc.bold(`${files.length} ficheros`));
     for (const file of files) {
-      console.log(`  ${pc.cyan(formatEpisode(file))}  ${file.filePath}`);
+      console.log(`  ${pc.dim(`#${file.id}`)} ${pc.cyan(formatEpisode(file))}  ${file.filePath}`);
     }
   });
 }

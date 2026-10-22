@@ -104,6 +104,11 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
   dependa de rutas en disco.
 - **`zod` v4**: `.default()` exige el tipo de _salida_; para objetos con subcampos
   opcionales usar `.prefault({})`.
+- **Reproductor**: la plantilla de `players.*.args` debe incluir `{file}`. Se usa
+  `spawn` con `shell: false`; nunca se construye una línea de shell. La TUI fuerza
+  `detach` para no bloquearse, aunque `player.onLaunch` sea `foreground`.
+- **Watch**: chokidar v6 no recibe globs; se filtran eventos con `isVideoFile` y se
+  reindexa la biblioteca completa (incremental) para que los borrados también se poden.
 
 ## Estado actual y siguiente paso
 
@@ -117,8 +122,8 @@ Hitos del plan (ver `PLAN.md` §7):
 | M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
 | M4   | CLI headless + búsqueda                               | ✅ hecho    |
 | M5   | TUI (Ink)                                             | ✅ hecho    |
-| M6   | Reproductor mpv/vlc + modo watch                      | ☐ siguiente |
-| M7   | Robustez y rendimiento                                | ☐           |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
+| M7   | Robustez y rendimiento                                | ☐ siguiente |
 | M8   | Release v1.0.0                                        | ☐           |
 
 ## Reglas para el agente

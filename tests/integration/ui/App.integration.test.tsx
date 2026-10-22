@@ -3,12 +3,13 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { defaultConfig } from '../../../src/core/config/defaults.js';
-import { NotFoundError } from '../../../src/shared/errors.js';
+import { NotFoundError, PlayerError } from '../../../src/shared/errors.js';
 import { App } from '../../../src/ui/App.js';
 
 import type { AppConfig } from '../../../src/core/config/schema.js';
 import type { MediaFileRow, MediaRow } from '../../../src/core/db/types.js';
 import type { LibraryService } from '../../../src/core/library/service.js';
+import type { LaunchPlan, PlayerHandle } from '../../../src/core/player/launcher.js';
 
 const config: AppConfig = {
   ...defaultConfig,
@@ -146,6 +147,10 @@ async function typeText(stdin: ReturnType<typeof render>['stdin'], text: string)
   }
 }
 
+async function flush(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 20));
+}
+
 function frameOf(lastFrame: () => string | undefined): string {
   return lastFrame() ?? '';
 }
@@ -242,6 +247,51 @@ describe('App (TUI)', () => {
     expect(frame).toContain('Configuración efectiva');
     expect(frame).toContain('/media/series');
     expect(frame).toContain('Base de datos');
+    unmount();
+  });
+
+  it('lanza la reproducción sin bloquear la TUI y sobrevive a la espera', async () => {
+    let resolveLaunch: ((handle: PlayerHandle) => void) | undefined;
+    const launchPlayer = vi.fn(
+      (_plan: LaunchPlan) =>
+        new Promise<PlayerHandle>((resolve) => {
+          resolveLaunch = resolve;
+        }),
+    );
+    const { lastFrame, stdin, unmount } = render(
+      <App config={config} library={fakeLibrary()} launchPlayer={launchPlayer} />,
+    );
+
+    await press(stdin, 'p');
+
+    expect(launchPlayer).toHaveBeenCalledOnce();
+    expect(launchPlayer.mock.calls[0]?.[0]).toMatchObject({
+      player: 'mpv',
+      mode: 'detach',
+      filePath: '/media/series/Severance/S01E01.mkv',
+    });
+    expect(frameOf(lastFrame)).toContain('Abriendo Severance · T01E01 en mpv');
+
+    // La TUI sigue respondiendo mientras el reproductor arranca.
+    await press(stdin, '\u001b[B');
+    expect(frameOf(lastFrame)).toContain('▸ Dark');
+
+    resolveLaunch?.({ pid: 42, wait: () => Promise.resolve() });
+    await flush();
+    expect(frameOf(lastFrame)).toContain('▶ Severance · T01E01 · mpv');
+    unmount();
+  });
+
+  it('muestra el error del reproductor en la barra de estado', async () => {
+    const launchPlayer = vi.fn(() => Promise.reject(new PlayerError('mpv no está instalado')));
+    const { lastFrame, stdin, unmount } = render(
+      <App config={config} library={fakeLibrary()} launchPlayer={launchPlayer} />,
+    );
+
+    await press(stdin, 'p');
+    await flush();
+
+    expect(frameOf(lastFrame)).toContain('mpv no está instalado');
     unmount();
   });
 
