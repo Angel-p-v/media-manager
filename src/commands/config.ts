@@ -2,18 +2,21 @@ import { existsSync } from 'node:fs';
 
 import pc from 'picocolors';
 
-import { defaultConfig } from '../core/config/defaults.js';
 import { loadConfig, resolveConfigPath } from '../core/config/loader.js';
 
 export type ConfigCommandOptions = {
   path?: boolean;
   validate?: boolean;
   json?: boolean;
+  config?: string;
 };
 
 /** Implementa `mm config`. */
 export async function runConfigCommand(options: ConfigCommandOptions): Promise<void> {
-  const configPath = resolveConfigPath();
+  const configPath =
+    options.config === undefined
+      ? resolveConfigPath()
+      : resolveConfigPath({ configPath: options.config });
 
   if (options.path) {
     console.log(configPath);
@@ -63,5 +66,5 @@ export async function runConfigCommand(options: ConfigCommandOptions): Promise<v
     console.log(`    ${pc.dim(pattern)}`);
   }
   console.log('');
-  console.log(pc.dim(`  atajos: ${Object.keys(defaultConfig.keybindings).length} definidos`));
+  console.log(pc.dim(`  atajos: ${Object.keys(config.keybindings).length} definidos`));
 }

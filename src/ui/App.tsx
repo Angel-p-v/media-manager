@@ -24,7 +24,7 @@ export function App({ config }: AppProps): React.JSX.Element {
         </Text>
       </Box>
 
-      <Box flexGrow={1} flexDirection="column" borderStyle="round" borderColor={theme.border('')}>
+      <Box flexGrow={1} flexDirection="column" borderStyle="round" borderColor={theme.border}>
         <Box marginX={1} marginY={1} flexDirection="column">
           <Text>{theme.highlight('Biblioteca vacía')}</Text>
           <Text>

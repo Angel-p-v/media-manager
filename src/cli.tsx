@@ -18,6 +18,7 @@ const program = new Command()
 program
   .command('config')
   .description('muestra la configuración efectiva')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--path', 'muestra solo la ruta del archivo de configuración')
   .option('--validate', 'valida el archivo de configuración y termina')
   .option('--json', 'salida en formato JSON')
