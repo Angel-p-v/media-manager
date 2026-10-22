@@ -4,8 +4,8 @@ node_modules/
 .pnp.js
 
 # Compilación
-dist/
-build/
+/dist/
+/build/
 *.tsbuildinfo
 
 # Tests y cobertura

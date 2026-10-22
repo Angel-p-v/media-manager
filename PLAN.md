@@ -62,15 +62,20 @@ media-manager/
 ├─ .husky/{pre-commit,commit-msg,pre-push}
 ├─ config/config.example.yaml
 ├─ docs/
-│  ├─ architecture.md
-│  ├─ performance.md
-│  └─ adr/000N-*.md
+│  ├─ README.md
+│  ├─ adr/000N-*.md
+│  ├─ assets/demo.svg
+│  ├─ guides/{architecture,performance,release}.md
+│  └─ plans/*.md
 ├─ src/
 │  ├─ cli.tsx                    # bin: mm
 │  ├─ commands/                  # subcomandos headless
 │  ├─ core/                      # dominio puro (config, db, indexer, library, player)
 │  ├─ ui/                        # presentación Ink (App, components, views, hooks)
 │  └─ shared/                    # errores, logger, rutas
+├─ scripts/
+│  ├─ build/standalone.mjs       # artefacto portable
+│  └─ test/smoke-pack.mjs        # smoke del tarball
 ├─ tests/
 │  ├─ unit/                      # lógica pura, sin I/O
 │  ├─ integration/               # SQLite real, fs real, render de Ink
@@ -446,7 +451,7 @@ desacoplado.
 - [x] Gestor global de errores con códigos
 - [x] `PRAGMA optimize` / `VACUUM`
 - [x] Prueba de migración de esquema v1 → v2
-- [x] `docs/performance.md` con presupuesto de rendimiento
+- [x] `docs/guides/performance.md` con presupuesto de rendimiento
 
 **Alcance:** `vitest bench` (escaneo de 10 000 ficheros, indexado completo, búsqueda) ·
 logging estructurado con niveles configurables · gestor de errores global con códigos ·
@@ -456,7 +461,7 @@ logging estructurado con niveles configurables · gestor de errores global con c
 entradas · test de migración desde la v0.2.
 
 **DoD:** cobertura global ≥ 80 % · presupuesto de rendimiento escrito en
-`docs/performance.md`.
+`docs/guides/performance.md`.
 
 **Estado:** implementado en `feat/robustness`. `npm run bench` mide escaneo de 10 000
 ficheros, indexado completo y búsqueda/listado sobre 100 000 títulos; el test de estrés de
@@ -466,7 +471,7 @@ se imprimen con código estable (`[CONFIG_ERROR]`, `[NOT_FOUND]`, …) y pila op
 migración v2 añade índices de rendimiento y se prueba desde v1 con datos. `PRAGMA
 optimize` se ejecuta al cerrar y `mm db optimize --vacuum` compacta la base. Decisiones en
 el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto en
-[`docs/performance.md`](./docs/performance.md).
+[`docs/guides/performance.md`](./docs/guides/performance.md).
 
 ---
 
@@ -497,7 +502,7 @@ porque no hay `NPM_TOKEN` en el repositorio ni sesión de npm en la máquina. El
 llama `media-manager-cli` (el nombre `media-manager` está ocupado) y el binario sigue
 siendo `mm`. Incluye `files`/`prepack`, smoke del tarball en CI, distribución portable
 opcional, release-please, `CHANGELOG.md`, demo, `SECURITY.md`, `CONTRIBUTING.md` y
-[`docs/release.md`](./docs/release.md). Decisiones en el
+[`docs/guides/release.md`](./docs/guides/release.md). Decisiones en el
 [ADR 0008](./docs/adr/0008-publicacion-y-distribucion.md). Al añadir el token: crear el tag
 `v1.0.0`, publicar la GitHub Release y dejar que `.github/workflows/publish.yml` publique
 con provenance.
@@ -551,7 +556,7 @@ main (protegida)  ←  squash merge  ←  PR (CI verde)  ←  feat/xyz | fix/xyz
 - `main` recibe mensajes Conventional validados (rama protegida + hook).
 - Release: release-please abre la PR con `CHANGELOG` y el bump; al mergear, tag `vX.Y.Z`
   → GitHub Release → `release.yml` publica. La primera `v1.0.0` se prepara a mano
-  siguiendo [`docs/release.md`](./docs/release.md).
+  siguiendo [`docs/guides/release.md`](./docs/guides/release.md).
 
 ## 10. Decisiones pendientes
 

@@ -96,14 +96,14 @@ Interfaz de terminal con Ink implementada en el hito M5:
 
 Subcomandos de la CLI que no dependen de Ink: `config`, `index`, `list`, `search`,
 `show`, `play`, `watch`, `db stats` y `db optimize`. Los códigos de salida y el contrato
-de `--json` están fijados en el [ADR 0004](./adr/0004-contrato-cli.md); los errores van a
+de `--json` están fijados en el [ADR 0004](../adr/0004-contrato-cli.md); los errores van a
 `stderr`. Las decisiones de reproducción y _watch_ están en el
-[ADR 0006](./adr/0006-reproductor-y-watch.md).
+[ADR 0006](../adr/0006-reproductor-y-watch.md).
 
 `context.ts` carga la configuración, crea el logger y abre/cierra la biblioteca en un
 único punto. `errorHandler.ts` es el gestor global de errores: imprime `[CÓDIGO] mensaje`
 y, con `--verbose`, la pila. Las decisiones de logging, códigos y mantenimiento están en
-el [ADR 0007](./adr/0007-logging-errores-y-mantenimiento.md).
+el [ADR 0007](../adr/0007-logging-errores-y-mantenimiento.md).
 
 ## Flujo de datos de una indexación
 
@@ -173,4 +173,4 @@ El presupuesto de rendimiento y la metodología de los benchmarks están en
 
 ## Decisiones registradas
 
-Las decisiones con más de un camino válido se documentan en [`adr/`](./adr).
+Las decisiones con más de un camino válido se documentan en [`adr/`](../adr).
