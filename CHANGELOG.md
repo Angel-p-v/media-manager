@@ -39,6 +39,6 @@ Primera versión estable de `media-manager-cli`: un gestor de series, anime y pe
 ### Documentación
 
 - README con instalación, demo, configuración, atajos y contrato de la CLI.
-- ADR 0001–0007 y presupuesto de rendimiento en `docs/performance.md`.
+- ADR 0001–0007 y presupuesto de rendimiento en `docs/guides/performance.md`.
 
 [1.0.0]: https://github.com/Angel-p-v/media-manager/releases/tag/v1.0.0

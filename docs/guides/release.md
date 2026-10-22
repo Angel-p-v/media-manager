@@ -14,7 +14,7 @@ desarrollo ni desde un portátil sin revisar la CI.
 
 El nombre `media-manager` ya estaba ocupado en npm, por eso el paquete se llama
 `media-manager-cli`; el binario instalado sigue siendo `mm`. La decisión completa está en
-el [ADR 0008](./adr/0008-publicacion-y-distribucion.md).
+el [ADR 0008](../adr/0008-publicacion-y-distribucion.md).
 
 ```bash
 gh secret set NPM_TOKEN

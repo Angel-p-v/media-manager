@@ -12,7 +12,7 @@
 
 ## Demo
 
-![Demo de media-manager-cli: indexar, buscar, ver el detalle y preparar la reproducción](./docs/demo.svg)
+![Demo de media-manager-cli: indexar, buscar, ver el detalle y preparar la reproducción](./docs/assets/demo.svg)
 
 La demo es una transcripción estática de una sesión real contra la biblioteca de pruebas.
 Para probarla en tu terminal, empieza por la sección de [instalación](#instalación).
@@ -120,7 +120,7 @@ node dist/cli.js --help
 
 El paquete npm incluye `dist/`, la configuración de ejemplo, el README, el CHANGELOG,
 las políticas de seguridad y contribución y la demo. Los detalles de publicación están
-en [`docs/release.md`](./docs/release.md).
+en [`docs/guides/release.md`](./docs/guides/release.md).
 
 ## Uso
 
@@ -315,10 +315,12 @@ Contribución: consultar [`PLAN.md`](./PLAN.md) y [`CONTRIBUTING.md`](./CONTRIBU
 ## Documentación
 
 - [`PLAN.md`](./PLAN.md) — plan de desarrollo por hitos
-- [`docs/architecture.md`](./docs/architecture.md) — decisiones técnicas
-- [`docs/performance.md`](./docs/performance.md) — presupuesto y benchmarks
-- [`docs/release.md`](./docs/release.md) — publicación, tags y credenciales
+- [`docs/README.md`](./docs/README.md) — índice de la documentación
+- [`docs/guides/architecture.md`](./docs/guides/architecture.md) — decisiones técnicas
+- [`docs/guides/performance.md`](./docs/guides/performance.md) — presupuesto y benchmarks
+- [`docs/guides/release.md`](./docs/guides/release.md) — publicación, tags y credenciales
 - [`docs/adr/`](./docs/adr) — _Architecture Decision Records_
+- [`docs/plans/`](./docs/plans) — planes de trabajo
 - [`CHANGELOG.md`](./CHANGELOG.md) — historial de versiones
 - [`SECURITY.md`](./SECURITY.md) — cómo reportar vulnerabilidades
 - [`CONTRIBUTING.md`](./CONTRIBUTING.md) — flujo de desarrollo y PRs

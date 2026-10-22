@@ -76,7 +76,7 @@ mm db optimize --vacuum
 
 `VACUUM` reescribe el fichero completo y requiere espacio temporal; no se lanza de forma
 automática. La decisión está registrada en el
-[ADR 0007](./adr/0007-logging-errores-y-mantenimiento.md).
+[ADR 0007](../adr/0007-logging-errores-y-mantenimiento.md).
 
 ## Qué revisar en una regresión
 

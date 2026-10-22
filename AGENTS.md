@@ -11,7 +11,8 @@ local** y permite buscarla y **lanzarla en `mpv`/`vlc`** sin salir de la termina
 No hay servidor, no hay web, no hay streaming: solo índice local + reproductor local.
 
 - Plan de desarrollo completo: [`PLAN.md`](./PLAN.md)
-- Documentación técnica: [`docs/architecture.md`](./docs/architecture.md)
+- Índice de documentación: [`docs/README.md`](./docs/README.md)
+- Documentación técnica: [`docs/guides/architecture.md`](./docs/guides/architecture.md)
 - Decisiones registradas (ADR): [`docs/adr/`](./docs/adr)
 
 ## Stack (fijado, no cambiar sin ADR)
@@ -127,7 +128,7 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
 - **Release**: la primera `v1.0.0` se publica manualmente con tag + GitHub Release;
   `release.yml` delega en `publish.yml`, que exige `NPM_TOKEN` y usa provenance. Después,
   release-please gestiona `CHANGELOG.md` y el tag y llama a `publish.yml` en el mismo run.
-  No muevas un tag ya publicado; ver `docs/release.md`.
+  No muevas un tag ya publicado; ver `docs/guides/release.md`.
 
 ## Estado actual y siguiente paso
 
@@ -146,7 +147,7 @@ Hitos del plan (ver `PLAN.md` §7):
 | M8   | Release v1.0.0                                        | 🟡 preparación |
 
 La preparación de M8 está cerrada salvo la publicación: falta añadir `NPM_TOKEN`, crear
-el tag `v1.0.0` y publicar la GitHub Release. Instrucciones en `docs/release.md`.
+el tag `v1.0.0` y publicar la GitHub Release. Instrucciones en `docs/guides/release.md`.
 
 ## Reglas para el agente
 

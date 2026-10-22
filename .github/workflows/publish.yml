@@ -46,7 +46,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::Falta el secreto NPM_TOKEN; consulta docs/release.md"
+            echo "::error::Falta el secreto NPM_TOKEN; consulta docs/guides/release.md"
             exit 1
           fi
       - run: npm publish --provenance --access public

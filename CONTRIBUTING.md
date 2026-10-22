@@ -74,7 +74,7 @@ Reglas:
 - Nombres `describe > it` en Given/When/Then.
 - Los umbrales de cobertura viven en `vitest.config.ts` (85/85/80/85).
 - Si tocas escáner, indexador, parser o consultas, adjunta el resultado de
-  `npm run bench` en la PR. El presupuesto está en `docs/performance.md`.
+  `npm run bench` en la PR. El presupuesto está en `docs/guides/performance.md`.
 
 ## Estilo
 
@@ -92,10 +92,12 @@ Si añades una dependencia con script de instalación, apruébala con
 ## Documentación
 
 - `README.md`: instalación y uso.
-- `docs/architecture.md`: capas y flujos.
-- `docs/performance.md`: benchmarks y presupuesto.
-- `docs/release.md`: publicación y credenciales.
+- `docs/README.md`: índice de la documentación.
+- `docs/guides/architecture.md`: capas y flujos.
+- `docs/guides/performance.md`: benchmarks y presupuesto.
+- `docs/guides/release.md`: publicación y credenciales.
 - `docs/adr/`: decisiones de arquitectura.
+- `docs/plans/`: planes de trabajo.
 - `PLAN.md`: hitos y estado.
 
 Al cerrar un hito, actualiza las tablas de estado de `PLAN.md`, `README.md` y `AGENTS.md`
@@ -105,5 +107,6 @@ en el mismo PR.
 
 El paquete npm es `media-manager-cli` y el binario `mm`. La publicación la ejecuta el
 workflow de release con `--provenance` cuando existe el secreto `NPM_TOKEN`. Los pasos
-completos están en [`docs/release.md`](./docs/release.md); no publiques manualmente desde
+completos están en [`docs/guides/release.md`](./docs/guides/release.md); no publiques
+manualmente desde
 una rama de desarrollo.
