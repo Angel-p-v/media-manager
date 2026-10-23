@@ -35,7 +35,7 @@ export type NextEpisode = {
  * Calcula el estado de reproducción a partir de la fila almacenada y la
  * configuración. El dominio no muta nada; solo deriva valores.
  */
-export function calculatePlayback(
+function calculatePlaybackImpl(
   state: PlaybackStateRow | undefined,
   config: PlaybackConfig,
   nowIso: string,
@@ -110,7 +110,7 @@ export type ResumeOptions = {
  * - `--resume` fuerza reanudar; error si no hay estado reanudable.
  * - Sin flags: reanuda si `config.resume` y hay estado reanudable.
  */
-export function resolveResumeDecision(options: ResumeOptions): ResumeDecision {
+function resolveResumeDecisionImpl(options: ResumeOptions): ResumeDecision {
   if (options.restart) return 'restart';
   if (options.resume) {
     if (!options.hasSavedState || !options.canResume) {
@@ -128,7 +128,7 @@ export function resolveResumeDecision(options: ResumeOptions): ResumeDecision {
  * Los especiales (season = 0) no se mezclan con la temporada regular.
  * Devuelve `null` si no hay siguiente (último episodio, película, o todos vistos).
  */
-export function findNextEpisode(
+function findNextEpisodeImpl(
   current: MediaFileRow,
   allFiles: MediaFileRow[],
   playbackRepo: { get(id: number): PlaybackStateRow | undefined },
@@ -154,7 +154,7 @@ export function findNextEpisode(
   if (candidates.length > 0) {
     for (const file of candidates) {
       const state = playbackRepo.get(file.id);
-      const calc = calculatePlayback(state, config, new Date().toISOString());
+      const calc = calculatePlaybackImpl(state, config, new Date().toISOString());
       if (!calc.isCompleted) return { media: { id: current.mediaId } as MediaRow, file };
     }
     return null; // hay candidatos pero todos completados
@@ -173,7 +173,7 @@ export function findNextEpisode(
 
   for (const file of futureSeasons) {
     const state = playbackRepo.get(file.id);
-    const calc = calculatePlayback(state, config, new Date().toISOString());
+    const calc = calculatePlaybackImpl(state, config, new Date().toISOString());
     if (!calc.isCompleted) return { media: { id: current.mediaId } as MediaRow, file };
   }
 
@@ -184,7 +184,7 @@ export function findNextEpisode(
  * Normaliza el tipo de contenido para comparaciones. `series` y `anime`
  * se tratan igual para buscar el siguiente episodio.
  */
-export function isEpisodic(type: MediaType): boolean {
+function isEpisodicImpl(type: MediaType): boolean {
   return type === 'series' || type === 'anime';
 }
 
@@ -192,7 +192,7 @@ export function isEpisodic(type: MediaType): boolean {
  * Genera una marca de tiempo ISO-8601 en UTC para el dominio.
  * Se separa del reloj del sistema para que los tests puedan inyectar `now`.
  */
-export function nowIso(now: Date = new Date()): string {
+function nowIsoImpl(now: Date = new Date()): string {
   return now.toISOString();
 }
 
@@ -201,10 +201,20 @@ export function nowIso(now: Date = new Date()): string {
  * segundos enteros de la posición, o elimina el argumento si no hay
  * reanudación.
  */
-export function applyStartPlaceholder(args: string[], startSeconds: number | null): string[] {
+function applyStartPlaceholderImpl(args: string[], startSeconds: number | null): string[] {
   if (startSeconds === null) {
     return args.filter((arg) => !arg.includes('{start}'));
   }
   const value = Math.floor(startSeconds).toString();
   return args.map((arg) => arg.replaceAll('{start}', value));
 }
+
+/** Exportaciones nombradas para compatibilidad con ESM y verbatimModuleSyntax. */
+export {
+  calculatePlaybackImpl as calculatePlayback,
+  resolveResumeDecisionImpl as resolveResumeDecision,
+  findNextEpisodeImpl as findNextEpisode,
+  isEpisodicImpl as isEpisodic,
+  nowIsoImpl as nowIso,
+  applyStartPlaceholderImpl as applyStartPlaceholder,
+};
