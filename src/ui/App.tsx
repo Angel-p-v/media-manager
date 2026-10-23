@@ -83,17 +83,7 @@ export function App({
   const counts = useMemo<Counts>(() => {
     try {
       const stats = library.stats();
-      // Obtener count de favoritos
-      let favoritesCount = 0;
-      try {
-        // Accedemos al preferenceRepo a través de la biblioteca
-        // Como LibraryService no expone preferenceRepo, usamos una aproximación
-        // En una implementación completa, se añadiría countFavorites a LibraryService
-        const favItems = library.list({ favorites: true, limit: 10000 });
-        favoritesCount = favItems.length;
-      } catch {
-        // Si falla, dejamos 0
-      }
+      const favoritesCount = library.countFavorites();
       return {
         all: stats.media.total,
         'in-progress': stats.inProgress,

@@ -160,6 +160,8 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
     }),
     listInProgress: () =>
       [defaultRows.find((r) => r.title === 'Severance')].filter(Boolean) as MediaRow[],
+    countFavorites: () =>
+      rows.filter((row) => row.title === 'Arrival' || row.title === 'Blade Runner 2049').length,
   };
 }
 
