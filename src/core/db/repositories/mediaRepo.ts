@@ -151,6 +151,16 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
       return row ? toMediaRow(row) : undefined;
     },
 
+    /**
+     * Comportamiento de los filtros watched/unwatched:
+     *
+     * - watched: título tiene AL MENOS UN archivo con completedAt !== null
+     * - unwatched: título NO TIENE archivos con completedAt !== null
+     *   (incluye títulos nunca reproducidos y parcialmente vistos sin completar)
+     *
+     * Ambos filtros usan una subconsulta SQL nativa para evitar el límite hardcoded
+     * de 10000 entradas y aprovechar los índices de la BD.
+     */
     list(options: ListMediaOptions = {}): MediaRow[] {
       const { favorites, inProgress, unwatched, watched, ...baseOptions } = options;
 

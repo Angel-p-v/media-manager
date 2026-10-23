@@ -465,13 +465,11 @@ step "extrayendo el artefacto"
 tar -xzf "$ARCHIVE" -C "$STAGE_DIR" --strip-components=1 2>/dev/null ||
   die 1 "no se pudo extraer el archivo"
 
-# macOS: quitar atributo de cuarentena de los binarios extraídos
+# macOS: quitar atributo de cuarentena de TODOS los ejecutables extraídos
 case "$PLATFORM" in
   macos-*)
     if have xattr; then
-      find "$STAGE_DIR" -type f \( -name 'node' -o -name 'mm' \) | while IFS= read -r _bin; do
-        xattr -d com.apple.quarantine "$_bin" 2>/dev/null || true
-      done
+      find "$STAGE_DIR" -type f -perm -u+x -exec xattr -d com.apple.quarantine {} \; 2>/dev/null || true
     fi
     ;;
 esac

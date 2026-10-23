@@ -53,6 +53,14 @@ export type LibraryService = {
   countFavorites(): number;
 };
 
+/**
+ * Comportamiento de los filtros watched/unwatched en mediaRepo.list():
+ *
+ * - watched: título tiene AL MENOS UN archivo con completedAt !== null
+ * - unwatched: título NO TIENE archivos con completedAt !== null
+ *   (incluye títulos nunca reproducidos y parcialmente vistos sin completar)
+ */
+
 /** Crea el servicio de biblioteca sobre un conjunto de repositorios. */
 export function createLibraryService(repositories: LibraryRepositories): LibraryService {
   const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo } = repositories;
