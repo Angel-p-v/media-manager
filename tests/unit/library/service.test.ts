@@ -9,6 +9,7 @@ import type {
   MediaRepository,
   SearchMediaOptions,
 } from '../../../src/core/db/repositories/mediaRepo.js';
+import type { PlaybackRepository } from '../../../src/core/db/repositories/playbackRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../../../src/core/db/types.js';
 
 const dark: MediaRow = {
@@ -95,6 +96,25 @@ function fakeIndexRunRepository(lastRun: IndexRunRow | undefined): {
   };
 }
 
+function fakePlaybackRepository(): PlaybackRepository {
+  return {
+    save: () => ({
+      mediaFileId: 1,
+      positionSeconds: 0,
+      durationSeconds: null,
+      completedAt: null,
+      lastPlayedAt: '',
+      playCount: 0,
+      updatedAt: '',
+    }),
+    get: () => undefined,
+    remove: () => false,
+    listInProgress: () => [],
+    listRecent: () => [],
+    count: () => 0,
+  };
+}
+
 function service(
   overrides: Partial<MediaRepository> = {},
   files: Partial<Record<number, MediaFileRow[]>> = {},
@@ -103,6 +123,7 @@ function service(
     mediaRepo: fakeMediaRepository(overrides),
     fileRepo: fakeFileRepository(files),
     indexRunRepo: fakeIndexRunRepository(undefined),
+    playbackRepo: fakePlaybackRepository(),
   });
 }
 
@@ -211,12 +232,14 @@ describe('createLibraryService', () => {
         }),
         fileRepo: fakeFileRepository({ 1: [], 2: [] }),
         indexRunRepo: fakeIndexRunRepository(lastRun),
+        playbackRepo: fakePlaybackRepository(),
       });
 
       expect(library.stats()).toEqual({
         media: { total: 3, series: 2, anime: 0, movie: 0 },
         files: 0,
         lastRun,
+        inProgress: 0,
       });
     });
 
@@ -224,6 +247,7 @@ describe('createLibraryService', () => {
       const library = service();
 
       expect(library.stats().lastRun).toBeNull();
+      expect(library.stats().inProgress).toBe(0);
     });
   });
 });

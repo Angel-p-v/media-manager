@@ -132,7 +132,9 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       },
       files: Object.values(files).reduce((total, list) => total + list.length, 0),
       lastRun: null,
+      inProgress: 0,
     }),
+    listInProgress: () => [],
   };
 }
 
@@ -179,6 +181,8 @@ describe('App (TUI)', () => {
   it('cambia de sección con Tab y filtra los títulos', async () => {
     const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
 
+    // Tab 1: 'in-progress' (vacío), Tab 2: 'series'
+    await press(stdin, '\t');
     await press(stdin, '\t');
 
     const frame = frameOf(lastFrame);

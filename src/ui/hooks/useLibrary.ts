@@ -10,6 +10,8 @@ export type UseLibraryOptions = {
   type?: MediaType;
   query?: string;
   limit?: number;
+  /** Sección especial: 'in-progress' para títulos en curso. */
+  section?: 'in-progress' | undefined;
 };
 
 export type UseLibraryResult = {
@@ -31,7 +33,7 @@ export function useLibrary(
   service: LibraryService,
   options: UseLibraryOptions = {},
 ): UseLibraryResult {
-  const { type, query, limit = DEFAULT_LIMIT } = options;
+  const { type, query, limit = DEFAULT_LIMIT, section } = options;
 
   return useMemo(() => {
     try {
@@ -47,6 +49,11 @@ export function useLibrary(
         return { items, total: items.length, error: null };
       }
 
+      if (section === 'in-progress') {
+        const items = service.listInProgress(limit);
+        return { items, total: items.length, error: null };
+      }
+
       const items = service.list({
         limit,
         ...(type === undefined ? {} : { type }),
@@ -55,5 +62,5 @@ export function useLibrary(
     } catch (error) {
       return { items: [], total: 0, error: formatError(error) };
     }
-  }, [service, type, query, limit]);
+  }, [service, type, query, limit, section]);
 }
