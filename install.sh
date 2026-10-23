@@ -469,7 +469,7 @@ tar -xzf "$ARCHIVE" -C "$STAGE_DIR" --strip-components=1 2>/dev/null ||
 case "$PLATFORM" in
   macos-*)
     if have xattr; then
-      find "$STAGE_DIR" -type f -name 'node' -o -name 'mm' | while IFS= read -r _bin; do
+      find "$STAGE_DIR" -type f \( -name 'node' -o -name 'mm' \) | while IFS= read -r _bin; do
         xattr -d com.apple.quarantine "$_bin" 2>/dev/null || true
       done
     fi
