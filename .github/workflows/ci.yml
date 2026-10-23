@@ -41,6 +41,20 @@ jobs:
           path: dist
           retention-days: 7
 
+  installers:
+    name: installers (shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Comprobar sintaxis POSIX
+        run: |
+          sh -n install.sh
+          sh -n uninstall.sh
+          dash -n install.sh
+          dash -n uninstall.sh
+      - name: ShellCheck
+        run: shellcheck --shell=sh --severity=warning install.sh uninstall.sh
+
   smoke:
     name: smoke (tarball)
     runs-on: ubuntu-latest
