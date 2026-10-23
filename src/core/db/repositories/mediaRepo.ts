@@ -189,46 +189,71 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
         }
       })();
 
+      // Helper: chunk array to respect SQLite parameter limit (999)
+      const chunkArray = <T>(arr: T[], size: number): T[][] => {
+        const chunks: T[][] = [];
+        for (let i = 0; i < arr.length; i += size) {
+          chunks.push(arr.slice(i, i + size));
+        }
+        return chunks;
+      };
+
+      // Helper: add IN clause with parameterization and chunking
+      const addInClause = (field: string, ids: Set<number>, isNotIn = false): void => {
+        const idArray = Array.from(ids);
+        if (idArray.length === 0) return;
+
+        const chunks = chunkArray(idArray, 500); // well under 999 limit
+        if (chunks.length === 1) {
+          const placeholders = idArray.map((_, i) => `@${field}_${i}`).join(',');
+          conditions.push(`m.${field} ${isNotIn ? 'NOT ' : ''}IN (${placeholders})`);
+          idArray.forEach((id, i) => {
+            params[`${field}_${i}`] = id;
+          });
+        } else {
+          // Multiple chunks: combine with OR
+          const chunkConditions = chunks.map((chunk, chunkIndex) => {
+            const placeholders = chunk.map((_, i) => `@${field}_${chunkIndex}_${i}`).join(',');
+            chunk.forEach((id, i) => {
+              params[`${field}_${chunkIndex}_${i}`] = id;
+            });
+            return `m.${field} ${isNotIn ? 'NOT ' : ''}IN (${placeholders})`;
+          });
+          conditions.push(`(${chunkConditions.join(' OR ')})`);
+        }
+      };
+
       // Favoritos: join con media_preferences
       if (favorites && preferenceRepo) {
-        // Obtener IDs de favoritos y filtrar en memoria (más eficiente para pocos favoritos)
         const favIds = new Set(preferenceRepo.listFavorites().map((p) => p.mediaId));
         if (favIds.size === 0) return [];
-        conditions.push(`m.id IN (${Array.from(favIds).join(',')})`);
+        addInClause('id', favIds);
       }
 
       // En curso: join con playback_state (no completados, posición > 0)
       if (inProgress && playbackRepo) {
         const inProgressIds = new Set(playbackRepo.listInProgress().map((e) => e.media.id));
         if (inProgressIds.size === 0) return [];
-        conditions.push(`m.id IN (${Array.from(inProgressIds).join(',')})`);
+        addInClause('id', inProgressIds);
       }
 
-      // Vistos (completados): tiene entrada en playback_state con completed_at no null
-      // No vistos: no tiene entrada en playback_state O tiene entrada pero sin completed_at y posición 0
+      // Vistos / No vistos: usar subconsulta en lugar de hardcoded 10000
       if ((watched || unwatched) && playbackRepo) {
+        // Subconsulta para obtener media_ids con al menos un completedAt
+        const completedSubquery = `
+          SELECT DISTINCT m2.id
+          FROM media m2
+          JOIN media_files f2 ON f2.media_id = m2.id
+          JOIN playback_state p2 ON p2.media_file_id = f2.id
+          WHERE p2.completed_at IS NOT NULL
+        `;
+
         if (watched) {
           // Títulos con al menos un fichero completado
-          const completedIds = new Set(
-            playbackRepo
-              .listRecent(10000)
-              .filter((e) => e.state.completedAt !== null)
-              .map((e) => e.media.id),
-          );
-          if (completedIds.size === 0) return [];
-          conditions.push(`m.id IN (${Array.from(completedIds).join(',')})`);
+          conditions.push(`m.id IN (${completedSubquery})`);
         } else if (unwatched) {
-          // Títulos que no tienen ningún fichero completado
-          // Excluir los que tienen completed_at
-          const completedIds = new Set(
-            playbackRepo
-              .listRecent(10000)
-              .filter((e) => e.state.completedAt !== null)
-              .map((e) => e.media.id),
-          );
-          if (completedIds.size > 0) {
-            conditions.push(`m.id NOT IN (${Array.from(completedIds).join(',')})`);
-          }
+          // Títulos que NO tienen ningún fichero completado
+          conditions.push(`m.id NOT IN (${completedSubquery})`);
         }
       }
 
