@@ -6,6 +6,14 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [1.2.0](https://github.com/Angel-p-v/media-manager/compare/v1.1.0...v1.2.0) (2026-10-23)
+
+
+### Features
+
+* **player:** tracker IPC mpv y integración en launcher ([#23](https://github.com/Angel-p-v/media-manager/issues/23)) ([70de97c](https://github.com/Angel-p-v/media-manager/commit/70de97c8c4100c9cfaa1be4d6a79a388709dde76))
+* **ui:** sección Continuar en la TUI ([#27](https://github.com/Angel-p-v/media-manager/issues/27)) ([539dcc5](https://github.com/Angel-p-v/media-manager/commit/539dcc5cc7301822cbd356e5dbd5a77390977038))
+
 ## [1.1.0](https://github.com/Angel-p-v/media-manager/compare/v1.0.1...v1.1.0) (2026-10-23)
 
 
