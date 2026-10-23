@@ -1,121 +1,152 @@
 # Publicación y release
 
-Este documento describe cómo se publica `media-manager-cli` y qué queda pendiente
-cuando no hay credenciales de npm. La publicación **no** se hace desde una rama de
-desarrollo ni desde un portátil sin revisar la CI.
+`media-manager-cli` se distribuye **solo desde GitHub Releases**. No se publica en npm.
+Cada release adjunta un bundle portable por plataforma, su checksum SHA-256, un SBOM
+CycloneDX y una atestación de procedencia.
+
+La decisión está en el [ADR 0009](../adr/0009-distribucion-github-releases.md). El detalle
+del plan y las pruebas está en
+[`docs/plans/instaladores-y-seguridad.md`](../plans/instaladores-y-seguridad.md).
+
+## Artefactos
+
+```text
+media-manager-cli-1.0.0-linux-x64.tar.gz
+media-manager-cli-1.0.0-linux-x64.tar.gz.sha256
+media-manager-cli-1.0.0-linux-arm64.tar.gz
+media-manager-cli-1.0.0-linux-arm64.tar.gz.sha256
+sbom.cdx.json
+```
+
+- El bundle incluye `dist/`, dependencias de producción, el runtime oficial de Node, la
+  configuración de ejemplo, documentación, `install.json` y `THIRD_PARTY_NOTICES.md`.
+- La versión del runtime está fijada en `scripts/build/node-version.txt`.
+- El `.sha256` usa el formato de `sha256sum -c` y `shasum -a 256 -c`.
+- La atestación se genera con `actions/attest-build-provenance` y se verifica con `gh`.
+
+Plataformas iniciales: **Linux x64** y **Linux arm64** sobre glibc. macOS y Windows
+quedan para una fase posterior.
 
 ## Requisitos
 
-- Cuenta de npm con permiso de publicación sobre `media-manager-cli`.
-- Secreto `NPM_TOKEN` en el repositorio de GitHub: un _automation token_ de npm con
-  permiso de publicación. No se guarda en el repositorio ni en `~/.npmrc` del proyecto.
-- `id-token: write` en el workflow para generar la atestación de procedencia.
-- CI verde en Node 22, 24 y 26.
+- `main` verde en Node 22, 24 y 26.
+- Permisos del `GITHUB_TOKEN` declarados en los workflows: `contents: write` para subir
+  assets, `id-token: write` y `attestations: write` para la atestación.
+- No hace falta ningún secreto de npm ni `NPM_TOKEN`.
 
-El nombre `media-manager` ya estaba ocupado en npm, por eso el paquete se llama
-`media-manager-cli`; el binario instalado sigue siendo `mm`. La decisión completa está en
-el [ADR 0008](../adr/0008-publicacion-y-distribucion.md).
+## Flujo automático (release-please)
 
-```bash
-gh secret set NPM_TOKEN
-# pega el token cuando se solicite
-```
+1. Los commits convencionales (`feat`, `fix`, `perf`, `deps`, …) llegan a `main`.
+2. `release-please.yml` abre una PR de release con `CHANGELOG.md` y el bump de versión.
+3. Al mergearla, release-please crea el tag y la GitHub Release.
+4. El mismo workflow llama a `release-artifacts.yml`, que:
+   - construye el bundle en la matriz `ubuntu-24.04` (x64) y `ubuntu-24.04-arm` (arm64);
+   - ejecuta `npm run verify`;
+   - descarga el Node oficial y verifica su `SHASUMS256.txt`;
+   - genera el `.sha256` y comprueba el artefacto;
+   - atesta la procedencia;
+   - sube los assets con `gh release upload` (sin `--clobber`);
+   - genera y sube el SBOM en un job aparte.
+5. El evento `release: published` también llama al workflow, por lo que una release creada
+   a mano sigue el mismo camino.
 
-## Preparar y verificar el tarball
-
-```bash
-npm ci
-npm run verify
-npm run build
-npm run smoke     # npm pack → instalación limpia → --version/config/index --dry-run
-```
-
-`npm run smoke` usa el tarball real, no el `dist/` del repositorio. Si falta un fichero
-en `files` o una dependencia de producción, el smoke falla.
-
-También se puede inspeccionar el contenido antes de publicar:
-
-```bash
-npm pack --dry-run
-```
+`release-please` invoca el workflow directamente porque los eventos generados con
+`GITHUB_TOKEN` no vuelven a disparar otros workflows.
 
 ## Primera release (`v1.0.0`)
 
 El repositorio parte de `1.0.0` en `package.json`, `package-lock.json`,
 `CHANGELOG.md`, `release-please-config.json` y `.release-please-manifest.json`.
 
-1. Añade el secreto `NPM_TOKEN` como se indica arriba.
-2. Comprueba que `main` está limpio y con la CI verde.
-3. Crea el tag anotado y súbelo:
+1. Comprueba que `main` está limpio y con la CI verde.
+2. Crea y sube el tag anotado:
 
    ```bash
    git tag -a v1.0.0 -m "media-manager-cli v1.0.0"
    git push origin v1.0.0
    ```
 
-4. Publica un GitHub Release asociado al tag. El evento `release: published` dispara
-   `.github/workflows/release.yml`, que delega en `publish.yml`: ejecuta `verify`, el smoke
-   del tarball y `npm publish --provenance --access public`.
+3. Crea la GitHub Release:
 
    ```bash
    gh release create v1.0.0 --title "v1.0.0" --notes-file CHANGELOG.md
    ```
 
-5. Verifica la publicación:
+4. Espera a que `release-artifacts.yml` termine y verifica los assets:
 
    ```bash
-   npm view media-manager-cli version
-   npm install --global media-manager-cli
-   mm --version
+   gh release view v1.0.0
+   gh attestation verify media-manager-cli-1.0.0-linux-x64.tar.gz \
+     --repo Angel-p-v/media-manager
    ```
 
-   La ficha de npm debe mostrar la procedencia (provenance) y el repositorio correcto.
+5. Instala desde la release en un entorno limpio (sin Node) y comprueba:
 
-Si el workflow falla por falta de token, no crees otro tag: corrige el secreto y vuelve
-a ejecutar el workflow desde la release. Un tag ya publicado no debe moverse.
+   ```bash
+   sh install.sh --version v1.0.0
+   mm --version
+   mm config --validate
+   ```
 
-## Releases siguientes con release-please
+## Construcción local
 
-`release-please` observa los pushes a `main` y abre una PR de release con el siguiente
-`CHANGELOG.md` y el bump de versión. Al mergear esa PR, release-please crea el tag y el
-GitHub Release. Ese mismo workflow invoca `publish.yml` como workflow reutilizable cuando
-`release_created` es verdadero; no depende de que el evento `release` dispare otro
-workflow, porque los eventos creados con `GITHUB_TOKEN` no lo hacen.
-
-- Configuración:
-  [`release-please-config.json`](https://github.com/Angel-p-v/media-manager/blob/main/release-please-config.json).
-- Versión de referencia:
-  [`.release-please-manifest.json`](https://github.com/Angel-p-v/media-manager/blob/main/.release-please-manifest.json).
-- Los commits deben ser convencionales (`feat`, `fix`, `perf`, `deps`, …). Un `chore` no
-  genera release.
-- No edites a mano el `CHANGELOG.md` salvo para la release inicial o una corrección
-  editorial; release-please lo reescribe.
-
-La release inicial se prepara a mano para fijar `1.0.0`; después release-please toma el
-relevo.
-
-## Distribución standalone opcional
-
-Para generar una carpeta portable con Node incluido (misma plataforma y arquitectura):
+El runtime oficial es obligatorio para publicar:
 
 ```bash
-npm run standalone
+npm ci
+npm run verify
+npm run standalone -- --node-source official
+sha256sum -c build/standalone/media-manager-cli-*-linux-x64.tar.gz.sha256
 ```
 
-El resultado queda en `build/standalone/media-manager-cli-<versión>-<plataforma>/` y en
-un `.tar.gz` hermano. Incluye el runtime de Node y `better-sqlite3`, por lo que no es un
-único binario: el addon nativo debe seguir en disco. No se publica en npm; se adjunta a
-la GitHub Release si se necesita una alternativa sin Node instalado.
+En desarrollo se puede usar el Node del sistema:
+
+```bash
+npm run standalone -- --node-source system
+```
+
+El resultado queda en `build/standalone/`. El script genera el `.tar.gz`, su `.sha256` y
+un `install.json` con la versión y la plataforma.
+
+Para probar el instalador contra un artefacto local:
+
+```bash
+sh install.sh \
+  --file build/standalone/media-manager-cli-1.0.0-linux-x64.tar.gz \
+  --sha256 build/standalone/media-manager-cli-1.0.0-linux-x64.tar.gz.sha256 \
+  --prefix /tmp/mm-test --no-path-check
+```
+
+## Verificación de una release
+
+```bash
+# Checksum
+sha256sum -c media-manager-cli-1.0.0-linux-x64.tar.gz.sha256
+
+# Procedencia (requiere gh autenticado)
+gh attestation verify media-manager-cli-1.0.0-linux-x64.tar.gz \
+  --repo Angel-p-v/media-manager
+
+# Contenido del bundle
+tar -tzf media-manager-cli-1.0.0-linux-x64.tar.gz | head
+```
+
+La atestación mejora la integridad, pero la raíz de confianza sigue siendo la cuenta de
+GitHub que publica la release. El checksum y el asset viven en el mismo release; usa la
+atestación cuando necesites vincular el artefacto al workflow que lo construyó.
 
 ## Si algo sale mal
 
-- **Falta el token o no tiene permisos:** el workflow falla antes de publicar. Corrige el
-  secreto y relanza el workflow.
-- **El tarball no contiene `dist/`:** ejecuta `npm run build` o revisa `prepack`.
-- **La versión ya existe en npm:** npm no permite republicar una versión. Prepara un
-  patch (`fix: …`) con release-please; no reutilices el tag.
-- **Un tag apunta a un commit incorrecto:** no lo muevas si ya hay una release publicada.
-  Crea una versión nueva.
-- **Hay que retirar una versión:** usa `npm deprecate media-manager-cli@<versión> "…"`
-  y publica una corrección. El borrado solo es posible durante las primeras 72 horas y
-  rompe instalaciones existentes.
+- **El workflow falla al descargar Node:** comprueba `scripts/build/node-version.txt` y que
+  la versión exista en `nodejs.org/dist`. La descarga se verifica contra
+  `SHASUMS256.txt`; un fallo de checksum aborta la construcción.
+- **`gh release upload` falla porque el asset existe:** el workflow no sobrescribe assets.
+  Corrige el problema y publica una versión nueva; no reutilices el tag.
+- **El checksum no coincide:** no instales el artefacto. Vuelve a construir y publicar.
+- **Un tag apunta a un commit incorrecto:** no lo muevas si ya tiene una release. Crea una
+  versión nueva.
+- **Hay que retirar una versión:** publica una corrección y, si hace falta, marca la
+  release anterior como _pre-release_ o edita sus notas; no borres assets de una release
+  que los usuarios ya hayan descargado.
+- **El instalador rechaza un artefacto:** revisa que `install.json` tenga el nombre,
+  versión y plataforma correctos y que el archivo no contenga rutas `../` o absolutas.

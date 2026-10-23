@@ -4,7 +4,8 @@ Este directorio reúne la documentación técnica y de mantenimiento del proyect
 
 - [Arquitectura](./guides/architecture.md): capas, dependencias y flujo de datos.
 - [Rendimiento](./guides/performance.md): presupuesto y cómo ejecutar los benchmarks.
-- [Publicación y release](./guides/release.md): tags, artefactos, credenciales y rollback.
+- [Publicación y release](./guides/release.md): instaladores, artefactos, checksums, SBOM
+  y atestaciones.
 - [ADR](./adr/): decisiones de arquitectura registradas.
 - [Planes](./plans/): planes de trabajo y propuestas de evolución.
   - [Instaladores, distribución y seguridad](./plans/instaladores-y-seguridad.md):
