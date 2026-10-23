@@ -160,27 +160,31 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
   `release.yml` y `release-please.yml` llaman a `release-artifacts.yml`, que descarga el
   Node oficial verificado, genera `.sha256` y SBOM, atesta la procedencia y sube los
   assets sin sobrescribir. No muevas un tag ya publicado; ver `docs/guides/release.md`.
+- **`CHANGELOG.md` es generado por release-please** y está en `.prettierignore`: su formato
+  (incluidos los dobles saltos de línea) lo fija la herramienta y `format:check` no debe
+  reformatearlo.
 
 ## Estado actual y siguiente paso
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado         |
-| ---- | ----------------------------------------------------- | -------------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho       |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho       |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho       |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho       |
-| M4   | CLI headless + búsqueda                               | ✅ hecho       |
-| M5   | TUI (Ink)                                             | ✅ hecho       |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho       |
-| M7   | Robustez y rendimiento                                | ✅ hecho       |
-| M8   | Release v1.0.0                                        | 🟡 preparación |
+| Hito | Contenido                                             | Estado   |
+| ---- | ----------------------------------------------------- | -------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho |
+| M4   | CLI headless + búsqueda                               | ✅ hecho |
+| M5   | TUI (Ink)                                             | ✅ hecho |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho |
+| M7   | Robustez y rendimiento                                | ✅ hecho |
+| M8   | Release v1.0.0                                        | ✅ hecho |
 
-La preparación de M8 está cerrada salvo la publicación: el canal ya es GitHub Releases
-(instaladores, bundles, checksums, SBOM y atestaciones). Falta crear el tag `v1.0.0`,
-publicar la release y probarla en un entorno limpio. Instrucciones en
-`docs/guides/release.md`.
+M8 está cerrado: `v1.0.0` y `v1.0.1` están publicadas desde GitHub Releases (instaladores,
+bundles Linux x64/arm64, checksums, SBOM y atestaciones). `v1.0.1` corrigió la expansión de
+`~` en los instaladores y superó el job de instalación en contenedor limpio. A partir de
+ahí las releases las prepara release-please; instrucciones en `docs/guides/release.md`.
+El siguiente paso es `docs/plans/version-2.0.md`.
 
 ## Reglas para el agente
 

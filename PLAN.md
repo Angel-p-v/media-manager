@@ -227,7 +227,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M5   | TUI (Ink)                                             | ✅     | 7/7      |
 | M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
 | M7   | Robustez y rendimiento                                | ✅     | 6/6      |
-| M8   | Release `v1.0.0`                                      | 🟡     | 5/7      |
+| M8   | Release `v1.0.0`                                      | ✅     | 7/7      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -491,7 +491,7 @@ el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto e
 - [x] README con demo, `SECURITY.md` y `CONTRIBUTING.md`
 - [x] Workflow de release
 - [x] _Smoke post-build_ con el tarball (`npm pack` → instalar → ejecutar)
-- [ ] Tag `v1.0.0`, release de GitHub y verificación en los 3 nodos
+- [x] Tag `v1.0.0`, release de GitHub y verificación en los 3 nodos
 
 > **Plan de ejecución (2026-10-22):**
 > [`docs/plans/instaladores-y-seguridad.md`](./docs/plans/instaladores-y-seguridad.md).
@@ -512,12 +512,13 @@ temporal → ejecutar `--version`, `config --validate` e `index --dry-run`.
 **DoD:** tag `v1.0.0` · release de GitHub con assets, checksums, SBOM y atestación ·
 instalación verificada sin Node · `npm run verify` verde en los 3 nodos.
 
-**Estado:** artefactos e instaladores completados; falta publicar. El canal oficial es
-GitHub Releases (ADR 0009): bundles Linux x64/arm64 con Node oficial, checksum SHA-256,
-SBOM CycloneDX y atestación de procedencia. `install.sh` y `uninstall.sh` verifican la
-integridad y están cubiertos por tests de integración. Queda crear el tag `v1.0.0`,
-publicar la release, probar la instalación en un entorno limpio y anotar el resultado en
-[`docs/guides/release.md`](./docs/guides/release.md).
+**Estado:** completado. `v1.0.0` se publicó el 2026-10-23 con bundles Linux x64/arm64,
+checksums, SBOM CycloneDX y atestaciones de procedencia. El job de instalación en
+contenedor limpio destapó un fallo en la expansión de `~` de los instaladores, corregido en
+`v1.0.1` (release publicada con todos los jobs en verde e instalación verificada sin Node).
+El canal oficial es GitHub Releases (ADR 0009). El detalle del proceso y el resultado están
+en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
+[`docs/plans/version-2.0.md`](./docs/plans/version-2.0.md).
 
 ## 8. Comandos de inicialización
 
@@ -567,8 +568,8 @@ main (protegida)  ←  squash merge  ←  PR (CI verde)  ←  feat/xyz | fix/xyz
 - Commits en la rama: un commit = un cambio conceptual; el squash mantiene el historial legible.
 - `main` recibe mensajes Conventional validados (rama protegida + hook).
 - Release: release-please abre la PR con `CHANGELOG` y el bump; al mergear, tag `vX.Y.Z`
-  → GitHub Release → `release.yml` publica. La primera `v1.0.0` se prepara a mano
-  siguiendo [`docs/guides/release.md`](./docs/guides/release.md).
+  → GitHub Release → `release-artifacts.yml` publica. `v1.0.0` se preparó a mano y desde
+  `v1.0.1` el flujo es automático; ver [`docs/guides/release.md`](./docs/guides/release.md).
 
 ## 10. Decisiones pendientes
 

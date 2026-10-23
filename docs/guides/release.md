@@ -8,13 +8,27 @@ La decisión está en el [ADR 0009](../adr/0009-distribucion-github-releases.md)
 del plan y las pruebas está en
 [`docs/plans/instaladores-y-seguridad.md`](../plans/instaladores-y-seguridad.md).
 
+## Releases publicadas
+
+| Versión  | Fecha      | Estado                                                                |
+| -------- | ---------- | --------------------------------------------------------------------- |
+| `v1.0.1` | 2026-10-23 | Actual; corrige la expansión de `~` en los instaladores.              |
+| `v1.0.0` | 2026-10-23 | Primera release; su instalador llevaba el fallo de `~` en `--prefix`. |
+
+`v1.0.0` se creó a mano y `v1.0.1` la generó release-please. El job de instalación en
+contenedor limpio de `v1.0.0` falló con `/rootoot/.local/bin/mm`: el patrón `~` del `case`
+se expandía a `$HOME` antes de comparar, de modo que un prefijo dentro de HOME acababa en
+una ruta corrupta. No se movió el tag publicado; la corrección salió como `v1.0.1`, cuyos
+bundles, checksums, SBOM, atestaciones e instalación limpia pasaron. Desde entonces ese job
+bloquea la release si el instalador no funciona.
+
 ## Artefactos
 
 ```text
-media-manager-cli-1.0.0-linux-x64.tar.gz
-media-manager-cli-1.0.0-linux-x64.tar.gz.sha256
-media-manager-cli-1.0.0-linux-arm64.tar.gz
-media-manager-cli-1.0.0-linux-arm64.tar.gz.sha256
+media-manager-cli-1.0.1-linux-x64.tar.gz
+media-manager-cli-1.0.1-linux-x64.tar.gz.sha256
+media-manager-cli-1.0.1-linux-arm64.tar.gz
+media-manager-cli-1.0.1-linux-arm64.tar.gz.sha256
 sbom.cdx.json
 ```
 
@@ -54,6 +68,10 @@ quedan para una fase posterior.
 `GITHUB_TOKEN` no vuelven a disparar otros workflows.
 
 ## Primera release (`v1.0.0`)
+
+> `v1.0.0` ya está publicada y fue la primera release manual. El flujo normal desde
+> `v1.0.1` es el automático de release-please; esta sección queda como referencia
+> histórica del arranque.
 
 El repositorio parte de `1.0.0` en `package.json`, `package-lock.json`,
 `CHANGELOG.md`, `release-please-config.json` y `.release-please-manifest.json`.
@@ -121,14 +139,14 @@ sh install.sh \
 
 ```bash
 # Checksum
-sha256sum -c media-manager-cli-1.0.0-linux-x64.tar.gz.sha256
+sha256sum -c media-manager-cli-1.0.1-linux-x64.tar.gz.sha256
 
 # Procedencia (requiere gh autenticado)
-gh attestation verify media-manager-cli-1.0.0-linux-x64.tar.gz \
+gh attestation verify media-manager-cli-1.0.1-linux-x64.tar.gz \
   --repo Angel-p-v/media-manager
 
 # Contenido del bundle
-tar -tzf media-manager-cli-1.0.0-linux-x64.tar.gz | head
+tar -tzf media-manager-cli-1.0.1-linux-x64.tar.gz | head
 ```
 
 La atestación mejora la integridad, pero la raíz de confianza sigue siendo la cuenta de
@@ -143,6 +161,8 @@ atestación cuando necesites vincular el artefacto al workflow que lo construyó
 - **`gh release upload` falla porque el asset existe:** el workflow no sobrescribe assets.
   Corrige el problema y publica una versión nueva; no reutilices el tag.
 - **El checksum no coincide:** no instales el artefacto. Vuelve a construir y publicar.
+- **La instalación acaba en una ruta tipo `/rootoot`:** era el bug de expansión de `~` de
+  `v1.0.0`, corregido en `v1.0.1`. Usa el `install.sh` de `main` y una versión ≥ 1.0.1.
 - **Un tag apunta a un commit incorrecto:** no lo muevas si ya tiene una release. Crea una
   versión nueva.
 - **Hay que retirar una versión:** publica una corrección y, si hace falta, marca la
