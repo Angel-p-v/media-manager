@@ -6,16 +6,18 @@ import {
   calculatePlayback,
   findNextEpisode,
   isEpisodic,
-  resolveResumeDecision,
   nowIso,
+  resolveResumeDecision,
 } from '../core/playback/index.js';
 import {
   createLaunchPlan,
   launchPlayer,
   type LaunchMode,
   type LaunchPlan,
+  type TrackerDeps,
 } from '../core/player/launcher.js';
 import { selectMediaFile } from '../core/player/selection.js';
+import { createLogger } from '../shared/logger.js';
 
 import type { MediaFileRow, MediaRow } from '../core/db/types.js';
 
@@ -129,7 +131,15 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
       return;
     }
 
-    const handle = await launchPlayer(plan);
+    const trackerDeps: TrackerDeps = {
+      playbackRepo,
+      playbackConfig,
+      logger: options.verbose
+        ? createLogger({ level: 'debug', format: 'text' })
+        : createLogger({ level: 'warn', format: 'text' }),
+      mediaFileId: file.id,
+    };
+    const handle = await launchPlayer(plan, trackerDeps);
 
     if (options.json === true) {
       if (plan.mode === 'foreground') await handle.wait();
@@ -155,6 +165,11 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
     if (plan.mode === 'foreground') {
       await handle.wait();
       console.log(pc.dim('El reproductor se ha cerrado.'));
+    }
+
+    // Limpiar tracker si existe
+    if (handle.cleanupTracker) {
+      await handle.cleanupTracker();
     }
   });
 }

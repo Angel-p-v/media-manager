@@ -5,8 +5,11 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { PlayerError } from '../../shared/errors.js';
+import { launchWithTracker } from '../playback/mpvTracker.js';
 
-import type { PlayerConfig } from '../config/schema.js';
+import type { Logger } from '../../shared/logger.js';
+import type { PlayerConfig, PlaybackConfig } from '../config/schema.js';
+import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
 import type { ChildProcess } from 'node:child_process';
 
 /** Forma de lanzar el reproductor: en segundo plano o esperando a que cierre. */
@@ -33,15 +36,25 @@ export type CreateLaunchPlanOptions = {
   startSeconds?: number | null;
 };
 
+/** Opciones para el tracker IPC de mpv. */
+export type TrackerDeps = {
+  playbackRepo: PlaybackRepository;
+  playbackConfig: PlaybackConfig;
+  logger: Logger;
+  mediaFileId: number;
+};
+
 /** Proceso de reproducción ya arrancado. */
 export type PlayerHandle = {
   pid: number | undefined;
   /** Espera al cierre y falla si el reproductor termina con error. */
   wait: () => Promise<void>;
+  /** Limpia el tracker si existe. */
+  cleanupTracker?: () => Promise<void> | undefined;
 };
 
 /** Firma que consume la TUI, inyectable en los tests. */
-export type LaunchPlayerFn = (plan: LaunchPlan) => Promise<PlayerHandle>;
+export type LaunchPlayerFn = (plan: LaunchPlan, trackerDeps?: TrackerDeps) => Promise<PlayerHandle>;
 
 /**
  * Construye el comando del reproductor a partir de la definición configurada.
@@ -100,8 +113,14 @@ export function createLaunchPlan(options: CreateLaunchPlanOptions): LaunchPlan {
  * la TUI; en modo `foreground` hereda stdio y `wait()` espera su salida. Comprobar
  * el binario antes de lanzarlo permite devolver un error útil aunque el proceso
  * se desacople inmediatamente.
+ *
+ * Si `trackerDeps` se proporciona, el reproductor es `mpv` y `playback.tracking` es
+ * `auto`, se lanza el tracker IPC que guarda la posición periódicamente.
  */
-export async function launchPlayer(plan: LaunchPlan): Promise<PlayerHandle> {
+export async function launchPlayer(
+  plan: LaunchPlan,
+  trackerDeps?: TrackerDeps,
+): Promise<PlayerHandle> {
   if (!(await isExecutable(plan.command))) {
     throw new PlayerError(
       `No se encontró el reproductor «${plan.player}» (${plan.command}). ` +
@@ -120,11 +139,42 @@ export async function launchPlayer(plan: LaunchPlan): Promise<PlayerHandle> {
 
   if (plan.mode === 'detach') child.unref();
 
+  let cleanupTracker: (() => Promise<void>) | undefined;
+
+  // Iniciar tracker IPC para mpv si procede
+  if (
+    trackerDeps &&
+    plan.player === 'mpv' &&
+    trackerDeps.playbackConfig.tracking === 'auto' &&
+    plan.mode === 'detach'
+  ) {
+    try {
+      cleanupTracker = await launchWithTracker(
+        plan.command,
+        plan.args.filter((arg) => arg !== plan.filePath), // args ya tiene {file} resuelto
+        plan.filePath,
+        {
+          mediaFileId: trackerDeps.mediaFileId,
+          playbackRepo: trackerDeps.playbackRepo,
+          playbackConfig: trackerDeps.playbackConfig,
+          logger: trackerDeps.logger.child({ component: 'mpv-tracker' }),
+          socketPath: '', // se genera dentro
+        },
+      );
+    } catch (error) {
+      trackerDeps.logger.warn('No se pudo iniciar tracker mpv, continuando sin tracking', {
+        error: (error as Error).message,
+      });
+    }
+  }
+
   const closed = waitForClose(child, plan.mode);
-  return {
+  const handle: PlayerHandle = {
     pid: child.pid,
     wait: () => closed.then((outcome) => assertSuccessfulExit(outcome, plan)),
   };
+  if (cleanupTracker) handle.cleanupTracker = cleanupTracker;
+  return handle;
 }
 
 /**
