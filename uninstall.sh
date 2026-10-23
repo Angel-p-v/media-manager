@@ -76,8 +76,8 @@ done
 [ $# -eq 0 ] || die 2 "argumentos inesperados: $*"
 
 case "$PREFIX" in
-  "~") PREFIX="${HOME}" ;;
-  ~/*) PREFIX="${HOME}${PREFIX#??}" ;;
+  \~) PREFIX="${HOME}" ;;
+  \~/*) PREFIX="${HOME}/${PREFIX#??}" ;;
   /*) ;;
   *) die 2 "--prefix debe ser una ruta absoluta" ;;
 esac
@@ -90,8 +90,8 @@ if [ -z "$BINDIR" ]; then
   BINDIR="${PREFIX}/bin"
 fi
 case "$BINDIR" in
-  "~") BINDIR="${HOME}" ;;
-  ~/*) BINDIR="${HOME}${BINDIR#??}" ;;
+  \~) BINDIR="${HOME}" ;;
+  \~/*) BINDIR="${HOME}/${BINDIR#??}" ;;
   /*) ;;
   *) die 2 "--bindir debe ser una ruta absoluta" ;;
 esac
