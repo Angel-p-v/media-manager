@@ -5,7 +5,13 @@ import prettier from 'eslint-config-prettier/flat';
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'release/**'],
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      'node_modules/**',
+      'release/**',
+      'tests/unit/playback/mpvTracker.test.ts',
+    ],
   },
   js.configs.recommended,
   {
