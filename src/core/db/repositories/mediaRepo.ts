@@ -18,6 +18,14 @@ export type ListMediaOptions = {
   limit?: number;
   offset?: number;
   orderBy?: 'title' | 'added' | 'recent';
+  /** Filtrar solo favoritos. */
+  favorites?: boolean;
+  /** Filtrar títulos en curso (con progreso guardado y no completados). */
+  inProgress?: boolean;
+  /** Filtrar títulos no vistos (sin progreso o completado). */
+  unwatched?: boolean;
+  /** Filtrar títulos completados. */
+  watched?: boolean;
 };
 
 export type SearchMediaOptions = {
@@ -37,8 +45,23 @@ export type MediaRepository = {
   listFolders(): string[];
 };
 
+export type MediaRepositoryDeps = {
+  /** Repositorio de preferencias (para filtro de favoritos). */
+  preferenceRepo?: {
+    listFavorites(limit?: number): { mediaId: number }[];
+    countFavorites(): number;
+  };
+  /** Repositorio de reproducción (para filtros inProgress, unwatched, watched). */
+  playbackRepo?: {
+    listInProgress(limit?: number): { media: { id: number } }[];
+    listRecent(limit?: number): { media: { id: number }; state: { completedAt: string | null } }[];
+    count(): number;
+  };
+};
+
 /** Crea el repositorio de títulos sobre una conexión SQLite dada. */
-export function createMediaRepository(db: Db): MediaRepository {
+export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): MediaRepository {
+  const { preferenceRepo, playbackRepo } = deps;
   const upsertStatement = db.prepare(`
     INSERT INTO media (type, title, sort_title, year, folder_path)
     VALUES (@type, @title, @sort_title, @year, @folder_path)
@@ -129,12 +152,96 @@ export function createMediaRepository(db: Db): MediaRepository {
     },
 
     list(options: ListMediaOptions = {}): MediaRow[] {
-      const statement = listStatements[options.orderBy ?? 'title'];
-      const rows = statement.all({
-        type: options.type ?? null,
-        limit: options.limit ?? 500,
-        offset: options.offset ?? 0,
-      });
+      const { favorites, inProgress, unwatched, watched, ...baseOptions } = options;
+
+      // Si no hay filtros especiales, usar la consulta simple
+      if (!favorites && !inProgress && !unwatched && !watched) {
+        const statement = listStatements[baseOptions.orderBy ?? 'title'];
+        const rows = statement.all({
+          type: baseOptions.type ?? null,
+          limit: baseOptions.limit ?? 500,
+          offset: baseOptions.offset ?? 0,
+        });
+        return rows.map(toMediaRow);
+      }
+
+      // Para filtros que requieren joins, construimos la consulta dinámicamente
+      const conditions: string[] = [];
+      const params: Record<string, unknown> = {
+        limit: baseOptions.limit ?? 500,
+        offset: baseOptions.offset ?? 0,
+      };
+
+      if (baseOptions.type) {
+        conditions.push('m.type = @type');
+        params.type = baseOptions.type;
+      }
+
+      const orderByClause = (() => {
+        switch (baseOptions.orderBy) {
+          case 'added':
+            return 'm.created_at DESC';
+          case 'recent':
+            return 'm.updated_at DESC';
+          case 'title':
+          default:
+            return 'm.sort_title ASC';
+        }
+      })();
+
+      // Favoritos: join con media_preferences
+      if (favorites && preferenceRepo) {
+        // Obtener IDs de favoritos y filtrar en memoria (más eficiente para pocos favoritos)
+        const favIds = new Set(preferenceRepo.listFavorites().map((p) => p.mediaId));
+        if (favIds.size === 0) return [];
+        conditions.push(`m.id IN (${Array.from(favIds).join(',')})`);
+      }
+
+      // En curso: join con playback_state (no completados, posición > 0)
+      if (inProgress && playbackRepo) {
+        const inProgressIds = new Set(playbackRepo.listInProgress().map((e) => e.media.id));
+        if (inProgressIds.size === 0) return [];
+        conditions.push(`m.id IN (${Array.from(inProgressIds).join(',')})`);
+      }
+
+      // Vistos (completados): tiene entrada en playback_state con completed_at no null
+      // No vistos: no tiene entrada en playback_state O tiene entrada pero sin completed_at y posición 0
+      if ((watched || unwatched) && playbackRepo) {
+        if (watched) {
+          // Títulos con al menos un fichero completado
+          const completedIds = new Set(
+            playbackRepo
+              .listRecent(10000)
+              .filter((e) => e.state.completedAt !== null)
+              .map((e) => e.media.id),
+          );
+          if (completedIds.size === 0) return [];
+          conditions.push(`m.id IN (${Array.from(completedIds).join(',')})`);
+        } else if (unwatched) {
+          // Títulos que no tienen ningún fichero completado
+          // Excluir los que tienen completed_at
+          const completedIds = new Set(
+            playbackRepo
+              .listRecent(10000)
+              .filter((e) => e.state.completedAt !== null)
+              .map((e) => e.media.id),
+          );
+          if (completedIds.size > 0) {
+            conditions.push(`m.id NOT IN (${Array.from(completedIds).join(',')})`);
+          }
+        }
+      }
+
+      const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+      const sql = `
+        SELECT * FROM media m
+        ${whereClause}
+        ORDER BY ${orderByClause}
+        LIMIT @limit OFFSET @offset
+      `;
+
+      const statement = db.prepare(sql);
+      const rows = statement.all(params) as MediaDbRow[];
       return rows.map(toMediaRow);
     },
 

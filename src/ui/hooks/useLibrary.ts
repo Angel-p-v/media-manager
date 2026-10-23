@@ -10,8 +10,8 @@ export type UseLibraryOptions = {
   type?: MediaType;
   query?: string;
   limit?: number;
-  /** Sección especial: 'in-progress' para títulos en curso. */
-  section?: 'in-progress' | undefined;
+  /** Sección especial: 'in-progress' para títulos en curso, 'favorites' para favoritos. */
+  section?: 'in-progress' | 'favorites' | undefined;
 };
 
 export type UseLibraryResult = {
@@ -51,6 +51,14 @@ export function useLibrary(
 
       if (section === 'in-progress') {
         const items = service.listInProgress(limit);
+        return { items, total: items.length, error: null };
+      }
+
+      if (section === 'favorites') {
+        const items = service.list({
+          limit,
+          favorites: true,
+        });
         return { items, total: items.length, error: null };
       }
 

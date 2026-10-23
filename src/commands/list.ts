@@ -13,6 +13,10 @@ export type ListCommandOptions = CommandOptions & {
   offset?: number;
   sort?: NonNullable<ListMediaOptions['orderBy']>;
   json?: boolean;
+  favorites?: boolean;
+  inProgress?: boolean;
+  unwatched?: boolean;
+  watched?: boolean;
 };
 
 const DEFAULT_LIMIT = 50;
@@ -29,6 +33,10 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
       limit,
       offset,
       orderBy: sort,
+      ...(options.favorites === true ? { favorites: true } : {}),
+      ...(options.inProgress === true ? { inProgress: true } : {}),
+      ...(options.unwatched === true ? { unwatched: true } : {}),
+      ...(options.watched === true ? { watched: true } : {}),
     });
     const total = library.count(options.type);
 
@@ -66,10 +74,17 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
 
     const first = offset + 1;
     const last = offset + items.length;
+    const filterParts = [];
+    if (options.type) filterParts.push(`tipo: ${options.type}`);
+    if (options.favorites) filterParts.push('favoritos');
+    if (options.inProgress) filterParts.push('en curso');
+    if (options.unwatched) filterParts.push('no vistos');
+    if (options.watched) filterParts.push('vistos');
+    const filterStr = filterParts.length > 0 ? pc.dim(` · ${filterParts.join(', ')}`) : '';
     console.log(
       pc.bold(`${total} títulos`) +
         pc.dim(` · mostrando ${first}-${last} · orden: ${sort}`) +
-        (options.type === undefined ? '' : pc.dim(` · tipo: ${options.type}`)),
+        filterStr,
     );
     printMediaList(items);
   });
@@ -81,11 +96,22 @@ export function parseListOptions(raw: {
   sort?: string;
   limit?: number;
   offset?: number;
-}): Pick<ListCommandOptions, 'type' | 'sort' | 'limit' | 'offset'> {
+  favorites?: boolean;
+  inProgress?: boolean;
+  unwatched?: boolean;
+  watched?: boolean;
+}): Pick<
+  ListCommandOptions,
+  'type' | 'sort' | 'limit' | 'offset' | 'favorites' | 'inProgress' | 'unwatched' | 'watched'
+> {
   return {
     ...(raw.type === undefined ? {} : { type: parseMediaType(raw.type) }),
     ...(raw.sort === undefined ? {} : { sort: parseSortOrder(raw.sort) }),
     ...(raw.limit === undefined ? {} : { limit: raw.limit }),
     ...(raw.offset === undefined ? {} : { offset: raw.offset }),
+    ...(raw.favorites === undefined ? {} : { favorites: raw.favorites }),
+    ...(raw.inProgress === undefined ? {} : { inProgress: raw.inProgress }),
+    ...(raw.unwatched === undefined ? {} : { unwatched: raw.unwatched }),
+    ...(raw.watched === undefined ? {} : { watched: raw.watched }),
   };
 }

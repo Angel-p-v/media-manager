@@ -13,6 +13,7 @@ export type SidebarProps = {
 const SECTIONS: readonly { key: Section; label: string }[] = [
   { key: 'all', label: 'Todo' },
   { key: 'in-progress', label: 'Continuar' },
+  { key: 'favorites', label: 'Favoritos' },
   { key: 'series', label: 'Series' },
   { key: 'anime', label: 'Anime' },
   { key: 'movie', label: 'Películas' },

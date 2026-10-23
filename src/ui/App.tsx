@@ -31,7 +31,14 @@ export type AppProps = {
   launchPlayer?: LaunchPlayerFn;
 };
 
-const SECTION_ORDER: readonly Section[] = ['all', 'in-progress', 'series', 'anime', 'movie'];
+const SECTION_ORDER: readonly Section[] = [
+  'all',
+  'in-progress',
+  'favorites',
+  'series',
+  'anime',
+  'movie',
+];
 
 const VIEW_TITLE: Record<ViewName, string> = {
   library: 'Biblioteca',
@@ -60,12 +67,14 @@ export function App({
   const [helpVisible, setHelpVisible] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const type = section === 'all' || section === 'in-progress' ? undefined : section;
+  const type =
+    section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
   const { items, total, error } = useLibrary(library, {
     limit: view === 'search' ? 100 : 200,
     ...(type === undefined ? {} : { type }),
     ...(view === 'search' ? { query } : {}),
-    section: section === 'in-progress' ? 'in-progress' : undefined,
+    section:
+      section === 'in-progress' ? 'in-progress' : section === 'favorites' ? 'favorites' : undefined,
   });
   const safeSelected = items.length === 0 ? 0 : Math.min(selected, items.length - 1);
   const selectedMedia = items[safeSelected];
@@ -74,15 +83,27 @@ export function App({
   const counts = useMemo<Counts>(() => {
     try {
       const stats = library.stats();
+      // Obtener count de favoritos
+      let favoritesCount = 0;
+      try {
+        // Accedemos al preferenceRepo a través de la biblioteca
+        // Como LibraryService no expone preferenceRepo, usamos una aproximación
+        // En una implementación completa, se añadiría countFavorites a LibraryService
+        const favItems = library.list({ favorites: true, limit: 10000 });
+        favoritesCount = favItems.length;
+      } catch {
+        // Si falla, dejamos 0
+      }
       return {
         all: stats.media.total,
         'in-progress': stats.inProgress,
+        favorites: favoritesCount,
         series: stats.media.series,
         anime: stats.media.anime,
         movie: stats.media.movie,
       };
     } catch {
-      return { all: 0, 'in-progress': 0, series: 0, anime: 0, movie: 0 };
+      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, anime: 0, movie: 0 };
     }
   }, [library]);
 

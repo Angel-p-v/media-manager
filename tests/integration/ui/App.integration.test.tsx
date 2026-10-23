@@ -101,8 +101,32 @@ const files: Record<number, MediaFileRow[]> = {
 function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
   return {
     list: (options = {}) => {
-      const filtered =
+      let filtered =
         options.type === undefined ? rows : rows.filter((row) => row.type === options.type);
+
+      // Simular filtro de favoritos: para el test, Arrival y Blade Runner 2049 son favoritos
+      if (options.favorites) {
+        filtered = filtered.filter(
+          (row) => row.title === 'Arrival' || row.title === 'Blade Runner 2049',
+        );
+      }
+      // Simular filtro de en curso
+      if (options.inProgress) {
+        filtered = filtered.filter((row) => row.title === 'Severance');
+      }
+      // Simular filtro de no vistos
+      if (options.unwatched) {
+        filtered = filtered.filter(
+          (row) => row.title !== 'Arrival' && row.title !== 'Blade Runner 2049',
+        );
+      }
+      // Simular filtro de vistos
+      if (options.watched) {
+        filtered = filtered.filter(
+          (row) => row.title === 'Arrival' || row.title === 'Blade Runner 2049',
+        );
+      }
+
       const offset = options.offset ?? 0;
       const limit = options.limit ?? filtered.length;
       return filtered.slice(offset, offset + limit);
@@ -132,9 +156,10 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       },
       files: Object.values(files).reduce((total, list) => total + list.length, 0),
       lastRun: null,
-      inProgress: 0,
+      inProgress: 1, // Severance en curso
     }),
-    listInProgress: () => [],
+    listInProgress: () =>
+      [defaultRows.find((r) => r.title === 'Severance')].filter(Boolean) as MediaRow[],
   };
 }
 
@@ -181,7 +206,8 @@ describe('App (TUI)', () => {
   it('cambia de sección con Tab y filtra los títulos', async () => {
     const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
 
-    // Tab 1: 'in-progress' (vacío), Tab 2: 'series'
+    // Tab 1: 'in-progress', Tab 2: 'favorites', Tab 3: 'series'
+    await press(stdin, '\t');
     await press(stdin, '\t');
     await press(stdin, '\t');
 
