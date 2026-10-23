@@ -1,7 +1,11 @@
 # ADR 0008 — Publicación npm y distribución standalone
 
-- **Estado:** aceptada
+- **Estado:** sustituida parcialmente por el [ADR 0009](./0009-distribucion-github-releases.md)
 - **Fecha:** 2026-10-22
+
+> La publicación en npm queda sustituida por la distribución mediante GitHub Releases
+> (ADR 0009). Siguen vigentes el nombre del paquete, el binario `mm` y el formato del
+> bundle portable.
 
 ## Contexto
 
