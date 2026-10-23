@@ -1,7 +1,8 @@
 # Plan: media-manager v2.0 — una biblioteca con memoria
 
-- **Estado:** propuesto; se ejecuta después de cerrar v1.0.0
+- **Estado:** en ejecución — M9 (contratos, datos y migración v3)
 - **Fecha:** 2026-10-22
+- **Inicio de ejecución:** 2026-10-23, tras cerrar `v1.0.0`/`v1.0.1`
 - **Depende de:** [`instaladores-y-seguridad.md`](./instaladores-y-seguridad.md)
 - **Base:** `1.x` publicada desde GitHub Releases
 - **Objetivo de versión:** `2.0.0`
@@ -312,8 +313,8 @@ Reglas:
 
 ### M9 — Contratos, datos y migración v3
 
-- [ ] ADR 0010: estado de reproducción y reanudación.
-- [ ] ADR 0011: salud de la biblioteca y reparaciones seguras.
+- [x] ADR 0010: estado de reproducción y reanudación.
+- [x] ADR 0011: salud de la biblioteca y reparaciones seguras.
 - [ ] Esquema v3, repositorios y migración con backup.
 - [ ] Configuración `playback` y placeholder `{start}`.
 - [ ] Contrato CLI/JSON de los comandos nuevos.
@@ -412,9 +413,13 @@ explícitas y reversibles mediante backup.
 
 ## 15. Decisiones pendientes
 
-1. ¿`mm play` reanuda por defecto en `2.0` o solo con `--resume`?
-2. ¿El tracker automático se limita a mpv o se intenta también VLC?
-3. ¿Windows entra en `2.0` o se confirma `2.1`?
-4. ¿Favoritos es suficiente o hacen falta etiquetas/colecciones en `2.0`?
-5. ¿`mm doctor --prune-missing` debe pedir confirmación interactiva?
-6. ¿macOS mantiene rutas XDG o adopta `~/Library/Application Support`?
+Las decisiones 1, 2, 3, 4 y 6 quedaron cerradas en el
+[ADR 0010](../adr/0010-estado-reproduccion.md) y el [ADR 0011](../adr/0011-salud-biblioteca.md).
+La decisión 5 se cerró en el ADR 0011 (confirmación interactiva salvo `--yes`).
+
+1. ~~¿`mm play` reanuda por defecto en `2.0` o solo con `--resume`?~~ → sí, por defecto.
+2. ~~¿El tracker automático se limita a mpv o se intenta también VLC?~~ → solo mpv.
+3. ~~¿Windows entra en `2.0` o se confirma `2.1`?~~ → `2.1`.
+4. ~~¿Favoritos es suficiente o hacen falta etiquetas/colecciones en `2.0`?~~ → favoritos.
+5. ~~¿`mm doctor --prune-missing` debe pedir confirmación interactiva?~~ → sí, salvo `--yes`.
+6. ~~¿macOS mantiene rutas XDG o adopta `~/Library/Application Support`?~~ → XDG.
