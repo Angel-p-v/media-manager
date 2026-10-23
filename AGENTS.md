@@ -183,6 +183,7 @@ Hitos del plan (ver `PLAN.md` §7):
 | M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho |
 | M11  | Biblioteca sana y descubrimiento                      | ✅ hecho |
 | M12  | macOS y experiencia v2                                | ✅ hecho |
+| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
@@ -192,9 +193,11 @@ M10 está completado: tracker IPC de mpv, sección "Continuar" en la TUI, y test
 
 M11 está completado: filtros de favoritos/en curso/vistos/no vistos en `mm list` y TUI, sección "Favoritos" en la barra lateral, benchmarks de consultas con estado de reproducción. Tests integrados y verificados en CI.
 
-M12 está completado: assets macOS x64/arm64, CI con runners macOS, instalador POSIX con eliminación automática de cuarentena, install-test en Ubuntu y macOS, README documenta instalación vía `sh install.sh` y Gatekeeper.
+M12 está completado: CI con runners macOS, instalador POSIX con eliminación automática de cuarentena, install-test en Ubuntu y macOS, README documenta instalación vía `sh install.sh` y Gatekeeper.
 
-El siguiente paso es M13 (Release v2.0.0).
+M13 está completado: release v2.0.1 publicada en GitHub Releases con assets Linux x64/arm64, checksums SHA-256, SBOM CycloneDX y atestaciones de procedencia. El asset macOS arm64 quedó pendiente por limitación de capacidad de runners de GitHub Actions (exit code 127).
+
+El siguiente paso es **M14** — decidir el alcance de la siguiente versión (v2.1 o v3.0) y completar el asset macOS pendiente.
 
 ## Reglas para el agente
 
@@ -216,3 +219,14 @@ El siguiente paso es M13 (Release v2.0.0).
   debe hacer una **preview/revisión completa** de la PR (diff, tests, CI, documentación)
   y, **si la CI está en verde y no hay bloqueadores**, proceder al **merge con squash**
   (`gh pr merge --squash --delete-branch`) y limpiar la rama remota.
+- **Releases descriptivas:** al publicar una release (manual o via release-please), las
+  notas deben ser **descriptivas y completas**, no solo una lista de commits. Deben
+  incluir:
+  - **Nuevas funcionalidades** (`Features`): qué se añade y para qué sirve.
+  - **Cambios** (`Changes`): qué se modifica y por qué (breaking changes destacados).
+  - **Correcciones** (`Bug Fixes`): qué fallaba y cómo se soluciona.
+  - **Documentación**: qué se actualiza en docs/README/ADRs.
+  - Usar el formato Keep a Changelog y agrupar por tipo (`### Features`, `### Changes`,
+    `### Bug Fixes`, `### Documentation`). Evitar notas genéricas como "v2.0.0" sin
+    contenido; release-please genera el CHANGELOG pero el agente debe revisar y
+    completar las notas de la GitHub Release antes de publicarla.
