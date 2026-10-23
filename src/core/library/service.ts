@@ -5,6 +5,7 @@ import type { FileRepository } from '../db/repositories/fileRepo.js';
 import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import type { ListMediaOptions, MediaRepository } from '../db/repositories/mediaRepo.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
+import type { PreferenceRepository } from '../db/repositories/preferencesRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../db/types.js';
 
 /** Repositorios que necesita la capa de consulta, inyectados por el llamante. */
@@ -13,6 +14,7 @@ export type LibraryRepositories = {
   fileRepo: FileRepository;
   indexRunRepo: IndexRunRepository;
   playbackRepo: PlaybackRepository;
+  preferenceRepo: PreferenceRepository;
 };
 
 export type SearchMediaOptions = {
@@ -47,11 +49,13 @@ export type LibraryService = {
   /** Títulos en curso (con progreso guardado y no completados). */
   listInProgress(limit?: number): MediaRow[];
   stats(): LibraryStats;
+  /** Número de títulos marcados como favoritos. */
+  countFavorites(): number;
 };
 
 /** Crea el servicio de biblioteca sobre un conjunto de repositorios. */
 export function createLibraryService(repositories: LibraryRepositories): LibraryService {
-  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo } = repositories;
+  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo } = repositories;
 
   const detailsFor = (media: MediaRow): MediaDetails => ({
     media,
@@ -131,6 +135,10 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         lastRun: indexRunRepo.latest() ?? null,
         inProgress: playbackRepo.count(),
       };
+    },
+
+    countFavorites(): number {
+      return preferenceRepo.countFavorites();
     },
   };
 }
