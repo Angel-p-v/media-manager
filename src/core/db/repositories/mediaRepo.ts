@@ -199,23 +199,26 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
       };
 
       // Helper: add IN clause with parameterization and chunking
+      // Uses a unique prefix for each call to avoid parameter name collisions
+      let inClauseCounter = 0;
       const addInClause = (field: string, ids: Set<number>, isNotIn = false): void => {
         const idArray = Array.from(ids);
         if (idArray.length === 0) return;
 
+        const prefix = `${field}_${inClauseCounter++}`;
         const chunks = chunkArray(idArray, 500); // well under 999 limit
         if (chunks.length === 1) {
-          const placeholders = idArray.map((_, i) => `@${field}_${i}`).join(',');
+          const placeholders = idArray.map((_, i) => `@${prefix}_${i}`).join(',');
           conditions.push(`m.${field} ${isNotIn ? 'NOT ' : ''}IN (${placeholders})`);
           idArray.forEach((id, i) => {
-            params[`${field}_${i}`] = id;
+            params[`${prefix}_${i}`] = id;
           });
         } else {
           // Multiple chunks: combine with OR
           const chunkConditions = chunks.map((chunk, chunkIndex) => {
-            const placeholders = chunk.map((_, i) => `@${field}_${chunkIndex}_${i}`).join(',');
+            const placeholders = chunk.map((_, i) => `@${prefix}_${chunkIndex}_${i}`).join(',');
             chunk.forEach((id, i) => {
-              params[`${field}_${chunkIndex}_${i}`] = id;
+              params[`${prefix}_${chunkIndex}_${i}`] = id;
             });
             return `m.${field} ${isNotIn ? 'NOT ' : ''}IN (${placeholders})`;
           });
@@ -224,21 +227,24 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
       };
 
       // Favoritos: join con media_preferences
-      if (favorites && preferenceRepo) {
+      if (favorites) {
+        if (!preferenceRepo) return [];
         const favIds = new Set(preferenceRepo.listFavorites().map((p) => p.mediaId));
         if (favIds.size === 0) return [];
         addInClause('id', favIds);
       }
 
       // En curso: join con playback_state (no completados, posición > 0)
-      if (inProgress && playbackRepo) {
+      if (inProgress) {
+        if (!playbackRepo) return [];
         const inProgressIds = new Set(playbackRepo.listInProgress().map((e) => e.media.id));
         if (inProgressIds.size === 0) return [];
         addInClause('id', inProgressIds);
       }
 
       // Vistos / No vistos: usar subconsulta en lugar de hardcoded 10000
-      if ((watched || unwatched) && playbackRepo) {
+      if (watched || unwatched) {
+        if (!playbackRepo) return [];
         // Subconsulta para obtener media_ids con al menos un completedAt
         const completedSubquery = `
           SELECT DISTINCT m2.id
