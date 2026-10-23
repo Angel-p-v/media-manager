@@ -6,7 +6,7 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
-## [1.0.0] - 2026-10-22
+## [1.0.0] - 2026-10-23
 
 Primera versión estable de `media-manager-cli`: un gestor de series, anime y películas
 100 % terminal, con índice local y reproducción en `mpv` o `vlc`.
@@ -29,11 +29,16 @@ Primera versión estable de `media-manager-cli`: un gestor de series, anime y pe
 - Migración v2 con índices de rendimiento y mantenimiento explícito de SQLite
   (`PRAGMA optimize` / `VACUUM`).
 - Benchmarks de escaneo, indexado y consultas, y test de estrés de 100 000 títulos.
+- Instaladores POSIX `install.sh` y `uninstall.sh` con checksum SHA-256 obligatorio,
+  validación del artefacto, instalación atómica y desinstalación conservadora.
+- Bundles portables para Linux x64 y arm64 con Node oficial verificado, `install.json`,
+  avisos de terceros, SBOM CycloneDX y atestación de procedencia.
 - Documentación de arquitectura, rendimiento, seguridad, contribución y publicación.
 
 ### Cambiado
 
-- El paquete se publica como `media-manager-cli`; el binario sigue llamándose `mm`.
+- La distribución pasa a GitHub Releases; no se publica en npm. El binario sigue
+  llamándose `mm`.
 - La configuración de logging emite siempre en `stderr`, dejando `stdout` para los datos.
 
 ### Documentación
