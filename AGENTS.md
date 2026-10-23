@@ -203,3 +203,5 @@ El siguiente paso es completar M10 y pasar a M11.
   único commit final.
 - Al terminar un hito: `npm run verify`, commit, push, PR, merge, y actualizar la
   tabla de estado de `PLAN.md` y del `README.md`.
+- **No pasar al siguiente hito hasta que la PR del hito actual esté mergeada y en `main`.**
+  Cada hito debe cerrar su PR y verificarse en CI antes de empezar el siguiente.
