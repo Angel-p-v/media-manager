@@ -328,7 +328,7 @@ Reglas:
 - [x] Tracker IPC de mpv y fallback manual.
 - [x] `mm play --resume/--restart/--next`.
 - [x] `mm mark`, `mm continue`, `mm history`.
-- [ ] Sección Continuar en la TUI.
+- [x] Sección Continuar en la TUI.
 - [ ] Tests con IPC falso y E2E de `--dry-run`.
 
 **DoD:** se puede empezar un episodio, salir, volver a `mm` y continuar donde se dejó.
