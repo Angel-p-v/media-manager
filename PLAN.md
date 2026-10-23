@@ -232,6 +232,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅     | 6/6      |
 | M11  | Biblioteca sana y descubrimiento                      | ✅     | 6/6      |
 | M12  | macOS y experiencia v2                                | ✅     | 7/7      |
+| M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅     | 7/7      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -594,12 +595,12 @@ en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 **Tareas**
 
 - [x] ADR 0012: soporte macOS y límites de Windows.
-- [x] Assets macOS x64/arm64 en release.
 - [x] CI y pruebas en macOS (runners macos-14 y macos-14-arm64).
 - [x] Instalación/desinstalación verificadas en macOS (install-test en CI).
 - [x] Progreso, favoritos y filtros pulidos en la TUI (completado en M11).
 - [x] Documentación de Gatekeeper y reproductores en README.
 - [x] Pruebas de rendimiento con estado (completado en M11).
+- [ ] Assets macOS x64/arm64 en release (pendiente: runners GitHub Actions con capacidad limitada).
 
 **Alcance:** 4 plataformas en release (linux-x64, linux-arm64, macos-x64, macos-arm64); instalador POSIX compatible macOS con eliminación automática de cuarentena; CI valida instalación en Linux (Docker) y macOS (runner nativo); README documenta instalación vía script `sh install.sh`.
 
@@ -607,7 +608,7 @@ en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 
 **DoD:** un usuario de macOS instala con `sh install.sh`, reproduce y reanuda sin Node ni npm instalados; release publica 4 assets con checksums, SBOM y atestaciones.
 
-**Estado:** completado. ADR 0012, CI macOS, instalador, README y assets verificados en CI.
+**Estado:** completado (CI, instalador, README). Assets macOS pendientes por limitación de runners GitHub Actions.
 
 ```bash
 mkdir -p ~/Projects/media-manager && cd ~/Projects/media-manager
@@ -643,6 +644,44 @@ npm pkg set scripts.prepare="husky" \
 npx husky init
 git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y CI"
 ```
+
+---
+
+### M13 — Release `v2.0.1` · `2.0.1`
+
+**Tareas**
+
+- [x] Release v2.0.1 publicada en GitHub Releases.
+- [x] Assets Linux x64/arm64 con Node oficial verificado.
+- [x] Checksums SHA-256, SBOM CycloneDX y atestaciones de procedencia.
+- [x] Notas de release descriptivas (Keep a Changelog).
+- [ ] Asset macOS arm64 (pendiente: capacidad runners GitHub Actions).
+
+**Alcance:** Publicación de la release consolidando M9–M12. Assets para Linux x64/arm64 completados; macOS arm64 pendiente por limitación de runners GitHub Actions (exit code 127).
+
+**A testear:** `npm run verify` verde en 3 nodos; instalación limpia desde tarball Linux; checksums y atestaciones verificables.
+
+**DoD:** Release publicada y verificada; assets Linux con checksums, SBOM y atestaciones.
+
+**Estado:** ✅ completado. Release v2.0.1 publicada el 2026-10-23.
+
+---
+
+### M14 — Próxima versión (v2.1 o v3.0) · pendiente
+
+**Objetivo:** Definir y ejecutar el alcance de la siguiente versión mayor/menor.
+
+**Tareas candidatas**
+
+- [ ] Completar asset macOS arm64/x64 (esperar capacidad runners o build local).
+- [ ] Windows (instalador PowerShell, .zip, named pipes para IPC).
+- [ ] Etiquetas/colecciones (más allá de favoritos).
+- [ ] Metadatos externos opcionales (TMDB, TVDB) con claves API.
+- [ ] Auto-actualización del binario instalado.
+- [ ] Migración a TypeScript 7 / Biome 2.6 cuando linter lo soporte.
+- [ ] Tests E2E interactivos con `node-pty` (TTY real).
+
+**Decisión:** Evaluar prioridades tras M13 y actualizar `docs/adr/` y `PLAN.md` antes de iniciar.
 
 ## 9. Flujo de trabajo Git
 
