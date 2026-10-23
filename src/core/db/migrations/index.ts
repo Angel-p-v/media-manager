@@ -79,7 +79,33 @@ CREATE INDEX IF NOT EXISTS idx_media_updated_at ON media(updated_at);
 CREATE INDEX IF NOT EXISTS idx_index_runs_started_at ON index_runs(started_at);
 `;
 
+// v3: estado de reproducción y preferencias. Aditiva: no toca las tablas
+// existentes ni FTS5, y el estado se borra en cascada con su fichero o título.
+const playbackAndPreferencesSql = `
+CREATE TABLE IF NOT EXISTS playback_state (
+  media_file_id    INTEGER PRIMARY KEY REFERENCES media_files(id) ON DELETE CASCADE,
+  position_seconds REAL    NOT NULL DEFAULT 0 CHECK (position_seconds >= 0),
+  duration_seconds REAL    CHECK (duration_seconds IS NULL OR duration_seconds > 0),
+  completed_at     TEXT,
+  last_played_at   TEXT    NOT NULL,
+  play_count       INTEGER NOT NULL DEFAULT 0 CHECK (play_count >= 0),
+  updated_at       TEXT    NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS media_preferences (
+  media_id   INTEGER PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE,
+  favorite   INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0, 1)),
+  created_at TEXT    NOT NULL,
+  updated_at TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_playback_last_played ON playback_state(last_played_at);
+CREATE INDEX IF NOT EXISTS idx_playback_completed ON playback_state(completed_at);
+CREATE INDEX IF NOT EXISTS idx_preferences_favorite ON media_preferences(favorite);
+`;
+
 export const migrations: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'performance-indexes', sql: performanceIndexesSql },
+  { version: 3, name: 'playback-and-preferences', sql: playbackAndPreferencesSql },
 ];
