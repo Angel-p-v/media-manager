@@ -29,6 +29,8 @@ export type CreateLaunchPlanOptions = {
   playerName?: string;
   /** Fuerza el modo; si se omite se usa `player.onLaunch`. */
   mode?: LaunchMode;
+  /** Segundos desde los que reanudar; si se omite se elimina el argumento con {start}. */
+  startSeconds?: number | null;
 };
 
 /** Proceso de reproducción ya arrancado. */
@@ -71,10 +73,20 @@ export function createLaunchPlan(options: CreateLaunchPlanOptions): LaunchPlan {
     );
   }
 
+  const hasStartPlaceholder = definition.args.some((arg) => arg.includes('{start}'));
+  const startSeconds = options.startSeconds ?? null;
+  let finalArgs = definition.args;
+  if (hasStartPlaceholder) {
+    finalArgs = finalArgs.map((arg) =>
+      arg.replaceAll('{start}', startSeconds !== null ? Math.floor(startSeconds).toString() : ''),
+    );
+    finalArgs = finalArgs.filter((arg) => arg.length > 0);
+  }
+
   return {
     player: playerName,
     command: definition.command,
-    args: definition.args.map((arg) => arg.replaceAll('{file}', filePath)),
+    args: finalArgs.map((arg) => arg.replaceAll('{file}', filePath)),
     mode: options.mode ?? playerConfig.onLaunch,
     filePath,
     ...(definition.env === undefined ? {} : { env: { ...definition.env } }),

@@ -81,6 +81,17 @@ export const loggingConfigSchema = z.object({
 
 export type LoggingConfig = z.infer<typeof loggingConfigSchema>;
 
+/** Configuración de reproducción y estado. */
+export const playbackConfigSchema = z.object({
+  tracking: z.enum(['auto', 'manual', 'off']).default('auto'),
+  resume: z.boolean().default(true),
+  resumeMinSeconds: z.number().int().min(0).default(30),
+  completedThreshold: z.number().min(0).max(1).default(0.9),
+  completedTailSeconds: z.number().int().min(0).default(30),
+});
+
+export type PlaybackConfig = z.infer<typeof playbackConfigSchema>;
+
 /** Esquema completo del archivo de configuración. */
 export const configSchema = z.object({
   version: z.literal(1).default(1),
@@ -101,6 +112,7 @@ export const configSchema = z.object({
   player: playerConfigSchema.prefault({}),
   ui: uiConfigSchema.prefault({}),
   logging: loggingConfigSchema.prefault({}),
+  playback: playbackConfigSchema.prefault({}),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 

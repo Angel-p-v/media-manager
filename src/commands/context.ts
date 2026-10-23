@@ -2,8 +2,10 @@ import { loadConfig } from '../core/config/loader.js';
 import { openLibrary } from '../core/library/open.js';
 import { createLogger, type Logger } from '../shared/logger.js';
 
-import type { AppConfig } from '../core/config/schema.js';
+import type { AppConfig, PlaybackConfig } from '../core/config/schema.js';
 import type { DatabaseMaintenance } from '../core/db/maintenance.js';
+import type { PlaybackRepository } from '../core/db/repositories/playbackRepo.js';
+import type { PreferenceRepository } from '../core/db/repositories/preferencesRepo.js';
 import type { LibraryRepositories, LibraryService } from '../core/library/service.js';
 
 /** Opciones comunes a todos los subcomandos que necesitan configuración y base de datos. */
@@ -19,6 +21,9 @@ export type CommandContext = {
   repositories: LibraryRepositories;
   library: LibraryService;
   maintenance: DatabaseMaintenance;
+  playbackRepo: PlaybackRepository;
+  preferenceRepo: PreferenceRepository;
+  playbackConfig: PlaybackConfig;
   logger: Logger;
 };
 
@@ -55,6 +60,9 @@ export async function withCommandContext<T>(
       repositories: opened.repositories,
       library: opened.library,
       maintenance: opened.maintenance,
+      playbackRepo: opened.playbackRepo,
+      preferenceRepo: opened.preferenceRepo,
+      playbackConfig: config.playback,
       logger,
     });
   } finally {

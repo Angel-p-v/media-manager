@@ -4,10 +4,15 @@ import process from 'node:process';
 import { Command, CommanderError } from 'commander';
 
 import { runConfigCommand } from './commands/config.js';
+import { runContinueCommand } from './commands/continue.js';
 import { runDbOptimizeCommand, runDbStatsCommand } from './commands/db.js';
+import { runDoctorCommand } from './commands/doctor.js';
 import { reportFatalError } from './commands/errorHandler.js';
+import { runFavoriteCommand } from './commands/favorite.js';
+import { runHistoryCommand } from './commands/history.js';
 import { runIndexCommand } from './commands/index.js';
 import { runListCommand } from './commands/list.js';
+import { runMarkCommand } from './commands/mark.js';
 import {
   parseMediaType,
   parseNonNegativeInteger,
@@ -100,6 +105,53 @@ program
   .option('--dry-run', 'muestra el comando sin lanzar el reproductor')
   .option('--json', 'salida en formato JSON')
   .action(runPlayCommand);
+
+program
+  .command('continue')
+  .description('lista títulos en curso')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-l, --limit <n>', 'máximo de resultados', parsePositiveInteger)
+  .option('--json', 'salida en formato JSON')
+  .action(runContinueCommand);
+
+program
+  .command('history')
+  .description('muestra el historial reciente')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-l, --limit <n>', 'máximo de resultados', parsePositiveInteger)
+  .option('--json', 'salida en formato JSON')
+  .action(runHistoryCommand);
+
+program
+  .command('mark')
+  .description('marca estado visto/no visto o posición manual')
+  .argument('<id-o-titulo>', 'id numérico o título a marcar')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-f, --file <id>', 'id del fichero (requerido si hay varios)', parsePositiveInteger)
+  .option('--watched', 'marca como visto')
+  .option('--unwatched', 'marca como no visto')
+  .option('--position <segundos>', 'guarda posición concreta', parseNonNegativeInteger)
+  .option('--json', 'salida en formato JSON')
+  .action(runMarkCommand);
+
+program
+  .command('favorite')
+  .description('marca o desmarca un título como favorito')
+  .argument('<id-o-titulo>', 'id numérico o título')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--off', 'desmarca el favorito')
+  .option('--json', 'salida en formato JSON')
+  .action(runFavoriteCommand);
+
+program
+  .command('doctor')
+  .description('diagnóstico y reparación de la biblioteca')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--json', 'salida en formato JSON')
+  .option('--full-hash', 'hash completo para confirmar duplicados')
+  .option('--prune-missing', 'elimina del índice los ficheros ausentes')
+  .option('-y, --yes', 'no pide confirmación para --prune-missing')
+  .action(runDoctorCommand);
 
 program
   .command('watch')

@@ -83,19 +83,8 @@ export type PlaybackInput = {
 /** Estado de reproducción con el título y el fichero a los que pertenece. */
 export type PlaybackEntryRow = {
   state: PlaybackStateRow;
-  media: {
-    id: number;
-    type: MediaType;
-    title: string;
-    year: number | null;
-  };
-  file: {
-    id: number;
-    filePath: string;
-    season: number | null;
-    episode: number | null;
-    title: string | null;
-  };
+  media: MediaRow;
+  file: MediaFileRow;
 };
 
 /** Fila de la tabla `media_preferences`. */

@@ -119,14 +119,22 @@ describe('repositorio de reproducción (integración)', () => {
       id: media.id,
       type: 'series',
       title: 'Severance',
+      sortTitle: 'severance',
       year: 2022,
+      folderPath: '/library/Severance',
+      createdAt: expect.any(String),
+      updatedAt: expect.any(String),
     });
     expect(inProgress[0]!.file).toEqual({
       id: files[1]!.id,
+      mediaId: media.id,
       filePath: '/library/Severance/S01E02.mkv',
       season: 1,
       episode: 2,
       title: null,
+      sizeBytes: null,
+      mtimeMs: null,
+      indexedAt: expect.any(String),
     });
   });
 
