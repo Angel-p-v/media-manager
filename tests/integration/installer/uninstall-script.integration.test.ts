@@ -129,6 +129,53 @@ describeLinux('uninstall.sh (integración)', () => {
     expect(existsSync(appDir)).toBe(true);
   });
 
+  it('desinstala ~/.local por defecto sin corromper el prefijo', () => {
+    const bundle = createArtifact({ root: path.join(workDir, 'default-home') });
+    const defaultPrefix = path.join(home, '.local');
+    const installed = runScript(
+      INSTALL_SCRIPT,
+      [
+        '--file',
+        bundle.archive,
+        '--sha256',
+        bundle.checksum,
+        '--prefix',
+        '~/.local',
+        '--no-path-check',
+      ],
+      baseEnv(home),
+    );
+    expect(installed.status).toBe(0);
+
+    const result = runScript(UNINSTALL_SCRIPT, ['--yes'], baseEnv(home));
+
+    expect(result.status).toBe(0);
+    expect(existsSync(path.join(defaultPrefix, 'bin', 'mm'))).toBe(false);
+    expect(existsSync(path.join(defaultPrefix, 'share', APP_NAME))).toBe(false);
+    expect(existsSync(`${home}${home.slice(2)}`)).toBe(false);
+  });
+
+  it('expande un --prefix literal ~/ dentro de HOME', () => {
+    const bundle = createArtifact({ root: path.join(workDir, 'tilde-home') });
+    const target = path.join(home, 'instalacion');
+    const installed = runScript(
+      INSTALL_SCRIPT,
+      installArgs(bundle, '~/instalacion'),
+      baseEnv(home),
+    );
+    expect(installed.status).toBe(0);
+
+    const result = runScript(
+      UNINSTALL_SCRIPT,
+      ['--prefix', '~/instalacion', '--yes'],
+      baseEnv(home),
+    );
+
+    expect(result.status).toBe(0);
+    expect(existsSync(path.join(target, 'share', APP_NAME))).toBe(false);
+    expect(existsSync(path.join(target, 'bin', 'mm'))).toBe(false);
+  });
+
   it('informa y sale con 0 si no hay instalación', () => {
     const otherPrefix = path.join(workDir, 'otro-prefix');
 

@@ -195,6 +195,47 @@ describeLinux('install.sh (integración)', () => {
     expect(version.stdout.trim()).toBe(bundle.version);
   });
 
+  it('instala en ~/.local por defecto sin corromper el prefijo', () => {
+    const bundle = artifact();
+    const args = ['--file', bundle.archive, '--sha256', bundle.checksum, '--no-path-check'];
+
+    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
+
+    expect(result.status).toBe(0);
+    const wrapper = path.join(home, '.local', 'bin', 'mm');
+    expect(spawnSync(wrapper, ['--version'], { encoding: 'utf8' }).stdout.trim()).toBe(
+      bundle.version,
+    );
+    // Un `~` sin escapar en el patrón de `case` expandía el prefijo a `<home>home/...`.
+    expect(existsSync(`${home}${home.slice(2)}`)).toBe(false);
+  });
+
+  it('expande un --prefix literal ~/ dentro de HOME', () => {
+    const bundle = artifact();
+    const target = path.join(home, 'prefijo personalizado');
+    const args = installArgs(bundle, '~/prefijo personalizado');
+
+    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
+
+    expect(result.status).toBe(0);
+    expect(existsSync(path.join(target, 'bin', 'mm'))).toBe(true);
+    const manifest = JSON.parse(
+      readFileSync(path.join(target, 'share', APP_NAME, bundle.version, 'install.json'), 'utf8'),
+    ) as Record<string, string>;
+    expect(manifest.prefix).toBe(target);
+    expect(existsSync(`${home}${home.slice(2)}`)).toBe(false);
+  });
+
+  it('expande un --bindir literal ~/ dentro de HOME', () => {
+    const bundle = artifact();
+    const args = installArgs(bundle, prefix, ['--bindir', '~/bin personalizado']);
+
+    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
+
+    expect(result.status).toBe(0);
+    expect(existsSync(path.join(home, 'bin personalizado', 'mm'))).toBe(true);
+  });
+
   it('falla si la atestación de procedencia no es válida', () => {
     const bundle = artifact();
     const fakeBin = path.join(workDir, 'gh-fallido');
