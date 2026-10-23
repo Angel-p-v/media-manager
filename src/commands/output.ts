@@ -28,12 +28,12 @@ const TYPE_LABEL: Record<MediaType, string> = {
 };
 
 /** Etiqueta legible del tipo de contenido. */
-export function mediaTypeLabel(type: MediaType): string {
+function mediaTypeLabelImpl(type: MediaType): string {
   return TYPE_LABEL[type];
 }
 
 /** Proyecta un título a la forma pública que consumen los scripts. */
-export function toMediaJson(media: MediaRow): MediaJson {
+function toMediaJsonImpl(media: MediaRow): MediaJson {
   return {
     id: media.id,
     type: media.type,
@@ -44,7 +44,7 @@ export function toMediaJson(media: MediaRow): MediaJson {
 }
 
 /** Proyecta un fichero a la forma pública que consumen los scripts. */
-export function toMediaFileJson(file: MediaFileRow): MediaFileJson {
+function toMediaFileJsonImpl(file: MediaFileRow): MediaFileJson {
   return {
     id: file.id,
     season: file.season,
@@ -55,7 +55,7 @@ export function toMediaFileJson(file: MediaFileRow): MediaFileJson {
 }
 
 /** Imprime títulos en una tabla compacta de terminal. */
-export function printMediaList(rows: readonly MediaRow[]): void {
+function printMediaListImpl(rows: readonly MediaRow[]): void {
   for (const row of rows) {
     const id = pc.dim(String(row.id).padStart(4));
     const type = pc.cyan(TYPE_LABEL[row.type].padEnd(8));
@@ -65,14 +65,14 @@ export function printMediaList(rows: readonly MediaRow[]): void {
 }
 
 /** Formatea la temporada y el episodio de un fichero para mostrarlos al usuario. */
-export function formatEpisode(file: Pick<MediaFileRow, 'season' | 'episode'>): string {
+function formatEpisodeImpl(file: Pick<MediaFileRow, 'season' | 'episode'>): string {
   if (file.episode === null) return '—';
   const episode = `E${String(file.episode).padStart(2, '0')}`;
   return file.season === null ? episode : `T${String(file.season).padStart(2, '0')}${episode}`;
 }
 
 /** Convierte bytes a una unidad legible sin depender de librerías externas. */
-export function formatBytes(bytes: number): string {
+function formatBytesImpl(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ['KiB', 'MiB', 'GiB', 'TiB'];
   let value = bytes / 1024;
@@ -85,3 +85,13 @@ export function formatBytes(bytes: number): string {
 
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${unit}`;
 }
+
+/** Exportaciones nombradas para compatibilidad con ESM y verbatimModuleSyntax. */
+export {
+  mediaTypeLabelImpl as mediaTypeLabel,
+  toMediaJsonImpl as toMediaJson,
+  toMediaFileJsonImpl as toMediaFileJson,
+  printMediaListImpl as printMediaList,
+  formatEpisodeImpl as formatEpisode,
+  formatBytesImpl as formatBytes,
+};
