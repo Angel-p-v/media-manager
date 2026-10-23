@@ -210,10 +210,10 @@ detect_platform() {
       fi
       ;;
     Darwin)
-      die 3 "macOS todavía no tiene bundle publicado"
+      _os=macos
       ;;
     *)
-      die 3 "sistema no soportado: $_os (solo Linux)"
+      die 3 "sistema no soportado: $_os (Linux y macOS)"
       ;;
   esac
   case "$_arch" in
@@ -464,6 +464,17 @@ mkdir -p "$STAGE_DIR" || die 1 "no se pudo preparar el directorio temporal"
 step "extrayendo el artefacto"
 tar -xzf "$ARCHIVE" -C "$STAGE_DIR" --strip-components=1 2>/dev/null ||
   die 1 "no se pudo extraer el archivo"
+
+# macOS: quitar atributo de cuarentena de los binarios extraídos
+case "$PLATFORM" in
+  macos-*)
+    if have xattr; then
+      find "$STAGE_DIR" -type f -name 'node' -o -name 'mm' | while IFS= read -r _bin; do
+        xattr -d com.apple.quarantine "$_bin" 2>/dev/null || true
+      done
+    fi
+    ;;
+esac
 
 _archive_hash=$(sha256_of "$ARCHIVE")
 _installed_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')

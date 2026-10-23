@@ -229,7 +229,9 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M7   | Robustez y rendimiento                                | ✅     | 6/6      |
 | M8   | Release `v1.0.0`                                      | ✅     | 7/7      |
 | M9   | Esquema v3, estado reproducción, doctor               | ✅     | 6/6      |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | 🟡     | 3/6      |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅     | 6/6      |
+| M11  | Biblioteca sana y descubrimiento                      | ✅     | 6/6      |
+| M12  | macOS y experiencia v2                                | ✅     | 7/7      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -563,6 +565,49 @@ en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 **DoD:** se puede empezar un episodio, salir, volver a `mm` y continuar donde se dejó.
 
 **Estado:** completado. Tracker IPC, sección TUI "Continuar" y tests E2E completados.
+
+---
+
+### M11 — Biblioteca sana y descubrimiento · `2.0.0`
+
+**Tareas**
+
+- [x] Favoritos y filtros de listado (`mm list --favorites|--in-progress|--unwatched|--watched`).
+- [x] `mm doctor` read-only y `--json` (completado en M9).
+- [x] Duplicados, ausentes y huérfanos (completado en M9).
+- [x] `--prune-missing` con backup (completado en M9).
+- [x] Filtros y acciones rápidas en la TUI (sección Favoritos, ciclo de secciones con Tab).
+- [x] Benchmarks de listados con estado (`tests/bench/playback.bench.ts`).
+
+**Alcance:** filtros de favoritos, en curso, vistos/no vistos en `mm list` y `LibraryService`; sección "Favoritos" en la barra lateral de la TUI; benchmarks de consultas con estado de reproducción sobre 100 000 títulos.
+
+**A testear:** listados con filtros combinados (tipo + favoritos, etc.); TUI navega a Favoritos y muestra conteo correcto; benchmarks de `listInProgress`, `listRecent`, `listFavorites`, y `mediaRepo.list` con filtros.
+
+**DoD:** `mm list --favorites` y resto de filtros funcionan con `--json`; TUI muestra sección Favoritos con contador; `npm run bench` incluye benchmarks de playback; `npm run verify` verde en los 3 nodos.
+
+**Estado:** completado. Filtros CLI, sección TUI, benchmarks y tests integrados y verificados en CI.
+
+---
+
+### M12 — macOS y experiencia v2 · `2.0.0`
+
+**Tareas**
+
+- [x] ADR 0012: soporte macOS y límites de Windows.
+- [x] Assets macOS x64/arm64 en release.
+- [x] CI y pruebas en macOS (runners macos-14 y macos-14-arm64).
+- [x] Instalación/desinstalación verificadas en macOS (install-test en CI).
+- [x] Progreso, favoritos y filtros pulidos en la TUI (completado en M11).
+- [x] Documentación de Gatekeeper y reproductores en README.
+- [x] Pruebas de rendimiento con estado (completado en M11).
+
+**Alcance:** 4 plataformas en release (linux-x64, linux-arm64, macos-x64, macos-arm64); instalador POSIX compatible macOS con eliminación automática de cuarentena; CI valida instalación en Linux (Docker) y macOS (runner nativo); README documenta instalación vía script `sh install.sh`.
+
+**A testear:** `npm run verify` en la matriz completa; build de artifacts para 4 plataformas; install-test pasa en Ubuntu y macOS; instalador maneja cuarentena.
+
+**DoD:** un usuario de macOS instala con `sh install.sh`, reproduce y reanuda sin Node ni npm instalados; release publica 4 assets con checksums, SBOM y atestaciones.
+
+**Estado:** completado. ADR 0012, CI macOS, instalador, README y assets verificados en CI.
 
 ```bash
 mkdir -p ~/Projects/media-manager && cd ~/Projects/media-manager

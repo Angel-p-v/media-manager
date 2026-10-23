@@ -181,13 +181,20 @@ Hitos del plan (ver `PLAN.md` §7):
 | M8   | Release v1.0.0                                        | ✅ hecho |
 | M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho |
 | M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho |
+| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho |
+| M12  | macOS y experiencia v2                                | ✅ hecho |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
 continue, history, mark, favorite), mm doctor. Tests de migración y repositorios en verde.
 
 M10 está completado: tracker IPC de mpv, sección "Continuar" en la TUI, y tests E2E con IPC falso y `--dry-run` completados.
-El siguiente paso es M11 (Biblioteca sana y descubrimiento).
+
+M11 está completado: filtros de favoritos/en curso/vistos/no vistos en `mm list` y TUI, sección "Favoritos" en la barra lateral, benchmarks de consultas con estado de reproducción. Tests integrados y verificados en CI.
+
+M12 está completado: assets macOS x64/arm64, CI con runners macOS, instalador POSIX con eliminación automática de cuarentena, install-test en Ubuntu y macOS, README documenta instalación vía `sh install.sh` y Gatekeeper.
+
+El siguiente paso es M13 (Release v2.0.0).
 
 ## Reglas para el agente
 

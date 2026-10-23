@@ -37,20 +37,26 @@ export type OpenedLibrary = {
  */
 export function openLibrary(databasePath: string): OpenedLibrary {
   const db = openDatabase(databasePath);
+  const fileRepo = createFileRepository(db);
+  const indexRunRepo = createIndexRunRepository(db);
+  const playbackRepo = createPlaybackRepository(db);
+  const preferenceRepo = createPreferenceRepository(db);
+  const mediaRepo = createMediaRepository(db, { preferenceRepo, playbackRepo });
+
   const repositories: ExtendedLibraryRepositories = {
-    mediaRepo: createMediaRepository(db),
-    fileRepo: createFileRepository(db),
-    indexRunRepo: createIndexRunRepository(db),
-    playbackRepo: createPlaybackRepository(db),
-    preferenceRepo: createPreferenceRepository(db),
+    mediaRepo,
+    fileRepo,
+    indexRunRepo,
+    playbackRepo,
+    preferenceRepo,
   };
 
   return {
     repositories,
     library: createLibraryService(repositories),
     maintenance: createDatabaseMaintenance(db),
-    playbackRepo: repositories.playbackRepo,
-    preferenceRepo: repositories.preferenceRepo,
+    playbackRepo,
+    preferenceRepo,
     close: () => closeDatabase(db),
   };
 }
