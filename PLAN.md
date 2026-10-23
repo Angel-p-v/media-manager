@@ -228,7 +228,8 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
 | M7   | Robustez y rendimiento                                | ✅     | 6/6      |
 | M8   | Release `v1.0.0`                                      | ✅     | 7/7      |
-| M9   | Esquema v3, estado reproducción, doctor               | 🟡     | 6/6      |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅     | 6/6      |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | 🟡     | 3/6      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -542,7 +543,26 @@ en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 
 **Estado:** completado. Migración v3, repositorios, dominio, comandos y tests integrados y verificados en CI.
 
-## 8. Comandos de inicialización
+---
+
+### M10 — Reproducción con memoria · `2.0.0`
+
+**Tareas**
+
+- [x] `playback_state` y cálculo de progreso (completado en M9).
+- [x] Tracker IPC de mpv y fallback manual.
+- [x] `mm play --resume/--restart/--next` (completado en M9).
+- [x] `mm mark`, `mm continue`, `mm history` (completado en M9).
+- [ ] Sección "Continuar" en la TUI con barra de progreso y acciones rápidas.
+- [ ] Tests con IPC falso y E2E de `--dry-run`.
+
+**Alcance:** tracker IPC de mpv (`MpvTracker`), integración en `launchPlayer`, guardado de posición cada 5s, limpieza de socket y proceso. La TUI añade sección "Continuar" usando `playbackRepo.listInProgress` y muestra indicadores de progreso.
+
+**A testear:** tracker con servidor IPC falso, E2E `mm play --dry-run` muestra `{start}`, reanudación tras cerrar mpv, sección TUI "Continuar".
+
+**DoD:** se puede empezar un episodio, salir, volver a `mm` y continuar donde se dejó.
+
+**Estado:** en curso. Tracker IPC completado e integrado. Pendiente TUI y tests E2E.
 
 ```bash
 mkdir -p ~/Projects/media-manager && cd ~/Projects/media-manager

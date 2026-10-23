@@ -324,10 +324,10 @@ Reglas:
 
 ### M10 — Reproducción con memoria
 
-- [ ] `playback_state` y cálculo de progreso.
-- [ ] Tracker IPC de mpv y fallback manual.
-- [ ] `mm play --resume/--restart/--next`.
-- [ ] `mm mark`, `mm continue`, `mm history`.
+- [x] `playback_state` y cálculo de progreso.
+- [x] Tracker IPC de mpv y fallback manual.
+- [x] `mm play --resume/--restart/--next`.
+- [x] `mm mark`, `mm continue`, `mm history`.
 - [ ] Sección Continuar en la TUI.
 - [ ] Tests con IPC falso y E2E de `--dry-run`.
 

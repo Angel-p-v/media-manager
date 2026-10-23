@@ -179,12 +179,15 @@ Hitos del plan (ver `PLAN.md` §7):
 | M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
 | M7   | Robustez y rendimiento                                | ✅ hecho    |
 | M8   | Release v1.0.0                                        | ✅ hecho    |
-| M9   | Esquema v3, estado reproducción, doctor               | 🟡 en curso |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho    |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | 🟡 en curso |
 
-M9 está en curso: esquema v3 (playback_state, media_preferences), migración con backup,
+M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
 continue, history, mark, favorite), mm doctor. Tests de migración y repositorios en verde.
-El siguiente paso es M10 (reproducción con memoria, tracker IPC mpv, TUI).
+
+M10 en curso: tracker IPC de mpv completado. Pendiente: sección "Continuar" en la TUI y tests E2E con IPC falso.
+El siguiente paso es completar M10 y pasar a M11.
 
 ## Reglas para el agente
 
