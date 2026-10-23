@@ -1,276 +1,194 @@
-# media-manager
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Angel-p-v/media-manager/main/docs/assets/logo.svg" alt="media-manager" width="200"/>
+</p>
 
-> Gestor de contenido multimedia **100 % terminal**. Indexa tu colección de series, anime y
-> películas en una base de datos SQLite local y lánzala directamente en `mpv` o `vlc` sin salir
-> de la terminal.
+<h1 align="center">media-manager</h1>
 
-[![Node](https://img.shields.io/badge/node-%3E%3D22-5FA04E)](https://nodejs.org)
-[![License](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-release%20candidate-orange)](#estado-del-proyecto)
+<p align="center">
+  <strong>Gestor de contenido multimedia 100 % terminal</strong><br/>
+  Indexa tu colección de series, anime y películas en una base de datos SQLite local<br/>
+  y lánzala directamente en <code>mpv</code> o <code>vlc</code> sin salir de la terminal.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Angel-p-v/media-manager/releases/latest">
+    <img src="https://img.shields.io/github/v/release/Angel-p-v/media-manager?label=latest%20release&style=for-the-badge" alt="Latest Release"/>
+  </a>
+  <a href="https://github.com/Angel-p-v/media-manager/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/Angel-p-v/media-manager/ci.yml?branch=main&style=for-the-badge" alt="CI Status"/>
+  </a>
+  <a href="https://github.com/Angel-p-v/media-manager/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="License"/>
+  </a>
+  <a href="https://nodejs.org/">
+    <img src="https://img.shields.io/badge/node-%3E%3D22-5FA04E?style=for-the-badge" alt="Node.js"/>
+  </a>
+  <a href="https://github.com/Angel-p-v/media-manager/releases">
+    <img src="https://img.shields.io/github/downloads/Angel-p-v/media-manager/total?style=for-the-badge" alt="Downloads"/>
+  </a>
+</p>
 
 ---
 
-## Demo
+## 🎬 Demo
 
-![Demo de media-manager-cli: indexar, buscar, ver el detalle y preparar la reproducción](./docs/assets/demo.svg)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Angel-p-v/media-manager/main/docs/assets/demo.svg" alt="Demo de media-manager: indexar, buscar, ver el detalle y preparar la reproducción" width="800"/>
+</p>
 
-La demo es una transcripción estática de una sesión real contra la biblioteca de pruebas.
-Para probarla en tu terminal, empieza por la sección de [instalación](#instalación).
+> **La demo es una transcripción estática de una sesión real.** Para probarla en tu terminal, empieza por la sección de [instalación](#instalación).
 
-## ¿Qué es?
+---
 
-`media-manager-cli` (CLI: `mm`) es una aplicación de línea de comandos para organizar y
-consumir una biblioteca multimedia personal que ya vive en tu disco.
+## 🎯 ¿Qué es media-manager?
 
-La idea es sencilla: **tus vídeos ya están ordenados en carpetas**; el trabajo de la
-aplicación es _entender_ esa estructura, guardarla en un índice rápido y ponerte a ver
-algo en dos pulsaciones.
+`media-manager` (CLI: `mm`) es una aplicación de línea de comandos **100% terminal** para organizar y consumir una biblioteca multimedia personal que ya vive en tu disco.
 
-```
-mm            →  abre la interfaz (TUI) con tu biblioteca
-mm search     →  busca por título desde la terminal, al instante
-mm play       →  lanza el episodio o la película en tu reproductor favorito
-mm index      →  re-escanea tus carpetas y actualiza el índice
-```
-
-## ¿Para qué sirve?
-
-- **Centralizar el acceso.** Una sola entrada (`mm`) a toda tu colección, sin depender del
-  explorador de archivos ni de la web del servidor de streaming.
-- **Indexer local, instantáneo.** Un índice SQLite (con FTS5) convierte "buscar entre
-  10 000 ficheros" en "buscar entre 10 000 filas" con búsqueda _full-text_.
-- **Reproducir, no retransmitir.** El vídeo se abre en el reproductor local (`mpv`, `vlc`)
-  con el hardware y la calidad que ya tienes; la app solo orquesta el proceso.
-- **Configurable de verdad.** Rutas, exclusiones, reproductores, tema y atajos de
-  teclado viven en un `config.yaml` externo, validado estrictamente al arrancar.
-- **Componible.** Todo lo que hace la TUI se puede hacer también por línea de
-  comandos y en formato `--json`, para integrarlo con scripts, hooks o cualquier otra
-  herramienta.
-
-## Características
-
-| Capacidad                                                    | Estado |
-| ------------------------------------------------------------ | ------ |
-| TUI navegable (Ink + React)                                  | ✅ M5  |
-| Índice local en SQLite con FTS5                              | ✅ M2  |
-| Indexación recursiva + incremental                           | ✅ M3  |
-| Parseo de nombres (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅ M3  |
-| Búsqueda instantánea en línea de comandos                    | ✅ M4  |
-| Reproducción con `mpv` / `vlc`                               | ✅ M6  |
-| Configuración YAML validada con Zod                          | ✅ M1  |
-| Modo _watch_ (reindexado automático)                         | ✅ M6  |
-| Salida `--json` para scripts                                 | ✅ M4  |
-| Logs estructurados, `--verbose` y errores con código         | ✅ M7  |
-| Mantenimiento SQLite (`optimize` / `VACUUM`)                 | ✅ M7  |
-| Instalador verificado, checksums y distribución portable     | ✅ M8  |
-| Estado de reproducción (continuar, historial, marcas)        | ✅ M9  |
-| Tracker IPC mpv y reanudación automática                     | ✅ M9  |
-| Comandos `continue`, `history`, `mark`, `favorite`, `doctor` | ✅ M9  |
-| Sección "Continuar" en la TUI                                | ✅ M10 |
-| Tracker IPC mpv (socket Unix, eventos property-change)       | ✅ M10 |
-| Tests E2E con IPC falso y `--dry-run`                        | ✅ M10 |
-
-## Estado del proyecto
-
-**Release `v1.0.1` publicada.** La distribución se hace desde GitHub Releases con un
-instalador que verifica checksum y estructura; no se publica en npm. El plan de desarrollo
-completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
-[`PLAN.md`](./PLAN.md).
-
-| Hito | Contenido                                   | Versión    |
-| ---- | ------------------------------------------- | ---------- |
-| M0   | Cimientos: tooling, hooks, CI               | `0.0.1` ✅ |
-| M1   | Núcleo de configuración                     | `0.1.0` ✅ |
-| M2   | Persistencia SQLite                         | `0.2.0` ✅ |
-| M3   | Indexación y parseo                         | `0.3.0` ✅ |
-| M4   | CLI _headless_ + búsqueda                   | `0.4.0` ✅ |
-| M5   | TUI (Ink)                                   | `0.5.0` ✅ |
-| M6   | Reproductor + modo watch                    | `0.6.0` ✅ |
-| M7   | Robustez y rendimiento                      | `0.7.0` ✅ |
-| M8   | Publicación `v1.0.1`                        | `1.0.1` ✅ |
-| M9   | Esquema v3, estado reproducción, doctor     | `1.0.1` ✅ |
-| M10  | Reproducción con memoria (tracker IPC, TUI) | `1.0.1` ✅ |
-
-Próximo: **M11 — Biblioteca sana y descubrimiento** (favoritos, filtros, `mm doctor`, macOS).
-
-## Requisitos
-
-- **Linux x64 o arm64 con glibc** si usas el instalador (no necesita Node ni npm).
-- **Node.js ≥ 22** (probado en 22, 24 y 26) solo para desarrollar o ejecutar desde el
-  código fuente.
-- Un reproductor local: [`mpv`](https://mpv.io/) (recomendado) o `vlc`.
-- SQLite (viene embebido; no requiere instalación).
-
-## Instalación
-
-El canal oficial son las [GitHub Releases](https://github.com/Angel-p-v/media-manager/releases).
-El instalador se ejecuta sin `sudo`, instala en `~/.local` y verifica el checksum SHA-256
-y la estructura del artefacto antes de extraerlo.
+> **La idea es sencilla:** tus vídeos ya están ordenados en carpetas; el trabajo de la aplicación es **entender** esa estructura, guardarla en un índice rápido y ponerte a ver algo en dos pulsaciones.
 
 ```bash
-# Descarga el instalador y revísalo antes de ejecutarlo
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/install.sh \
-  -o /tmp/mm-install.sh
+mm                       # abre la interfaz (TUI) con tu biblioteca
+mm search "cowboy bebop" # busca por título desde la terminal, al instante
+mm play "cowboy bebop"   # lanza el episodio en tu reproductor favorito
+mm index                 # re-escanea tus carpetas y actualiza el índice
+```
+
+---
+
+## ✨ ¿Por qué media-manager?
+
+| 🎯 **Centralizar el acceso**       | Una sola entrada (`mm`) a toda tu colección, sin depender del explorador de archivos ni de la web del servidor de streaming.                                 |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ⚡ **Indexer local, instantáneo**  | Un índice SQLite con FTS5 convierte "buscar entre 10 000 ficheros" en "buscar entre 10 000 filas" con búsqueda full-text.                                    |
+| 🎮 **Reproducir, no retransmitir** | El vídeo se abre en tu reproductor local (`mpv`, `vlc`) con el hardware y la calidad que ya tienes; la app solo orquesta el proceso.                         |
+| ⚙️ **Configurable de verdad**      | Rutas, exclusiones, reproductores, tema y atajos de teclado viven en un `config.yaml` externo, validado estrictamente al arrancar.                           |
+| 🔧 **Componible**                  | Todo lo que hace la TUI se puede hacer también por línea de comandos y en formato `--json`, para integrarlo con scripts, hooks o cualquier otra herramienta. |
+
+---
+
+## ✨ Características principales
+
+| Capacidad                                                        | Estado |
+| ---------------------------------------------------------------- | ------ |
+| 🖥️ TUI navegable (Ink + React)                                   | ✅     |
+| 🗃️ Índice local en SQLite con FTS5                               | ✅     |
+| 🔄 Indexación recursiva + incremental                            | ✅     |
+| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅     |
+| 🔍 Búsqueda instantánea (CLI + TUI)                              | ✅     |
+| 🎮 Reproducción con `mpv` / `vlc`                                | ✅     |
+| ⚙️ Configuración YAML validada con Zod                           | ✅     |
+| 👀 Modo _watch_ (reindexado automático)                          | ✅     |
+| 📤 Salida `--json` para scripts                                  | ✅     |
+| 📝 Logs estructurados, `--verbose`, errores con código           | ✅     |
+| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                  | ✅     |
+| ✅ Instalador verificado, checksums, distribución portable       | ✅     |
+| ▶️ Estado de reproducción (continuar, historial, marcas)         | ✅     |
+| 📡 Tracker IPC mpv y reanudación automática                      | ✅     |
+| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`  | ✅     |
+| 📋 Sección "Continuar" en la TUI                                 | ✅     |
+| 📡 Tracker IPC mpv (socket Unix, eventos property-change)        | ✅     |
+| 🧪 Tests E2E con IPC falso y `--dry-run`                         | ✅     |
+
+---
+
+## 🚀 Instalación rápida
+
+### 📦 Instalador oficial (recomendado)
+
+```bash
+# 1. Descarga el instalador y revísalo
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/install.sh -o /tmp/mm-install.sh
 less /tmp/mm-install.sh
+
+# 2. Ejecútalo (sin sudo, instala en ~/.local)
 sh /tmp/mm-install.sh
 
+# 3. Verifica
 mm --version
 ```
 
-Opciones habituales:
+> **Opciones útiles:**
+>
+> ```bash
+> sh /tmp/mm-install.sh --version v1.0.1     # versión concreta
+> sh /tmp/mm-install.sh --prefix "$HOME/.local"
+> sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
+> ```
 
-```bash
-sh /tmp/mm-install.sh --version v1.0.1     # versión concreta
-sh /tmp/mm-install.sh --prefix "$HOME/.local"
-sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
-```
+> ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer
 
-Si `~/.local/bin` no está en el `PATH`, el instalador lo avisa; no modifica tu shell.
-Para actualizar, vuelve a ejecutar `install.sh` con la nueva versión (no hay
-autoactualización).
-
-### Verificar una descarga manual
+### 🔐 Verificar descarga manual
 
 ```bash
 sha256sum -c media-manager-cli-1.0.1-linux-x64.tar.gz.sha256
-gh attestation verify media-manager-cli-1.0.1-linux-x64.tar.gz \
-  --repo Angel-p-v/media-manager
+gh attestation verify media-manager-cli-1.0.1-linux-x64.tar.gz --repo Angel-p-v/media-manager
 ```
 
-La atestación es opcional en el instalador (`--verify-attestation`) y no sustituye al
-checksum. El modelo de confianza está en [`SECURITY.md`](./SECURITY.md).
-
-### Desinstalar
+### 🗑️ Desinstalar
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/uninstall.sh \
-  -o /tmp/mm-uninstall.sh
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/uninstall.sh -o /tmp/mm-uninstall.sh
 sh /tmp/mm-uninstall.sh            # conserva configuración y base de datos
 sh /tmp/mm-uninstall.sh --purge    # las elimina también
 ```
 
-La biblioteca multimedia nunca se toca.
+> 🛡️ La biblioteca multimedia nunca se toca.
 
-### Desde el código fuente
+---
 
-```bash
-git clone https://github.com/Angel-p-v/media-manager.git
-cd media-manager
-npm ci
-npm run build
-npm link             # deja `mm` disponible en el PATH
-mm --version
-```
-
-Para ejecutar sin instalar el binario global:
+## 🚀 Uso rápido
 
 ```bash
-npm run dev          # CLI en modo watch desde el código fuente
-node dist/cli.js --help
+# 🖥️ Interfaz visual (TUI)
+mm
+
+# 🔍 Buscar y reproducir
+mm search "cowboy bebop"
+mm play "cowboy bebop" --resume    # reanuda donde lo dejaste
+mm play "cowboy bebop" --next      # siguiente episodio no visto
+mm play "akira" --dry-run          # muestra el comando sin lanzar
+
+# 📋 Gestión de biblioteca
+mm index                           # escanea y actualiza
+mm list --in-progress              # títulos en curso
+mm continue                        # lista lo que estás viendo
+mm history                         # historial de reproducción
+
+# ✅ Gestión de estado
+mm mark "cowboy bebop" --watched       # marca como visto
+mm mark "cowboy bebop" --position 120  # guarda posición exacta
+mm favorite "cowboy bebop"             # ⭐ favorito
+mm doctor                              # diagnóstico biblioteca
+mm doctor --prune-missing              # limpia entradas rotas
+
+# 👀 Modo vigilancia
+mm watch                           # reindexa automáticamente al detectar cambios
 ```
 
-El flujo de release y la construcción de artefactos están en
-[`docs/guides/release.md`](./docs/guides/release.md).
+---
 
-## Uso
+## ⌨️ Atajos en la TUI
 
-```bash
-mm                       # interfaz TUI a pantalla completa
-mm index                 # escanea las raíces configuradas y actualiza el índice
-mm index --dry-run       # simula el escaneo sin tocar la base de datos
-mm list                  # enumera la biblioteca
-mm list --favorites      # solo favoritos
-mm list --in-progress    # títulos en curso
-mm list --unwatched      # no vistos
-mm search "cowboy bebop" # búsqueda por título
-mm search "akira" --json # salida para scripts
-mm show "cowboy bebop"   # detalle de un título (temporadas, episodios, rutas)
-mm play "cowboy bebop"   # abre el primer episodio (o el fichero con --file) en mpv/vlc
-mm play "cowboy bebop" --resume   # reanuda desde la posición guardada
-mm play "cowboy bebop" --restart  # ignora la posición guardada
-mm play "cowboy bebop" --next     # siguiente episodio no completado
-mm play "akira" --dry-run         # muestra el comando sin lanzar el reproductor
-mm continue              # lista títulos en curso
-mm history               # historial de reproducción
-mm mark "cowboy bebop" --watched     # marca como visto
-mm mark "cowboy bebop" --unwatched   # marca como no visto
-mm mark "cowboy bebop" --position 120 # guarda posición manual
-mm favorite "cowboy bebop"           # marca/desmarca favorito
-mm favorite "cowboy bebop" --off     # desmarca favorito
-mm doctor                # diagnóstico de la biblioteca
-mm doctor --prune-missing # elimina entradas de ficheros ausentes
-mm watch                 # vigila las raíces y reindexa al detectar cambios
-mm config --path          # ruta del archivo de configuración en uso
-mm db stats               # tamaño de la biblioteca y del índice
-mm db optimize            # actualiza estadísticas de SQLite
-mm db optimize --vacuum   # además compacta el fichero (puede tardar)
-mm index --verbose        # diagnóstico detallado por stderr
-```
+| Tecla          | Acción                                                            |
+| -------------- | ----------------------------------------------------------------- |
+| `q` / `Ctrl+C` | Salir                                                             |
+| `Tab`          | Siguiente sección (Todo, **Continuar**, Series, Anime, Películas) |
+| `↑` `↓`        | Mover selección                                                   |
+| `/`            | Buscar • `Esc` vuelve                                             |
+| `p`            | Reproducir                                                        |
+| `w`            | Marcar visto / no visto                                           |
+| `f`            | ⭐ Favorito / quitar favorito                                     |
+| `n`            | ▶️ Siguiente episodio                                             |
+| `g`            | 🔄 Ciclo filtros (todos / en curso / no vistos / favoritos)       |
+| `s`            | ⚙️ Configuración                                                  |
+| `?`            | ❓ Ayuda                                                          |
+| `p`            | ▶️ Reproducir                                                     |
 
-`mm play` acepta `--file <id>` para elegir un fichero concreto (el id aparece en
-`mm show`), `--player <nombre>` para usar otro reproductor de los configurados,
-`--foreground` para esperar a que termine y `--dry-run` para inspeccionar el comando.
-La salida `--json` de `mm play --dry-run` incluye el comando, los argumentos, el modo y
-el fichero resuelto, además de info de reproducción (`resumedFrom`, `position`, `duration`, `completed`).
+---
 
-`mm mark`, `mm continue`, `mm history`, `mm favorite` y `mm doctor` también admiten `--json`.
+## ⚙️ Configuración
 
-### Logs y diagnóstico
-
-Los logs se escriben **siempre en `stderr`**, nunca en `stdout`. `--verbose` (`-v`) fuerza
-el nivel `debug` y añade la pila a los errores; funciona antes o después del subcomando.
-El nivel y el formato también se configuran en `logging` o con variables de entorno:
-
-```bash
-MM_LOG_FORMAT=json mm search "akira" --verbose > resultados.json 2> diagnostico.log
-```
-
-`logging.format: json` emite una línea JSON por evento con `time`, `level`, `event` y
-campos estructurados. `logging.level` acepta `silent`, `error`, `warn`, `info` y `debug`
-(por defecto `warn`).
-
-### Códigos de salida
-
-| Código | Significado                                                       |
-| ------ | ----------------------------------------------------------------- |
-| `0`    | Éxito                                                             |
-| `1`    | Error de ejecución (configuración, base de datos, título ausente) |
-| `2`    | Uso incorrecto (comando u opción inválidos, falta un argumento)   |
-
-Los errores de ejecución se imprimen en `stderr` con un código estable delante:
-`[CONFIG_ERROR]`, `[DB_ERROR]`, `[INDEX_ERROR]`, `[PLAYER_ERROR]`, `[NOT_FOUND]`,
-`[AMBIGUOUS]` o `[APP_ERROR]` para fallos inesperados. Con `--verbose` se añade la pila
-del error.
-
-La salida `--json` es el contrato estable para scripts: un único objeto JSON por
-`stdout`, sin colores. Los errores se escriben en `stderr`.
-
-### TUI
-
-`mm` sin argumentos abre la interfaz a pantalla completa. La barra lateral incluye
-secciones: **Todo**, **Continuar** (títulos en curso), **Series**, **Anime**, **Películas**.
-El panel de detalle muestra progreso, estado (● en curso / ✓ completado) y favoritos (★).
-
-Atajos por defecto (todos se pueden cambiar en `keybindings` de la configuración):
-
-| Tecla   | Acción                                                      |
-| ------- | ----------------------------------------------------------- |
-| `q`     | salir (también `Ctrl+C`)                                    |
-| `Tab`   | siguiente sección (todo, continuar, series…)                |
-| `↑` `↓` | mover la selección                                          |
-| `/`     | abrir el buscador; `Esc` vuelve                             |
-| `s`     | ver la configuración efectiva                               |
-| `?`     | ayuda con los atajos                                        |
-| `p`     | reproducir el primer fichero del título                     |
-| `w`     | marcar visto / no visto                                     |
-| `f`     | favorito / quitar favorito                                  |
-| `n`     | siguiente episodio                                          |
-| `g`     | ciclo de filtros (todos / en curso / no vistos / favoritos) |
-
-## Configuración
-
-Ubicación por defecto: `~/.config/media-manager/config.yaml`
-(se respeta `XDG_CONFIG_HOME`; se puede forzar con `MM_CONFIG=/ruta/config.yaml`).
+Archivo: `~/.config/media-manager/config.yaml` (respeta `XDG_CONFIG_HOME`)
 
 ```yaml
 version: 1
@@ -307,12 +225,12 @@ player:
       command: vlc
       args: ['--started-from-file', '--start-time={start}', '{file}']
 
-playback:
-  tracking: auto
-  resume: true
-  resumeMinSeconds: 30
-  completedThreshold: 0.9
-  completedTailSeconds: 30
+playback: # 🎬 Estado de reproducción
+  tracking: auto # auto | manual | off (solo mpv)
+  resume: true # reanudar por defecto
+  resumeMinSeconds: 30 # mínimo para reanudar
+  completedThreshold: 0.9 # 90% = completado
+  completedTailSeconds: 30 # últimos 30s = completado
 
 ui:
   theme: default
@@ -331,25 +249,22 @@ keybindings:
   nextSection: tab
 ```
 
-`{file}` es obligatorio en la plantilla de `args`: se sustituye por la ruta del vídeo
-como un argumento independiente (nunca se pasa por una shell). `{start}` es opcional:
-si la plantilla lo incluye y hay una posición de reanudación válida, se sustituye por los
-segundos enteros; si no hay reanudación, se elimina el argumento completo. `onLaunch: detach`
-no bloquea la terminal y el reproductor sigue vivo si cierras la TUI; `foreground` espera a
-que termine. La TUI usa siempre `detach` para no congelarse.
+> **💡 Placeholder `{start}`**: si la plantilla lo incluye y hay posición de reanudación, se sustituye por los segundos; si no hay reanudación, se elimina el argumento completo.
 
-Precedencia de la configuración: `defaults → archivo YAML → variables de entorno → flags`.
+### Variables de entorno
 
-| Variable           | Efecto                                    |
-| ------------------ | ----------------------------------------- |
-| `MM_CONFIG`        | ruta alternativa del archivo YAML         |
-| `MM_DATABASE_PATH` | ruta alternativa de la base SQLite        |
-| `MM_PLAYER`        | reproductor por defecto                   |
-| `MM_LOG_LEVEL`     | nivel de logging (`silent`…`debug`)       |
-| `MM_LOG_FORMAT`    | formato de logging (`text` o `json`)      |
-| `NO_COLOR`         | desactiva colores en la salida de usuario |
+| Variable           | Efecto                             |
+| ------------------ | ---------------------------------- |
+| `MM_CONFIG`        | Ruta alternativa del YAML          |
+| `MM_DATABASE_PATH` | Ruta alternativa de la base SQLite |
+| `MM_PLAYER`        | Reproductor por defecto            |
+| `MM_LOG_LEVEL`     | Nivel logging (`silent`…`debug`)   |
+| `MM_LOG_FORMAT`    | Formato (`text` o `json`)          |
+| `NO_COLOR`         | Desactiva colores                  |
 
-## Arquitectura
+---
+
+## 🏗️ Arquitectura
 
 Principio rector: **la lógica de negocio no sabe que existe una terminal.**
 
@@ -358,56 +273,71 @@ src/
 ├─ cli.tsx        # punto de entrada; delega en commands/ o en la TUI
 ├─ commands/      # subcomandos headless (no dependen de Ink)
 ├─ core/          # dominio puro: config, db, indexer, library, player
-├─ ui/            # presentación con Ink (React) — solo consume `core/`
+├─ ui/            # presentación con Ink (React) — solo consume core/
 └─ shared/        # utilidades transversales: errores, logger, rutas
 ```
 
-Reglas que se verifican automáticamente con tests:
+**Reglas verificadas en CI:**
 
-- `core/` **nunca** importa desde `ui/` (dependencias hacia dentro).
-- `ui/` y `commands/` hablan con el dominio mediante casos de uso, no con SQL directo.
-- El acceso a datos se hace por repositorios con la `Database` inyectada.
+- `core/` **nunca** importa desde `ui/`
+- `ui/` y `commands/` usan casos de uso, no SQL directo
+- Acceso a datos por repositorios con `Database` inyectada
 
-## Desarrollo
+---
+
+## 🛠️ Desarrollo
 
 ```bash
-npm install          # instala dependencias (prepara los hooks de Husky)
+npm install          # instala dependencias (prepara hooks Husky)
 npm run dev          # CLI en modo watch
-npm run verify       # lint + formato + tipos + tests  (gate local)
-npm test             # suite completa (incluye el test de estrés)
-npm run test:unit    # solo unitarias (rápidas)
+npm run verify       # lint + formato + tipos + tests (gate local)
+npm test             # suite completa (412 tests)
+npm run test:unit    # solo unitarias
 npm run test:integration
 npm run test:e2e
 npm run coverage     # informe de cobertura
-npm run bench        # benchmarks de escaneo, indexado y consultas
-npm run smoke        # npm pack → instalación limpia → smoke de la CLI
-npm run standalone   # distribución portable con Node incluido (opcional)
+npm run bench        # benchmarks
+npm run smoke        # npm pack → instalación limpia → smoke test
+npm run standalone   # distribución portable con Node incluido
 ```
 
-Calidad y convenciones:
+### Calidad y CI
 
-- **ESLint 10** con reglas _type-aware_ (`typescript-eslint`) + **Prettier 3**.
-- **Vitest 5** con tres proyectos: `unit`, `integration` y `e2e`.
-- **Husky** + **lint-staged** (formato y lint en el commit) + **commitlint**
-  ([Conventional Commits](https://www.conventionalcommits.org/)).
-- **CI** en GitHub Actions: lint, formato, tipos, build y tests en Node 22/24/26, más un
-  job que instala el tarball real y ejecuta el smoke.
+| Herramienta             | Configuración                         |
+| ----------------------- | ------------------------------------- |
+| **ESLint 10**           | type-aware + `typescript-eslint`      |
+| **Prettier 3**          | formato consistente                   |
+| **Vitest 5**            | 3 proyectos: unit / integration / e2e |
+| **Husky + lint-staged** | formato + lint en pre-commit          |
+| **commitlint**          | Conventional Commits                  |
+| **CI (GitHub Actions)** | Node 22/24/26 + smoke test real       |
 
-Contribución: consultar [`PLAN.md`](./PLAN.md) y [`CONTRIBUTING.md`](./CONTRIBUTING.md).
+---
 
-## Documentación
+## 📚 Documentación
 
-- [`PLAN.md`](./PLAN.md) — plan de desarrollo por hitos
-- [`docs/README.md`](./docs/README.md) — índice de la documentación
-- [`docs/guides/architecture.md`](./docs/guides/architecture.md) — decisiones técnicas
-- [`docs/guides/performance.md`](./docs/guides/performance.md) — presupuesto y benchmarks
-- [`docs/guides/release.md`](./docs/guides/release.md) — publicación, tags y credenciales
-- [`docs/adr/`](./docs/adr) — _Architecture Decision Records_
-- [`docs/plans/`](./docs/plans) — planes de trabajo
-- [`CHANGELOG.md`](./CHANGELOG.md) — historial de versiones
-- [`SECURITY.md`](./SECURITY.md) — cómo reportar vulnerabilidades
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — flujo de desarrollo y PRs
+| Documento                                                      | Descripción                      |
+| -------------------------------------------------------------- | -------------------------------- |
+| [`PLAN.md`](./PLAN.md)                                         | Plan de desarrollo por hitos     |
+| [`docs/README.md`](./docs/README.md)                           | Índice de documentación          |
+| [`docs/guides/architecture.md`](./docs/guides/architecture.md) | Decisiones técnicas              |
+| [`docs/guides/performance.md`](./docs/guides/performance.md)   | Presupuesto y benchmarks         |
+| [`docs/guides/release.md`](./docs/guides/release.md)           | Publicación, tags y credenciales |
+| [`docs/adr/`](./docs/adr)                                      | Architecture Decision Records    |
+| [`docs/plans/`](./docs/plans)                                  | Planes de trabajo                |
+| [`CHANGELOG.md`](./CHANGELOG.md)                               | Historial de versiones           |
+| [`SECURITY.md`](./SECURITY.md)                                 | Reportar vulnerabilidades        |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md)                         | Flujo de desarrollo y PRs        |
 
-## Licencia
+---
+
+## 📄 Licencia
 
 [MIT](./LICENSE) © 2026 media-manager contributors
+
+---
+
+<p align="center">
+  <sub>Hecho con ❤️ para quienes prefieren la terminal.</sub><br/>
+  <sub><a href="https://github.com/Angel-p-v/media-manager/issues">Reportar bug</a> • <a href="https://github.com/Angel-p-v/media-manager/discussions">Preguntar</a> • <a href="https://github.com/Angel-p-v/media-manager/blob/main/CONTRIBUTING.md">Contribuir</a></sub>
+</p>
