@@ -105,8 +105,7 @@ en el mismo PR.
 
 ## Publicación
 
-El paquete npm es `media-manager-cli` y el binario `mm`. La publicación la ejecuta el
-workflow de release con `--provenance` cuando existe el secreto `NPM_TOKEN`. Los pasos
-completos están en [`docs/guides/release.md`](./docs/guides/release.md); no publiques
-manualmente desde
-una rama de desarrollo.
+El binario es `mm` y la distribución oficial son las GitHub Releases: bundles portables,
+checksums SHA-256, SBOM y atestaciones de procedencia. No se publica en npm. Los pasos
+completos están en [`docs/guides/release.md`](./docs/guides/release.md); no muevas un tag
+ni subas assets manualmente desde una rama de desarrollo.

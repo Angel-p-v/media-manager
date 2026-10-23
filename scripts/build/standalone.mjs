@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import console from 'node:console';
+import { createHash } from 'node:crypto';
 import {
   chmod,
   copyFile,
+  cp,
   mkdir,
   mkdtemp,
   readFile,
@@ -16,21 +18,37 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
+import { fetchNodeRuntime } from './fetch-node.mjs';
+import { buildNotices } from './notices.mjs';
+import { artifactName, bundleName, normalizePlatform } from './platform.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const NODE_VERSION_FILE = path.join(ROOT, 'scripts', 'build', 'node-version.txt');
+const DISTRIBUTION_FILES = [
+  'README.md',
+  'PLAN.md',
+  'CHANGELOG.md',
+  'CONTRIBUTING.md',
+  'SECURITY.md',
+  'LICENSE',
+];
 
 /**
  * Crea una distribución portable con el runtime de Node incluido.
  *
  * No es un único ejecutable de Node SEA: `better-sqlite3` incluye un addon
  * nativo y necesita seguir en disco. El resultado es un directorio (y un
- * `.tar.gz`) que funciona en la misma plataforma/arquitectura sin Node instalado.
+ * `.tar.gz` con su checksum) que funciona en la misma plataforma/arquitectura
+ * sin Node instalado.
  */
 async function main() {
+  const options = parseArguments(process.argv.slice(2));
   const packageJson = JSON.parse(await readFile(path.join(ROOT, 'package.json'), 'utf8'));
-  const platform = `${process.platform}-${process.arch}`;
-  const bundleName = `${packageJson.name}-${packageJson.version}-${platform}`;
+  const platform = normalizePlatform();
+  const version = packageJson.version;
+  const name = bundleName(version, platform);
   const outputDirectory = path.join(ROOT, 'build', 'standalone');
-  const bundleDirectory = path.join(outputDirectory, bundleName);
+  const bundleDirectory = path.join(outputDirectory, name);
   const workspace = await mkdtemp(path.join(tmpdir(), 'mm-standalone-'));
 
   try {
@@ -40,8 +58,8 @@ async function main() {
 
     step('empaquetando la aplicación');
     run('npm', ['pack', '--pack-destination', path.join(workspace, 'pack'), '--silent'], ROOT);
-    const tarballs = (await readdir(path.join(workspace, 'pack'))).filter((name) =>
-      name.endsWith('.tgz'),
+    const tarballs = (await readdir(path.join(workspace, 'pack'))).filter((file) =>
+      file.endsWith('.tgz'),
     );
     if (tarballs.length !== 1) {
       throw new Error(`Se esperaba un tarball y hay ${tarballs.length}`);
@@ -73,41 +91,149 @@ async function main() {
       bundleDirectory,
     );
 
-    step('copiando el runtime de Node');
-    const runtimeName = process.platform === 'win32' ? 'node.exe' : 'node';
-    await copyFile(process.execPath, path.join(bundleDirectory, runtimeName));
-    await chmod(path.join(bundleDirectory, runtimeName), 0o755);
+    step('copiando documentación y configuración');
+    for (const file of DISTRIBUTION_FILES) {
+      await copyFile(path.join(ROOT, file), path.join(bundleDirectory, file));
+    }
+    await cp(path.join(ROOT, 'config'), path.join(bundleDirectory, 'config'), {
+      recursive: true,
+    });
+    await cp(path.join(ROOT, 'docs'), path.join(bundleDirectory, 'docs'), { recursive: true });
+
+    step('preparando el runtime de Node');
+    const nodeInfo = await prepareRuntime(options, bundleDirectory);
+
+    step('generando install.json y avisos de terceros');
+    await writeFile(
+      path.join(bundleDirectory, 'install.json'),
+      `${JSON.stringify(
+        {
+          schemaVersion: 1,
+          name: packageJson.name,
+          version,
+          platform,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    const notices = await buildNotices({
+      lockfilePath: path.join(ROOT, 'package-lock.json'),
+      nodeLicense: nodeInfo.license,
+      nodeVersion: nodeInfo.version,
+      root: ROOT,
+    });
+    await writeFile(path.join(bundleDirectory, 'THIRD_PARTY_NOTICES.md'), notices);
 
     const packagePath = packageJson.name.split('/').join(path.sep);
-    const launcher =
-      process.platform === 'win32'
-        ? createWindowsLauncher(packagePath)
-        : createPosixLauncher(packagePath);
-    const launcherName = process.platform === 'win32' ? 'mm.cmd' : 'mm';
-    const launcherPath = path.join(bundleDirectory, launcherName);
+    const launcher = createPosixLauncher(packagePath);
+    const launcherPath = path.join(bundleDirectory, 'mm');
     await writeFile(launcherPath, launcher);
-    if (process.platform !== 'win32') {
-      await chmod(launcherPath, 0o755);
-    }
+    await chmod(launcherPath, 0o755);
 
     step('comprobando el lanzador');
-    const version = run(launcherPath, ['--version'], bundleDirectory).stdout.trim();
-    if (version !== packageJson.version) {
-      throw new Error(`El lanzador devolvió ${version} y se esperaba ${packageJson.version}`);
+    const reportedVersion = run(launcherPath, ['--version'], bundleDirectory).stdout.trim();
+    if (reportedVersion !== version) {
+      throw new Error(`El lanzador devolvió ${reportedVersion} y se esperaba ${version}`);
     }
 
-    step('creando el archivo portable');
-    const archivePath = path.join(outputDirectory, `${bundleName}.tar.gz`);
-    run('tar', ['-czf', archivePath, '-C', outputDirectory, path.basename(bundleDirectory)], ROOT);
+    step('creando el archivo portable y el checksum');
+    const archiveName = artifactName(version, platform);
+    const archivePath = path.join(outputDirectory, archiveName);
+    run('tar', ['-czf', archivePath, '-C', outputDirectory, name], ROOT);
+    const hash = createHash('sha256')
+      .update(await readFile(archivePath))
+      .digest('hex');
+    await writeFile(`${archivePath}.sha256`, `${hash}  ${archiveName}\n`);
 
     console.log(`\n✔ Distribución portable: ${bundleDirectory}`);
     console.log(`✔ Archivo: ${archivePath}`);
-    console.log(
-      '  Incluye Node y better-sqlite3 para esta plataforma; no requiere Node instalado.',
-    );
+    console.log(`✔ SHA-256: ${hash}`);
+    console.log(`  Runtime: Node v${nodeInfo.version} (${nodeInfo.source})`);
   } finally {
     await rm(workspace, { recursive: true, force: true });
   }
+}
+
+function parseArguments(argv) {
+  const options = { nodeSource: 'system', nodeVersion: undefined };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index];
+    if (argument === '--help' || argument === '-h') {
+      printHelp();
+      process.exit(0);
+    }
+    if (argument.startsWith('--node-source=')) {
+      options.nodeSource = argument.slice('--node-source='.length);
+      continue;
+    }
+    if (argument === '--node-source') {
+      options.nodeSource = nextValue(argv, index, '--node-source');
+      index += 1;
+      continue;
+    }
+    if (argument.startsWith('--node-version=')) {
+      options.nodeVersion = argument.slice('--node-version='.length);
+      continue;
+    }
+    if (argument === '--node-version') {
+      options.nodeVersion = nextValue(argv, index, '--node-version');
+      index += 1;
+      continue;
+    }
+    throw new Error(`Opción desconocida: ${argument} (usa --help)`);
+  }
+
+  if (!['official', 'system'].includes(options.nodeSource)) {
+    throw new Error('--node-source debe ser "official" o "system"');
+  }
+  return options;
+}
+
+function nextValue(argv, index, option) {
+  const value = argv[index + 1];
+  if (value === undefined || value.startsWith('--')) {
+    throw new Error(`Falta el valor de ${option}`);
+  }
+  return value;
+}
+
+function printHelp() {
+  console.log(`Uso: npm run standalone -- [opciones]
+
+Opciones:
+  --node-source official   descarga y verifica el Node oficial (obligatorio en CI)
+  --node-source system     usa el Node que ejecuta el script (desarrollo local)
+  --node-version <x.y.z>   versión exacta del runtime oficial
+  --help                   muestra esta ayuda`);
+}
+
+async function prepareRuntime(options, bundleDirectory) {
+  const destination = path.join(bundleDirectory, 'node');
+
+  if (options.nodeSource === 'official') {
+    const version = options.nodeVersion ?? (await readFile(NODE_VERSION_FILE, 'utf8')).trim();
+    const runtime = await fetchNodeRuntime({
+      cacheRoot: path.join(ROOT, 'build', 'cache', 'node'),
+      version,
+    });
+    await copyFile(runtime.binaryPath, destination);
+    await chmod(destination, 0o755);
+    return {
+      license: await readFile(runtime.licensePath, 'utf8'),
+      source: 'official',
+      version: runtime.version,
+    };
+  }
+
+  await copyFile(process.execPath, destination);
+  await chmod(destination, 0o755);
+  return {
+    license: undefined,
+    source: 'system',
+    version: process.version.replace(/^v/, ''),
+  };
 }
 
 function createPosixLauncher(packagePath) {
@@ -118,11 +244,6 @@ function createPosixLauncher(packagePath) {
     `exec "$HERE/node" "$HERE/node_modules/${packagePath}/dist/cli.js" "$@"`,
     '',
   ].join('\n');
-}
-
-function createWindowsLauncher(packagePath) {
-  const cliPath = path.join('%HERE%', 'node_modules', packagePath, 'dist', 'cli.js');
-  return ['@echo off', 'set "HERE=%~dp0"', `"%HERE%node.exe" "${cliPath}" %*`, ''].join('\r\n');
 }
 
 function step(message) {

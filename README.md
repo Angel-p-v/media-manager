@@ -62,13 +62,13 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Salida `--json` para scripts                                 | ✅ M4  |
 | Logs estructurados, `--verbose` y errores con código         | ✅ M7  |
 | Mantenimiento SQLite (`optimize` / `VACUUM`)                 | ✅ M7  |
-| Paquete npm, tarball smoke y distribución portable           | 🟡 M8  |
+| Instalador verificado, checksums y distribución portable     | 🟡 M8  |
 
 ## Estado del proyecto
 
-**Release `v1.0.0` en preparación.** El paquete se llamará `media-manager-cli` en npm;
-la publicación queda pendiente de las credenciales del mantenedor. El plan de desarrollo
-completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
+**Release `v1.0.0` en preparación.** La distribución se hará desde GitHub Releases con
+un instalador que verifica checksum y estructura; no se publica en npm. El plan de
+desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
 | Hito | Contenido                     | Versión    |
@@ -85,22 +85,63 @@ completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 
 ## Requisitos
 
-- **Node.js ≥ 22** (probado en 22, 24 y 26)
-- Un reproductor local: [`mpv`](https://mpv.io/) (recomendado) o `vlc`
-- SQLite (viene embebido; no requiere instalación)
+- **Linux x64 o arm64 con glibc** si usas el instalador (no necesita Node ni npm).
+- **Node.js ≥ 22** (probado en 22, 24 y 26) solo para desarrollar o ejecutar desde el
+  código fuente.
+- Un reproductor local: [`mpv`](https://mpv.io/) (recomendado) o `vlc`.
+- SQLite (viene embebido; no requiere instalación).
 
 ## Instalación
 
-Cuando `v1.0.0` esté publicada en npm:
+El canal oficial son las [GitHub Releases](https://github.com/Angel-p-v/media-manager/releases).
+El instalador se ejecuta sin `sudo`, instala en `~/.local` y verifica el checksum SHA-256
+y la estructura del artefacto antes de extraerlo.
 
 ```bash
-npm install --global media-manager-cli
+# Descarga el instalador y revísalo antes de ejecutarlo
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/install.sh \
+  -o /tmp/mm-install.sh
+less /tmp/mm-install.sh
+sh /tmp/mm-install.sh
+
 mm --version
-mm --help
 ```
 
-> La publicación está preparada pero pendiente de las credenciales de npm. Hasta
-> entonces, instala desde el código fuente:
+Opciones habituales:
+
+```bash
+sh /tmp/mm-install.sh --version v1.0.0     # versión concreta
+sh /tmp/mm-install.sh --prefix "$HOME/.local"
+sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
+```
+
+Si `~/.local/bin` no está en el `PATH`, el instalador lo avisa; no modifica tu shell.
+Para actualizar, vuelve a ejecutar `install.sh` con la nueva versión (no hay
+autoactualización).
+
+### Verificar una descarga manual
+
+```bash
+sha256sum -c media-manager-cli-1.0.0-linux-x64.tar.gz.sha256
+gh attestation verify media-manager-cli-1.0.0-linux-x64.tar.gz \
+  --repo Angel-p-v/media-manager
+```
+
+La atestación es opcional en el instalador (`--verify-attestation`) y no sustituye al
+checksum. El modelo de confianza está en [`SECURITY.md`](./SECURITY.md).
+
+### Desinstalar
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/uninstall.sh \
+  -o /tmp/mm-uninstall.sh
+sh /tmp/mm-uninstall.sh            # conserva configuración y base de datos
+sh /tmp/mm-uninstall.sh --purge    # las elimina también
+```
+
+La biblioteca multimedia nunca se toca.
+
+### Desde el código fuente
 
 ```bash
 git clone https://github.com/Angel-p-v/media-manager.git
@@ -118,9 +159,8 @@ npm run dev          # CLI en modo watch desde el código fuente
 node dist/cli.js --help
 ```
 
-El paquete npm incluye `dist/`, la configuración de ejemplo, el README, el CHANGELOG,
-las políticas de seguridad y contribución y la demo. Los detalles de publicación están
-en [`docs/guides/release.md`](./docs/guides/release.md).
+El flujo de release y la construcción de artefactos están en
+[`docs/guides/release.md`](./docs/guides/release.md).
 
 ## Uso
 

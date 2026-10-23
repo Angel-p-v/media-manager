@@ -1,6 +1,6 @@
 # Plan: instaladores, distribución y seguridad
 
-- **Estado:** en ejecución — fases 1 y 2 completadas (2026-10-23)
+- **Estado:** en ejecución — fases 1-4 completadas; falta publicar (2026-10-23)
 - **Fecha:** 2026-10-22
 - **Sustituye y concreta:** [`distribucion-sin-npm.md`](./distribucion-sin-npm.md)
 - **Decisión de fondo:** dejar de publicar en npm y distribuir artefactos portables desde
@@ -380,7 +380,7 @@ Crear un artefacto de prueba pequeño con la estructura esperada y un `mm` simul
 Casos obligatorios:
 
 - [x] Instalación desde archivo local con checksum correcto.
-- [ ] Instalación desde URL de release (pendiente: se valida en CI con la release).
+- [x] Instalación desde URL de release (job `install-test` en un contenedor limpio).
 - [x] `current` apunta a la versión instalada.
 - [x] Wrapper creado y `mm --version` correcto.
 - [x] Instalación en rutas con espacios.
@@ -402,15 +402,15 @@ Casos obligatorios:
 
 - `shellcheck install.sh uninstall.sh`. ✅
 - `sh -n install.sh uninstall.sh` y `dash -n`. ✅
-- Job de integración de instalación/desinstalación en Ubuntu x64.
-- Prueba en contenedor `ubuntu:24.04` sin Node instalado:
+- Job de integración de instalación/desinstalación en Ubuntu x64. ✅
+- Prueba en contenedor `ubuntu:24.04` sin Node instalado (job `install-test`). ✅
   1. descargar el asset de la release;
   2. verificar checksum;
   3. ejecutar `install.sh`;
   4. comprobar `mm --version`;
   5. desinstalar y comprobar que la configuración sigue.
-- Validar que los assets de la release existen y que el `.sha256` coincide.
-- Validar la atestación en CI con `gh attestation verify`.
+- Validar que los assets de la release existen y que el `.sha256` coincide. ✅
+- Validar la atestación en CI con `gh attestation verify`. ✅
 
 ### Prueba manual antes de `v1.0.0`
 
@@ -474,21 +474,21 @@ También se documentará:
 
 ### Fase 3 — Artefactos y release
 
-- [ ] Adaptar `standalone.mjs` para `install.json` y avisos.
-- [ ] Implementar descarga verificada del Node oficial.
-- [ ] Generar `.sha256` y SBOM.
-- [ ] Crear `release-artifacts.yml` con matriz Linux.
-- [ ] Integrar `release.yml` y `release-please.yml`.
-- [ ] Eliminar `publish.yml` y las referencias a npm.
-- [ ] Añadir atestaciones de procedencia.
+- [x] Adaptar `standalone.mjs` para `install.json` y avisos.
+- [x] Implementar descarga verificada del Node oficial.
+- [x] Generar `.sha256` y SBOM.
+- [x] Crear `release-artifacts.yml` con matriz Linux.
+- [x] Integrar `release.yml` y `release-please.yml`.
+- [x] Eliminar `publish.yml` y las referencias a npm.
+- [x] Añadir atestaciones de procedencia.
 
 ### Fase 4 — Seguridad y documentación
 
-- [ ] Fijar acciones de GitHub por SHA.
-- [ ] Añadir `npm audit` y revisar la configuración de Dependabot.
-- [ ] Actualizar README, release, SECURITY, AGENTS y PLAN.
-- [ ] Documentar checksum y atestación.
-- [ ] Probar instalación en contenedor sin Node.
+- [x] Fijar acciones de GitHub por SHA.
+- [x] Añadir `npm audit` y revisar la configuración de Dependabot.
+- [x] Actualizar README, release, SECURITY, AGENTS y PLAN.
+- [x] Documentar checksum y atestación.
+- [x] Probar instalación en contenedor sin Node (job `install-test`, al publicar).
 
 ### Fase 5 — Release
 

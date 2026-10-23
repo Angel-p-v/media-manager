@@ -96,9 +96,6 @@
     "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "allowScripts": {
     "better-sqlite3": true,
     "esbuild": true,
