@@ -5,13 +5,13 @@ on:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
+  attestations: write
 
 jobs:
-  publish:
-    name: publish released tag
-    uses: ./.github/workflows/publish.yml
+  artifacts:
+    name: build release artifacts
+    uses: ./.github/workflows/release-artifacts.yml
     with:
       tag: ${{ github.event.release.tag_name }}
-    secrets: inherit
