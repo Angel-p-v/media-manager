@@ -27,6 +27,10 @@ jobs:
             platform: linux-x64
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
+          - runner: macos-14
+            platform: macos-x64
+          - runner: macos-14-arm64
+            platform: macos-arm64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -69,15 +73,26 @@ jobs:
             --repo "${{ github.repository }}"
 
   install-test:
-    name: install (ubuntu limpio, sin Node)
+    name: install (${{ matrix.os }}, sin Node)
     needs: bundle
-    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            label: ubuntu
+            use-docker: 'true'
+          - os: macos-14
+            label: macos
+            use-docker: 'false'
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.tag }}
           persist-credentials: false
-      - name: Instalar y desinstalar desde la release
+      - name: Instalar y desinstalar desde la release (Linux)
+        if: matrix.use-docker == 'true'
         env:
           TAG: ${{ inputs.tag }}
         run: |
@@ -106,6 +121,28 @@ jobs:
               sh /uninstall.sh --prefix /root/.local --yes
               test -f /root/.config/media-manager/config.yaml
             '
+      - name: Instalar y desinstalar desde la release (macOS)
+        if: matrix.use-docker == 'false'
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -eu
+          # macOS runner no tiene Node preinstalado en la imagen base
+          if command -v node >/dev/null 2>&1; then
+            echo "El runner no debe tener Node" >&2
+            exit 1
+          fi
+          mkdir -p "$HOME/.config/media-manager"
+          printf "version: 1\n" > "$HOME/.config/media-manager/config.yaml"
+          sh ./install.sh --version "$TAG" --prefix "$HOME/.local" --no-path-check
+          test -x "$HOME/.local/bin/mm"
+          "$HOME/.local/bin/mm" --version
+          if command -v node >/dev/null 2>&1; then
+            echo "El bundle no debe exponer Node en PATH" >&2
+            exit 1
+          fi
+          sh ./uninstall.sh --prefix "$HOME/.local" --yes
+          test -f "$HOME/.config/media-manager/config.yaml"
 
   sbom:
     name: sbom (CycloneDX)

@@ -93,7 +93,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ## 🚀 Instalación rápida
 
-### 📦 Instalador oficial (recomendado)
+### 📦 Instalador oficial (recomendado — **Linux x64/arm64, macOS x64/arm64**)
 
 ```bash
 # 1. Descarga el instalador y revísalo
@@ -110,18 +110,23 @@ mm --version
 > **Opciones útiles:**
 >
 > ```bash
-> sh /tmp/mm-install.sh --version v1.0.1     # versión concreta
+> sh /tmp/mm-install.sh --version v1.2.0     # versión concreta
 > sh /tmp/mm-install.sh --prefix "$HOME/.local"
 > sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
+> sh /tmp/mm-install.sh --verify-attestation # verifica atestación de procedencia (requiere gh)
 > ```
 
-> ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer
+> ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: quita cuarentena automáticamente**
+
+> **Plataformas soportadas:** Linux (x64, arm64) · macOS (x64, arm64)  
+> **Windows:** próximamente en v2.1
 
 ### 🔐 Verificar descarga manual
 
 ```bash
-sha256sum -c media-manager-cli-1.0.1-linux-x64.tar.gz.sha256
-gh attestation verify media-manager-cli-1.0.1-linux-x64.tar.gz --repo Angel-p-v/media-manager
+# Descarga el .tar.gz y su .sha256 desde la release de GitHub
+sha256sum -c media-manager-cli-<version>-<platform>.tar.gz.sha256
+gh attestation verify media-manager-cli-<version>-<platform>.tar.gz --repo Angel-p-v/media-manager
 ```
 
 ### 🗑️ Desinstalar
@@ -133,6 +138,17 @@ sh /tmp/mm-uninstall.sh --purge    # las elimina también
 ```
 
 > 🛡️ La biblioteca multimedia nunca se toca.
+
+#### macOS: si Gatekeeper bloquea el binario
+
+Si al ejecutar `mm` ves un error de "app no verificada" o "no se puede abrir porque no es de un desarrollador identificado":
+
+```bash
+# Quita el atributo de cuarentena de los binarios instalados
+xattr -d com.apple.quarantine ~/.local/share/media-manager/current/node ~/.local/bin/mm
+```
+
+El instalador intenta hacerlo automáticamente, pero en algunos casos macOS lo reaplica.
 
 ---
 
