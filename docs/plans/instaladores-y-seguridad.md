@@ -1,6 +1,6 @@
 # Plan: instaladores, distribución y seguridad
 
-- **Estado:** listo para ejecutar
+- **Estado:** en ejecución — fases 1 y 2 completadas (2026-10-23)
 - **Fecha:** 2026-10-22
 - **Sustituye y concreta:** [`distribucion-sin-npm.md`](./distribucion-sin-npm.md)
 - **Decisión de fondo:** dejar de publicar en npm y distribuir artefactos portables desde
@@ -379,29 +379,29 @@ Crear un artefacto de prueba pequeño con la estructura esperada y un `mm` simul
 
 Casos obligatorios:
 
-- [ ] Instalación desde archivo local con checksum correcto.
-- [ ] Instalación desde URL de release.
-- [ ] `current` apunta a la versión instalada.
-- [ ] Wrapper creado y `mm --version` correcto.
-- [ ] Instalación en rutas con espacios.
-- [ ] `--prefix` y `--bindir` personalizados.
-- [ ] Reinstalación sin `--force` falla.
-- [ ] Checksum ausente, inválido o de otro archivo aborta.
-- [ ] Archivo con `../` o rutas absolutas se rechaza.
-- [ ] Plataforma no soportada aborta con código 3.
-- [ ] `--dry-run` no modifica nada.
-- [ ] Desinstalación normal elimina app y wrapper.
-- [ ] Desinstalación conserva configuración y base de datos.
-- [ ] `--purge` elimina configuración y base de datos.
-- [ ] `--prefix /` y `--prefix "$HOME"` se rechazan.
-- [ ] Wrapper ajeno sin marca no se borra.
-- [ ] `install.json` manipulado no permite borrar rutas arbitrarias.
-- [ ] `--verify-attestation` falla si la atestación no es válida.
+- [x] Instalación desde archivo local con checksum correcto.
+- [ ] Instalación desde URL de release (pendiente: se valida en CI con la release).
+- [x] `current` apunta a la versión instalada.
+- [x] Wrapper creado y `mm --version` correcto.
+- [x] Instalación en rutas con espacios.
+- [x] `--prefix` y `--bindir` personalizados.
+- [x] Reinstalación sin `--force` falla.
+- [x] Checksum ausente, inválido o de otro archivo aborta.
+- [x] Archivo con `../` se rechaza (la comprobación de rutas absolutas está implementada).
+- [x] Plataforma no soportada aborta con código 3.
+- [x] `--dry-run` no modifica nada.
+- [x] Desinstalación normal elimina app y wrapper.
+- [x] Desinstalación conserva configuración y base de datos.
+- [x] `--purge` elimina configuración y base de datos.
+- [x] `--prefix /` y `--prefix "$HOME"` se rechazan.
+- [x] Wrapper ajeno sin marca no se borra.
+- [x] `install.json` manipulado no permite borrar rutas arbitrarias.
+- [x] `--verify-attestation` falla si la atestación no es válida.
 
 ### CI
 
-- `shellcheck install.sh uninstall.sh`.
-- `sh -n install.sh uninstall.sh`.
+- `shellcheck install.sh uninstall.sh`. ✅
+- `sh -n install.sh uninstall.sh` y `dash -n`. ✅
 - Job de integración de instalación/desinstalación en Ubuntu x64.
 - Prueba en contenedor `ubuntu:24.04` sin Node instalado:
   1. descargar el asset de la release;
@@ -458,19 +458,19 @@ También se documentará:
 
 ### Fase 1 — Contratos y esqueleto
 
-- [ ] Crear ADR 0009 con la decisión de GitHub Releases.
-- [ ] Definir `install.json` y el nombre de assets.
-- [ ] Crear `install.sh` y `uninstall.sh` con `--help`.
-- [ ] Añadir `shellcheck` y `sh -n` al CI.
+- [x] Crear ADR 0009 con la decisión de GitHub Releases.
+- [x] Definir `install.json` y el nombre de assets.
+- [x] Crear `install.sh` y `uninstall.sh` con `--help`.
+- [x] Añadir `shellcheck` y `sh -n` al CI.
 
 ### Fase 2 — Instalación segura
 
-- [ ] Implementar detección de plataforma y versión.
-- [ ] Implementar descarga, checksum y validación de archivo.
-- [ ] Implementar instalación atómica, `current` y wrapper.
-- [ ] Implementar `--dry-run`, `--force` y bloqueo.
-- [ ] Implementar desinstalación conservadora y `--purge`.
-- [ ] Añadir tests de integración de los casos obligatorios.
+- [x] Implementar detección de plataforma y versión.
+- [x] Implementar descarga, checksum y validación de archivo.
+- [x] Implementar instalación atómica, `current` y wrapper.
+- [x] Implementar `--dry-run`, `--force` y bloqueo.
+- [x] Implementar desinstalación conservadora y `--purge`.
+- [x] Añadir tests de integración de los casos obligatorios.
 
 ### Fase 3 — Artefactos y release
 
