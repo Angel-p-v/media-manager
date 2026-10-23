@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [1.3.0](https://github.com/Angel-p-v/media-manager/compare/v1.2.0...v1.3.0) (2026-10-23)
+
+
+### Features
+
+* M11 Biblioteca sana y M12 macOS — filtros, favoritos, TUI, CI 4 plataformas ([#35](https://github.com/Angel-p-v/media-manager/issues/35)) ([7a4e437](https://github.com/Angel-p-v/media-manager/commit/7a4e437a529f20439d46ed88ec5030d9a394b2ce))
+
 ## [1.2.0](https://github.com/Angel-p-v/media-manager/compare/v1.1.0...v1.2.0) (2026-10-23)
 
 
