@@ -329,7 +329,7 @@ Reglas:
 - [x] `mm play --resume/--restart/--next`.
 - [x] `mm mark`, `mm continue`, `mm history`.
 - [x] Sección Continuar en la TUI.
-- [ ] Tests con IPC falso y E2E de `--dry-run`.
+- [x] Tests con IPC falso y E2E de `--dry-run`.
 
 **DoD:** se puede empezar un episodio, salir, volver a `mm` y continuar donde se dejó.
 
