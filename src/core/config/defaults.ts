@@ -1,4 +1,4 @@
-import { defaultPlayers } from './schema.js';
+import { defaultPlayers, playbackConfigSchema } from './schema.js';
 
 import type { AppConfig } from './schema.js';
 
@@ -31,6 +31,7 @@ export const defaultConfig: AppConfig = {
     sort: 'title',
     showDetails: true,
   },
+  playback: playbackConfigSchema.parse({}),
   logging: {
     level: 'warn',
     format: 'text',

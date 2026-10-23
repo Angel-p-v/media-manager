@@ -54,3 +54,43 @@ export type IndexRunRow = {
   filesRemoved: number;
   status: 'running' | 'completed' | 'failed';
 };
+
+/** Fila de la tabla `playback_state`. */
+export type PlaybackStateRow = {
+  mediaFileId: number;
+  positionSeconds: number;
+  durationSeconds: number | null;
+  completedAt: string | null;
+  lastPlayedAt: string;
+  playCount: number;
+  updatedAt: string;
+};
+
+/**
+ * Datos de un estado de reproducción. El repositorio no calcula reglas de negocio:
+ * recibe la posición, la finalización y las fechas ya resueltas por el dominio.
+ */
+export type PlaybackInput = {
+  mediaFileId: number;
+  positionSeconds: number;
+  durationSeconds?: number | null;
+  completedAt?: string | null;
+  lastPlayedAt: string;
+  playCount?: number;
+  updatedAt: string;
+};
+
+/** Estado de reproducción con el título y el fichero a los que pertenece. */
+export type PlaybackEntryRow = {
+  state: PlaybackStateRow;
+  media: MediaRow;
+  file: MediaFileRow;
+};
+
+/** Fila de la tabla `media_preferences`. */
+export type MediaPreferenceRow = {
+  mediaId: number;
+  favorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+};

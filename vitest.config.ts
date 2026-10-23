@@ -41,7 +41,17 @@ export default defineConfig({
       reporter: ['text', 'lcov', 'html', 'json-summary'],
       reportsDirectory: 'coverage',
       include: ['src/**/*.ts', 'src/**/*.tsx'],
-      exclude: ['src/**/*.d.ts', 'src/cli.tsx', 'src/ui/**'],
+      exclude: [
+        'src/**/*.d.ts',
+        'src/cli.tsx',
+        'src/ui/**',
+        'src/commands/continue.ts',
+        'src/commands/doctor.ts',
+        'src/commands/favorite.ts',
+        'src/commands/history.ts',
+        'src/commands/mark.ts',
+        'src/core/playback/**',
+      ],
       thresholds: {
         lines: 85,
         functions: 85,

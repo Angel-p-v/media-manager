@@ -1,0 +1,119 @@
+import pc from 'picocolors';
+
+import { withCommandContext, type CommandOptions } from './context.js';
+import { toMediaFileJson, toMediaJson } from './output.js';
+import { calculatePlayback, nowIso } from '../core/playback/index.js';
+
+import type { MediaFileRow } from '../core/db/types.js';
+
+export type MarkCommandOptions = CommandOptions & {
+  watched?: boolean;
+  unwatched?: boolean;
+  file?: number;
+  position?: number;
+  json?: boolean;
+};
+
+/** Implementa `mm mark`: marca estado manualmente. */
+export async function runMarkCommand(query: string, options: MarkCommandOptions): Promise<void> {
+  await withCommandContext(options, ({ library, playbackRepo, playbackConfig }) => {
+    const { media, files } = library.find(query);
+
+    // Validar que exactamente una acción
+    const actions = [options.watched, options.unwatched, options.position !== undefined].filter(
+      Boolean,
+    ).length;
+    if (actions === 0) {
+      throw new Error('Debe indicar una acción: --watched, --unwatched o --position.');
+    }
+    if (actions > 1) {
+      throw new Error(
+        'Las opciones --watched, --unwatched y --position son mutuamente excluyentes.',
+      );
+    }
+
+    // Resolver el fichero
+    const file = ((): MediaFileRow => {
+      if (options.file !== undefined) {
+        const found = files.find((f) => f.id === options.file);
+        if (!found) throw new Error(`El fichero #${options.file} no pertenece a este título.`);
+        return found;
+      }
+      if (files.length === 1) return files[0]!;
+      throw new Error('El título tiene varios ficheros; use --file para especificar uno.');
+    })();
+
+    const state = playbackRepo.get(file.id);
+    let updatedState: ReturnType<typeof playbackRepo.save>;
+
+    if (options.watched) {
+      // Marcar como visto: posición = duración (o 0 si no se conoce), completedAt = now
+      const duration = state?.durationSeconds ?? 0;
+      updatedState = playbackRepo.save({
+        mediaFileId: file.id,
+        positionSeconds: duration,
+        durationSeconds: state?.durationSeconds ?? null,
+        completedAt: nowIso(),
+        lastPlayedAt: nowIso(),
+        playCount: (state?.playCount ?? 0) + 1,
+        updatedAt: nowIso(),
+      });
+    } else if (options.unwatched) {
+      // Marcar como no visto: posición = 0, limpiar completedAt
+      updatedState = playbackRepo.save({
+        mediaFileId: file.id,
+        positionSeconds: 0,
+        durationSeconds: state?.durationSeconds ?? null,
+        completedAt: null,
+        lastPlayedAt: nowIso(),
+        playCount: state?.playCount ?? 0,
+        updatedAt: nowIso(),
+      });
+    } else if (options.position !== undefined) {
+      // Posición manual
+      const positionValue = options.position;
+      if (positionValue < 0) {
+        throw new Error('La posición no puede ser negativa.');
+      }
+      const duration = state?.durationSeconds;
+      const position = duration === null ? positionValue : Math.min(positionValue, duration!);
+      updatedState = playbackRepo.save({
+        mediaFileId: file.id,
+        positionSeconds: position,
+        durationSeconds: state?.durationSeconds ?? null,
+        completedAt: null, // posición manual no completa
+        lastPlayedAt: nowIso(),
+        playCount: state?.playCount ?? 0,
+        updatedAt: nowIso(),
+      });
+    }
+
+    if (options.json === true) {
+      const calc = calculatePlayback(updatedState!, playbackConfig, new Date().toISOString());
+      console.log(
+        JSON.stringify(
+          {
+            media: toMediaJson(media),
+            file: toMediaFileJson(file),
+            position: calc.positionSeconds,
+            duration: calc.durationSeconds,
+            completed: calc.isCompleted,
+            lastPlayedAt: updatedState!.lastPlayedAt,
+            playCount: updatedState!.playCount,
+          },
+          null,
+          2,
+        ),
+      );
+      return;
+    }
+
+    const year = media.year === null ? '' : ` (${media.year})`;
+    const calc = calculatePlayback(updatedState!, playbackConfig, new Date().toISOString());
+    const status = calc.isCompleted ? '✓ visto' : '● en curso';
+    const progress = calc.progressPercent !== null ? ` [${calc.progressPercent.toFixed(0)}%]` : '';
+    console.log(
+      `${pc.green(status)} #${media.id} ${media.title}${year} · ${file.filePath}${progress}`,
+    );
+  });
+}
