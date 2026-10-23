@@ -168,23 +168,23 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado   |
-| ---- | ----------------------------------------------------- | -------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho |
-| M4   | CLI headless + búsqueda                               | ✅ hecho |
-| M5   | TUI (Ink)                                             | ✅ hecho |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho |
-| M7   | Robustez y rendimiento                                | ✅ hecho |
-| M8   | Release v1.0.0                                        | ✅ hecho |
+| Hito | Contenido                                             | Estado      |
+| ---- | ----------------------------------------------------- | ----------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho    |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
+| M4   | CLI headless + búsqueda                               | ✅ hecho    |
+| M5   | TUI (Ink)                                             | ✅ hecho    |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
+| M7   | Robustez y rendimiento                                | ✅ hecho    |
+| M8   | Release v1.0.0                                        | ✅ hecho    |
+| M9   | Esquema v3, estado reproducción, doctor               | 🟡 en curso |
 
-M8 está cerrado: `v1.0.0` y `v1.0.1` están publicadas desde GitHub Releases (instaladores,
-bundles Linux x64/arm64, checksums, SBOM y atestaciones). `v1.0.1` corrigió la expansión de
-`~` en los instaladores y superó el job de instalación en contenedor limpio. A partir de
-ahí las releases las prepara release-please; instrucciones en `docs/guides/release.md`.
-El siguiente paso es `docs/plans/version-2.0.md`.
+M9 está en curso: esquema v3 (playback_state, media_preferences), migración con backup,
+repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
+continue, history, mark, favorite), mm doctor. Tests de migración y repositorios en verde.
+El siguiente paso es M10 (reproducción con memoria, tracker IPC mpv, TUI).
 
 ## Reglas para el agente
 
