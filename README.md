@@ -63,6 +63,12 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Logs estructurados, `--verbose` y errores con código         | ✅ M7  |
 | Mantenimiento SQLite (`optimize` / `VACUUM`)                 | ✅ M7  |
 | Instalador verificado, checksums y distribución portable     | ✅ M8  |
+| Estado de reproducción (continuar, historial, marcas)        | ✅ M9  |
+| Tracker IPC mpv y reanudación automática                     | ✅ M9  |
+| Comandos `continue`, `history`, `mark`, `favorite`, `doctor` | ✅ M9  |
+| Sección "Continuar" en la TUI                                | ✅ M10 |
+| Tracker IPC mpv (socket Unix, eventos property-change)       | ✅ M10 |
+| Tests E2E con IPC falso y `--dry-run`                        | ✅ M10 |
 
 ## Estado del proyecto
 
@@ -71,17 +77,21 @@ instalador que verifica checksum y estructura; no se publica en npm. El plan de 
 completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
-| Hito | Contenido                     | Versión    |
-| ---- | ----------------------------- | ---------- |
-| M0   | Cimientos: tooling, hooks, CI | `0.0.1` ✅ |
-| M1   | Núcleo de configuración       | `0.1.0` ✅ |
-| M2   | Persistencia SQLite           | `0.2.0` ✅ |
-| M3   | Indexación y parseo           | `0.3.0` ✅ |
-| M4   | CLI _headless_ + búsqueda     | `0.4.0` ✅ |
-| M5   | TUI (Ink)                     | `0.5.0` ✅ |
-| M6   | Reproductor + modo watch      | `0.6.0` ✅ |
-| M7   | Robustez y rendimiento        | `0.7.0` ✅ |
-| M8   | Publicación `v1.0.1`          | `1.0.1` ✅ |
+| Hito | Contenido                                   | Versión    |
+| ---- | ------------------------------------------- | ---------- |
+| M0   | Cimientos: tooling, hooks, CI               | `0.0.1` ✅ |
+| M1   | Núcleo de configuración                     | `0.1.0` ✅ |
+| M2   | Persistencia SQLite                         | `0.2.0` ✅ |
+| M3   | Indexación y parseo                         | `0.3.0` ✅ |
+| M4   | CLI _headless_ + búsqueda                   | `0.4.0` ✅ |
+| M5   | TUI (Ink)                                   | `0.5.0` ✅ |
+| M6   | Reproductor + modo watch                    | `0.6.0` ✅ |
+| M7   | Robustez y rendimiento                      | `0.7.0` ✅ |
+| M8   | Publicación `v1.0.1`                        | `1.0.1` ✅ |
+| M9   | Esquema v3, estado reproducción, doctor     | `1.0.1` ✅ |
+| M10  | Reproducción con memoria (tracker IPC, TUI) | `1.0.1` ✅ |
+
+Próximo: **M11 — Biblioteca sana y descubrimiento** (favoritos, filtros, `mm doctor`, macOS).
 
 ## Requisitos
 
@@ -169,11 +179,26 @@ mm                       # interfaz TUI a pantalla completa
 mm index                 # escanea las raíces configuradas y actualiza el índice
 mm index --dry-run       # simula el escaneo sin tocar la base de datos
 mm list                  # enumera la biblioteca
+mm list --favorites      # solo favoritos
+mm list --in-progress    # títulos en curso
+mm list --unwatched      # no vistos
 mm search "cowboy bebop" # búsqueda por título
 mm search "akira" --json # salida para scripts
 mm show "cowboy bebop"   # detalle de un título (temporadas, episodios, rutas)
 mm play "cowboy bebop"   # abre el primer episodio (o el fichero con --file) en mpv/vlc
-mm play "akira" --dry-run # muestra el comando sin lanzar el reproductor
+mm play "cowboy bebop" --resume   # reanuda desde la posición guardada
+mm play "cowboy bebop" --restart  # ignora la posición guardada
+mm play "cowboy bebop" --next     # siguiente episodio no completado
+mm play "akira" --dry-run         # muestra el comando sin lanzar el reproductor
+mm continue              # lista títulos en curso
+mm history               # historial de reproducción
+mm mark "cowboy bebop" --watched     # marca como visto
+mm mark "cowboy bebop" --unwatched   # marca como no visto
+mm mark "cowboy bebop" --position 120 # guarda posición manual
+mm favorite "cowboy bebop"           # marca/desmarca favorito
+mm favorite "cowboy bebop" --off     # desmarca favorito
+mm doctor                # diagnóstico de la biblioteca
+mm doctor --prune-missing # elimina entradas de ficheros ausentes
 mm watch                 # vigila las raíces y reindexa al detectar cambios
 mm config --path          # ruta del archivo de configuración en uso
 mm db stats               # tamaño de la biblioteca y del índice
@@ -186,7 +211,9 @@ mm index --verbose        # diagnóstico detallado por stderr
 `mm show`), `--player <nombre>` para usar otro reproductor de los configurados,
 `--foreground` para esperar a que termine y `--dry-run` para inspeccionar el comando.
 La salida `--json` de `mm play --dry-run` incluye el comando, los argumentos, el modo y
-el fichero resuelto.
+el fichero resuelto, además de info de reproducción (`resumedFrom`, `position`, `duration`, `completed`).
+
+`mm mark`, `mm continue`, `mm history`, `mm favorite` y `mm doctor` también admiten `--json`.
 
 ### Logs y diagnóstico
 
@@ -220,18 +247,25 @@ La salida `--json` es el contrato estable para scripts: un único objeto JSON po
 
 ### TUI
 
-`mm` sin argumentos abre la interfaz a pantalla completa. Atajos por defecto (todos se
-pueden cambiar en `keybindings` de la configuración):
+`mm` sin argumentos abre la interfaz a pantalla completa. La barra lateral incluye
+secciones: **Todo**, **Continuar** (títulos en curso), **Series**, **Anime**, **Películas**.
+El panel de detalle muestra progreso, estado (● en curso / ✓ completado) y favoritos (★).
 
-| Tecla   | Acción                                   |
-| ------- | ---------------------------------------- |
-| `q`     | salir (también `Ctrl+C`)                 |
-| `Tab`   | siguiente sección (todo, series, anime…) |
-| `↑` `↓` | mover la selección                       |
-| `/`     | abrir el buscador; `Esc` vuelve          |
-| `s`     | ver la configuración efectiva            |
-| `?`     | ayuda con los atajos                     |
-| `p`     | reproducir el primer fichero del título  |
+Atajos por defecto (todos se pueden cambiar en `keybindings` de la configuración):
+
+| Tecla   | Acción                                                      |
+| ------- | ----------------------------------------------------------- |
+| `q`     | salir (también `Ctrl+C`)                                    |
+| `Tab`   | siguiente sección (todo, continuar, series…)                |
+| `↑` `↓` | mover la selección                                          |
+| `/`     | abrir el buscador; `Esc` vuelve                             |
+| `s`     | ver la configuración efectiva                               |
+| `?`     | ayuda con los atajos                                        |
+| `p`     | reproducir el primer fichero del título                     |
+| `w`     | marcar visto / no visto                                     |
+| `f`     | favorito / quitar favorito                                  |
+| `n`     | siguiente episodio                                          |
+| `g`     | ciclo de filtros (todos / en curso / no vistos / favoritos) |
 
 ## Configuración
 
@@ -268,10 +302,17 @@ player:
   players:
     mpv:
       command: mpv
-      args: ['--force-window=immediate', '{file}']
+      args: ['--force-window=immediate', '--start={start}', '{file}']
     vlc:
       command: vlc
-      args: ['--started-from-file', '{file}']
+      args: ['--started-from-file', '--start-time={start}', '{file}']
+
+playback:
+  tracking: auto
+  resume: true
+  resumeMinSeconds: 30
+  completedThreshold: 0.9
+  completedTailSeconds: 30
 
 ui:
   theme: default
@@ -291,8 +332,10 @@ keybindings:
 ```
 
 `{file}` es obligatorio en la plantilla de `args`: se sustituye por la ruta del vídeo
-como un argumento independiente (nunca se pasa por una shell). `onLaunch: detach` no
-bloquea la terminal y el reproductor sigue vivo si cierras la TUI; `foreground` espera a
+como un argumento independiente (nunca se pasa por una shell). `{start}` es opcional:
+si la plantilla lo incluye y hay una posición de reanudación válida, se sustituye por los
+segundos enteros; si no hay reanudación, se elimina el argumento completo. `onLaunch: detach`
+no bloquea la terminal y el reproductor sigue vivo si cierras la TUI; `foreground` espera a
 que termine. La TUI usa siempre `detach` para no congelarse.
 
 Precedencia de la configuración: `defaults → archivo YAML → variables de entorno → flags`.
