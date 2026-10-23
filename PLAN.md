@@ -228,6 +228,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
 | M7   | Robustez y rendimiento                                | ✅     | 6/6      |
 | M8   | Release `v1.0.0`                                      | ✅     | 7/7      |
+| M9   | Esquema v3, estado reproducción, doctor               | 🟡     | 6/6      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -519,6 +520,27 @@ contenedor limpio destapó un fallo en la expansión de `~` de los instaladores,
 El canal oficial es GitHub Releases (ADR 0009). El detalle del proceso y el resultado están
 en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 [`docs/plans/version-2.0.md`](./docs/plans/version-2.0.md).
+
+---
+
+### M9 — Esquema v3, estado reproducción, doctor · `2.0.0`
+
+**Tareas**
+
+- [x] ADR 0010: estado de reproducción y reanudación.
+- [x] ADR 0011: salud de la biblioteca y reparaciones seguras.
+- [x] Esquema v3 (playback_state, media_preferences), repositorios y migración con backup.
+- [x] Configuración `playback` y placeholder `{start}`.
+- [x] Contrato CLI/JSON de los comandos nuevos (`play --resume/--restart/--next`, `continue`, `history`, `mark`, `favorite`, `doctor`).
+- [x] Tests de migración y repositorios.
+
+**Alcance:** migración v3 aditiva con backup automático, repositorios `playbackRepo` y `preferencesRepo`, dominio de reproducción (`calculatePlayback`, `findNextEpisode`, `applyStartPlaceholder`), comandos CLI, `mm doctor` con diagnóstico y `--prune-missing`, integración en launcher con `{start}`.
+
+**A testear:** migración desde base `v1` y `v2` con backup, repositorios playback/preferences, dominio playback, comandos CLI.
+
+**DoD:** una base `1.0` migra a v3, conserva todos los títulos y deja backup verificable; `mm play --resume` reanuda posición guardada; `mm doctor` detecta ausentes/duplicados; `npm run verify` verde en los 3 nodos.
+
+**Estado:** completado. Migración v3, repositorios, dominio, comandos y tests integrados y verificados en CI.
 
 ## 8. Comandos de inicialización
 

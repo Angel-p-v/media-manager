@@ -315,10 +315,10 @@ Reglas:
 
 - [x] ADR 0010: estado de reproducción y reanudación.
 - [x] ADR 0011: salud de la biblioteca y reparaciones seguras.
-- [ ] Esquema v3, repositorios y migración con backup.
-- [ ] Configuración `playback` y placeholder `{start}`.
-- [ ] Contrato CLI/JSON de los comandos nuevos.
-- [ ] Tests de migración y repositorios.
+- [x] Esquema v3, repositorios y migración con backup.
+- [x] Configuración `playback` y placeholder `{start}`.
+- [x] Contrato CLI/JSON de los comandos nuevos.
+- [x] Tests de migración y repositorios.
 
 **DoD:** una base `1.0` migra a v3, conserva todos los títulos y deja backup verificable.
 
