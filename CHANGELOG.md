@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [1.1.0](https://github.com/Angel-p-v/media-manager/compare/v1.0.1...v1.1.0) (2026-10-23)
+
+
+### Features
+
+* **db:** esquema v3, estado reproducción, doctor y comandos CLI ([#20](https://github.com/Angel-p-v/media-manager/issues/20)) ([93e2ba8](https://github.com/Angel-p-v/media-manager/commit/93e2ba8c35d02d625c3a8554e72b3f922ff14489))
+
 ## [1.0.1](https://github.com/Angel-p-v/media-manager/compare/v1.0.0...v1.0.1) (2026-10-23)
 
 
