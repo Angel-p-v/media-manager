@@ -3,8 +3,7 @@ import pc from 'picocolors';
 import { withCommandContext, type CommandOptions } from './context.js';
 import { toMediaFileJson, toMediaJson } from './output.js';
 import { calculatePlayback, nowIso } from '../core/playback/index.js';
-
-import type { MediaFileRow } from '../core/db/types.js';
+import { selectMediaFile } from '../core/player/selection.js';
 
 export type MarkCommandOptions = CommandOptions & {
   watched?: boolean;
@@ -32,16 +31,8 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       );
     }
 
-    // Resolver el fichero
-    const file = ((): MediaFileRow => {
-      if (options.file !== undefined) {
-        const found = files.find((f) => f.id === options.file);
-        if (!found) throw new Error(`El fichero #${options.file} no pertenece a este título.`);
-        return found;
-      }
-      if (files.length === 1) return files[0]!;
-      throw new Error('El título tiene varios ficheros; use --file para especificar uno.');
-    })();
+    // Resolver el fichero (usa el primero si hay varios, igual que play)
+    const file = selectMediaFile(files, options.file);
 
     const state = playbackRepo.get(file.id);
     let updatedState: ReturnType<typeof playbackRepo.save>;
@@ -75,8 +66,8 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       if (positionValue < 0) {
         throw new Error('La posición no puede ser negativa.');
       }
-      const duration = state?.durationSeconds;
-      const position = duration === null ? positionValue : Math.min(positionValue, duration!);
+      const duration = state?.durationSeconds ?? null;
+      const position = duration === null ? positionValue : Math.min(positionValue, duration);
       updatedState = playbackRepo.save({
         mediaFileId: file.id,
         positionSeconds: position,
