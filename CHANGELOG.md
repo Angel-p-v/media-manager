@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [1.0.1](https://github.com/Angel-p-v/media-manager/compare/v1.0.0...v1.0.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **release:** expande ~ correctamente en los instaladores ([#16](https://github.com/Angel-p-v/media-manager/issues/16)) ([3ac5bd4](https://github.com/Angel-p-v/media-manager/commit/3ac5bd4efc3c4fc0f1bd02f645ac55d0a6c0ab4e))
+
 ## [1.0.0] - 2026-10-23
 
 Primera versión estable de `media-manager-cli`: un gestor de series, anime y películas
