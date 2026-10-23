@@ -186,7 +186,7 @@ M9 está completado: esquema v3 (playback_state, media_preferences), migración 
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
 continue, history, mark, favorite), mm doctor. Tests de migración y repositorios en verde.
 
-M10 en curso: tracker IPC de mpv completado. Pendiente: sección "Continuar" en la TUI y tests E2E con IPC falso.
+M10 en curso: tracker IPC de mpv y sección "Continuar" en la TUI completados. Pendiente: tests E2E con IPC falso y `--dry-run`.
 El siguiente paso es completar M10 y pasar a M11.
 
 ## Reglas para el agente

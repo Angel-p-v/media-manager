@@ -553,7 +553,7 @@ en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 - [x] Tracker IPC de mpv y fallback manual.
 - [x] `mm play --resume/--restart/--next` (completado en M9).
 - [x] `mm mark`, `mm continue`, `mm history` (completado en M9).
-- [ ] Sección "Continuar" en la TUI con barra de progreso y acciones rápidas.
+- [x] Sección "Continuar" en la TUI con barra de progreso y acciones rápidas.
 - [ ] Tests con IPC falso y E2E de `--dry-run`.
 
 **Alcance:** tracker IPC de mpv (`MpvTracker`), integración en `launchPlayer`, guardado de posición cada 5s, limpieza de socket y proceso. La TUI añade sección "Continuar" usando `playbackRepo.listInProgress` y muestra indicadores de progreso.
@@ -562,7 +562,7 @@ en [`docs/guides/release.md`](./docs/guides/release.md). El siguiente paso es
 
 **DoD:** se puede empezar un episodio, salir, volver a `mm` y continuar donde se dejó.
 
-**Estado:** en curso. Tracker IPC completado e integrado. Pendiente TUI y tests E2E.
+**Estado:** en curso. Tracker IPC y sección TUI "Continuar" completados. Pendiente: tests E2E con IPC falso y `--dry-run`.
 
 ```bash
 mkdir -p ~/Projects/media-manager && cd ~/Projects/media-manager
