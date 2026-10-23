@@ -1,7 +1,7 @@
 import type { MediaType } from '../core/config/schema.js';
 
 /** Sección activa del navegador. */
-export type Section = 'all' | MediaType;
+export type Section = 'all' | MediaType | 'in-progress';
 
 /** Vistas de la interfaz. */
 export type ViewName = 'library' | 'search' | 'settings';

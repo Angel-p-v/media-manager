@@ -4,6 +4,7 @@ import type { MediaType } from '../config/schema.js';
 import type { FileRepository } from '../db/repositories/fileRepo.js';
 import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import type { ListMediaOptions, MediaRepository } from '../db/repositories/mediaRepo.js';
+import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../db/types.js';
 
 /** Repositorios que necesita la capa de consulta, inyectados por el llamante. */
@@ -11,6 +12,7 @@ export type LibraryRepositories = {
   mediaRepo: MediaRepository;
   fileRepo: FileRepository;
   indexRunRepo: IndexRunRepository;
+  playbackRepo: PlaybackRepository;
 };
 
 export type SearchMediaOptions = {
@@ -27,6 +29,7 @@ export type LibraryStats = {
   media: Record<'total' | MediaType, number>;
   files: number;
   lastRun: IndexRunRow | null;
+  inProgress: number;
 };
 
 /**
@@ -41,12 +44,14 @@ export type LibraryService = {
   search(query: string, options?: SearchMediaOptions): MediaRow[];
   /** Resuelve un id o un título y devuelve el título con sus ficheros. */
   find(query: string): MediaDetails;
+  /** Títulos en curso (con progreso guardado y no completados). */
+  listInProgress(limit?: number): MediaRow[];
   stats(): LibraryStats;
 };
 
 /** Crea el servicio de biblioteca sobre un conjunto de repositorios. */
 export function createLibraryService(repositories: LibraryRepositories): LibraryService {
-  const { mediaRepo, fileRepo, indexRunRepo } = repositories;
+  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo } = repositories;
 
   const detailsFor = (media: MediaRow): MediaDetails => ({
     media,
@@ -101,6 +106,19 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       return detailsFor(candidates[0]!);
     },
 
+    listInProgress(limit = 200): MediaRow[] {
+      const entries = playbackRepo.listInProgress(limit);
+      // Devolvemos solo los MediaRow únicos (un título puede tener varios ficheros en progreso)
+      const seen = new Set<number>();
+      return entries
+        .map((entry) => entry.media)
+        .filter((media) => {
+          if (seen.has(media.id)) return false;
+          seen.add(media.id);
+          return true;
+        });
+    },
+
     stats(): LibraryStats {
       return {
         media: {
@@ -111,6 +129,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         },
         files: fileRepo.count(),
         lastRun: indexRunRepo.latest() ?? null,
+        inProgress: playbackRepo.count(),
       };
     },
   };

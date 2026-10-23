@@ -31,7 +31,7 @@ export type AppProps = {
   launchPlayer?: LaunchPlayerFn;
 };
 
-const SECTION_ORDER: readonly Section[] = ['all', 'series', 'anime', 'movie'];
+const SECTION_ORDER: readonly Section[] = ['all', 'in-progress', 'series', 'anime', 'movie'];
 
 const VIEW_TITLE: Record<ViewName, string> = {
   library: 'Biblioteca',
@@ -60,11 +60,12 @@ export function App({
   const [helpVisible, setHelpVisible] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  const type = section === 'all' ? undefined : section;
+  const type = section === 'all' || section === 'in-progress' ? undefined : section;
   const { items, total, error } = useLibrary(library, {
     limit: view === 'search' ? 100 : 200,
     ...(type === undefined ? {} : { type }),
     ...(view === 'search' ? { query } : {}),
+    section: section === 'in-progress' ? 'in-progress' : undefined,
   });
   const safeSelected = items.length === 0 ? 0 : Math.min(selected, items.length - 1);
   const selectedMedia = items[safeSelected];
@@ -72,15 +73,16 @@ export function App({
 
   const counts = useMemo<Counts>(() => {
     try {
-      const { media } = library.stats();
+      const stats = library.stats();
       return {
-        all: media.total,
-        series: media.series,
-        anime: media.anime,
-        movie: media.movie,
+        all: stats.media.total,
+        'in-progress': stats.inProgress,
+        series: stats.media.series,
+        anime: stats.media.anime,
+        movie: stats.media.movie,
       };
     } catch {
-      return { all: 0, series: 0, anime: 0, movie: 0 };
+      return { all: 0, 'in-progress': 0, series: 0, anime: 0, movie: 0 };
     }
   }, [library]);
 
