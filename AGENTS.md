@@ -168,26 +168,26 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado      |
-| ---- | ----------------------------------------------------- | ----------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho    |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
-| M4   | CLI headless + búsqueda                               | ✅ hecho    |
-| M5   | TUI (Ink)                                             | ✅ hecho    |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
-| M7   | Robustez y rendimiento                                | ✅ hecho    |
-| M8   | Release v1.0.0                                        | ✅ hecho    |
-| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho    |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | 🟡 en curso |
+| Hito | Contenido                                             | Estado   |
+| ---- | ----------------------------------------------------- | -------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho |
+| M4   | CLI headless + búsqueda                               | ✅ hecho |
+| M5   | TUI (Ink)                                             | ✅ hecho |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho |
+| M7   | Robustez y rendimiento                                | ✅ hecho |
+| M8   | Release v1.0.0                                        | ✅ hecho |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
 continue, history, mark, favorite), mm doctor. Tests de migración y repositorios en verde.
 
-M10 en curso: tracker IPC de mpv y sección "Continuar" en la TUI completados. Pendiente: tests E2E con IPC falso y `--dry-run`.
-El siguiente paso es completar M10 y pasar a M11.
+M10 está completado: tracker IPC de mpv, sección "Continuar" en la TUI, y tests E2E con IPC falso y `--dry-run` completados.
+El siguiente paso es M11 (Biblioteca sana y descubrimiento).
 
 ## Reglas para el agente
 
