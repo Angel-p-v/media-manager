@@ -1,6 +1,6 @@
 # Plan: instaladores, distribución y seguridad
 
-- **Estado:** en ejecución — fases 1-4 completadas; falta publicar (2026-10-23)
+- **Estado:** completado — `v1.0.0` y `v1.0.1` publicadas y verificadas (2026-10-23)
 - **Fecha:** 2026-10-22
 - **Sustituye y concreta:** [`distribucion-sin-npm.md`](./distribucion-sin-npm.md)
 - **Decisión de fondo:** dejar de publicar en npm y distribuir artefactos portables desde
@@ -492,28 +492,29 @@ También se documentará:
 
 ### Fase 5 — Release
 
-- [ ] Construir y probar artefactos Linux x64/arm64.
-- [ ] Publicar una release candidata.
-- [ ] Instalar desde la release candidata y desinstalar.
-- [ ] Crear `v1.0.0`.
-- [ ] Adjuntar assets, checksums, SBOM y atestaciones.
-- [ ] Marcar M8 como completado.
+- [x] Construir y probar artefactos Linux x64/arm64.
+- [x] Publicar `v1.0.0` con los assets de ambas plataformas.
+- [x] Instalar desde la release y desinstalar en un entorno limpio.
+- [x] Crear `v1.0.0`.
+- [x] Adjuntar assets, checksums, SBOM y atestaciones.
+- [x] Corregir la expansión de `~` en los instaladores y publicar `v1.0.1`.
+- [x] Marcar M8 como completado.
 
 ## 13. Criterios de aceptación
 
-- [ ] `install.sh` instala `mm` en Linux x64 sin Node ni npm instalados.
-- [ ] `install.sh` verifica checksum antes de extraer y ejecutar.
-- [ ] `install.sh` rechaza archivos manipulados o plataformas no soportadas.
-- [ ] `install.sh` no requiere `sudo` ni modifica el `PATH`.
-- [ ] `uninstall.sh` conserva configuración y base de datos por defecto.
-- [ ] `uninstall.sh --purge` elimina también configuración y base de datos.
-- [ ] El wrapper funciona desde cualquier directorio.
-- [ ] La release publica `.tar.gz`, `.sha256`, SBOM y atestación.
-- [ ] El flujo de release no usa `NPM_TOKEN`.
-- [ ] CI ejecuta `shellcheck`, pruebas de instalación y validación de assets.
-- [ ] La instalación desde la release se prueba en un entorno limpio.
-- [ ] README, release, SECURITY, AGENTS, PLAN y ADR están actualizados.
-- [ ] M8 se cierra solo después de publicar y verificar la release.
+- [x] `install.sh` instala `mm` en Linux x64 sin Node ni npm instalados.
+- [x] `install.sh` verifica checksum antes de extraer y ejecutar.
+- [x] `install.sh` rechaza archivos manipulados o plataformas no soportadas.
+- [x] `install.sh` no requiere `sudo` ni modifica el `PATH`.
+- [x] `uninstall.sh` conserva configuración y base de datos por defecto.
+- [x] `uninstall.sh --purge` elimina también configuración y base de datos.
+- [x] El wrapper funciona desde cualquier directorio.
+- [x] La release publica `.tar.gz`, `.sha256`, SBOM y atestación.
+- [x] El flujo de release no usa `NPM_TOKEN`.
+- [x] CI ejecuta `shellcheck`, pruebas de instalación y validación de assets.
+- [x] La instalación desde la release se prueba en un entorno limpio.
+- [x] README, release, SECURITY, AGENTS, PLAN y ADR están actualizados.
+- [x] M8 se cierra solo después de publicar y verificar la release.
 
 ## 14. Riesgos y mitigaciones
 
@@ -533,7 +534,7 @@ También se documentará:
 
 ## 15. Decisiones pendientes
 
-1. ¿Linux arm64 entra en `v1.0.0` o se publica después de x64?
+1. **Resuelta:** sí, Linux x64 y arm64 se publicaron juntas en `v1.0.0` y `v1.0.1`.
 2. ¿macOS se incluye en esta release o en una siguiente?
 3. ¿Se exige `--verify-attestation` por defecto cuando `gh` está disponible?
 4. ¿Se añade `--init-config` al instalador o se mantiene la configuración manual?
@@ -542,6 +543,7 @@ También se documentará:
 
 ## 16. Siguiente plan
 
-Una vez publicada y verificada `v1.0.0`, el siguiente paso es
+`v1.0.0` y su corrección `v1.0.1` están publicadas y verificadas, así que este plan y M8
+están cerrados. El siguiente paso es
 [`version-2.0.md`](./version-2.0.md): estado de reproducción, continuar viendo,
 biblioteca sana y soporte macOS.

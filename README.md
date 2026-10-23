@@ -62,13 +62,13 @@ mm index      →  re-escanea tus carpetas y actualiza el índice
 | Salida `--json` para scripts                                 | ✅ M4  |
 | Logs estructurados, `--verbose` y errores con código         | ✅ M7  |
 | Mantenimiento SQLite (`optimize` / `VACUUM`)                 | ✅ M7  |
-| Instalador verificado, checksums y distribución portable     | 🟡 M8  |
+| Instalador verificado, checksums y distribución portable     | ✅ M8  |
 
 ## Estado del proyecto
 
-**Release `v1.0.0` en preparación.** La distribución se hará desde GitHub Releases con
-un instalador que verifica checksum y estructura; no se publica en npm. El plan de
-desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
+**Release `v1.0.1` publicada.** La distribución se hace desde GitHub Releases con un
+instalador que verifica checksum y estructura; no se publica en npm. El plan de desarrollo
+completo, con hitos, criterios de aceptación y estrategia de pruebas, vive en
 [`PLAN.md`](./PLAN.md).
 
 | Hito | Contenido                     | Versión    |
@@ -81,7 +81,7 @@ desarrollo completo, con hitos, criterios de aceptación y estrategia de pruebas
 | M5   | TUI (Ink)                     | `0.5.0` ✅ |
 | M6   | Reproductor + modo watch      | `0.6.0` ✅ |
 | M7   | Robustez y rendimiento        | `0.7.0` ✅ |
-| M8   | Publicación `v1.0.0`          | `1.0.0` 🟡 |
+| M8   | Publicación `v1.0.1`          | `1.0.1` ✅ |
 
 ## Requisitos
 
@@ -110,7 +110,7 @@ mm --version
 Opciones habituales:
 
 ```bash
-sh /tmp/mm-install.sh --version v1.0.0     # versión concreta
+sh /tmp/mm-install.sh --version v1.0.1     # versión concreta
 sh /tmp/mm-install.sh --prefix "$HOME/.local"
 sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
 ```
@@ -122,8 +122,8 @@ autoactualización).
 ### Verificar una descarga manual
 
 ```bash
-sha256sum -c media-manager-cli-1.0.0-linux-x64.tar.gz.sha256
-gh attestation verify media-manager-cli-1.0.0-linux-x64.tar.gz \
+sha256sum -c media-manager-cli-1.0.1-linux-x64.tar.gz.sha256
+gh attestation verify media-manager-cli-1.0.1-linux-x64.tar.gz \
   --repo Angel-p-v/media-manager
 ```
 
