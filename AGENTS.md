@@ -98,7 +98,7 @@ npm run test:e2e
 npm run coverage       # informe de cobertura
 npm run bench          # benchmarks de escaneo, indexado y consultas
 npm run smoke          # npm pack → instalación limpia → smoke de la CLI
-npm run standalone     # distribución portable con Node incluido (opcional)
+npm run standalone     # bundle portable con Node oficial verificado (--node-source official)
 npm run build          # compila a dist/
 npm run lint:fix       # eslint --fix
 npm run format         # prettier --write
@@ -147,14 +147,19 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
   `detach` para no bloquearse, aunque `player.onLaunch` sea `foreground`.
 - **Watch**: chokidar v6 no recibe globs; se filtran eventos con `isVideoFile` y se
   reindexa la biblioteca completa (incremental) para que los borrados también se poden.
-- **Paquete npm**: el nombre público es `media-manager-cli` (`media-manager` ya está
-  ocupado) y el binario es `mm`. `files` es una lista blanca: si añades documentación que
-  el README enlace desde npm, inclúyela o el enlace se romperá. `prepack` compila `dist/`
-  y `npm run smoke` prueba el tarball real.
-- **Release**: la primera `v1.0.0` se publica manualmente con tag + GitHub Release;
-  `release.yml` delega en `publish.yml`, que exige `NPM_TOKEN` y usa provenance. Después,
-  release-please gestiona `CHANGELOG.md` y el tag y llama a `publish.yml` en el mismo run.
-  No muevas un tag ya publicado; ver `docs/guides/release.md`.
+- **Paquete npm interno**: el nombre sigue siendo `media-manager-cli` y el binario `mm`,
+  pero npm solo se usa para construir y probar. `files` es una lista blanca: si añades
+  documentación que el instalador copie o el README enlace, inclúyela. `prepack` compila
+  `dist/` y `npm run smoke` prueba el tarball real.
+- **Instaladores**: `install.sh` y `uninstall.sh` son POSIX `sh`, sin `eval` ni `sudo`.
+  Cualquier cambio debe pasar `shellcheck`, `sh -n` y los tests de
+  `tests/integration/installer/`. El checksum es obligatorio incluso con `--file`; no
+  ejecutes el bundle antes de verificarlo ni confíes en las rutas del `install.json`
+  instalado para borrar nada.
+- **Release**: las releases se publican desde GitHub Releases (ADR 0009), sin `NPM_TOKEN`.
+  `release.yml` y `release-please.yml` llaman a `release-artifacts.yml`, que descarga el
+  Node oficial verificado, genera `.sha256` y SBOM, atesta la procedencia y sube los
+  assets sin sobrescribir. No muevas un tag ya publicado; ver `docs/guides/release.md`.
 
 ## Estado actual y siguiente paso
 
@@ -172,8 +177,10 @@ Hitos del plan (ver `PLAN.md` §7):
 | M7   | Robustez y rendimiento                                | ✅ hecho       |
 | M8   | Release v1.0.0                                        | 🟡 preparación |
 
-La preparación de M8 está cerrada salvo la publicación: falta añadir `NPM_TOKEN`, crear
-el tag `v1.0.0` y publicar la GitHub Release. Instrucciones en `docs/guides/release.md`.
+La preparación de M8 está cerrada salvo la publicación: el canal ya es GitHub Releases
+(instaladores, bundles, checksums, SBOM y atestaciones). Falta crear el tag `v1.0.0`,
+publicar la release y probarla en un entorno limpio. Instrucciones en
+`docs/guides/release.md`.
 
 ## Reglas para el agente
 

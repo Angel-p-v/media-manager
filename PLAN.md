@@ -6,7 +6,7 @@
 
 - **Proyecto:** `media-manager` (`mm`) — gestor de contenido multimedia para terminal
 - **Naturaleza:** proyecto personal open source, mantenido a largo plazo
-- **Objetivo:** llegar a una `v1.0.0` estable, publicada en npm, con CI/CD, tests y docs
+- **Objetivo:** llegar a una `v1.0.0` estable, publicada en GitHub Releases, con CI/CD, tests y docs
 - **Última actualización:** 2026-10-22
 
 ---
@@ -55,7 +55,7 @@
 ```
 media-manager/
 ├─ .github/
-│  ├─ workflows/{ci.yml,publish.yml,release.yml,release-please.yml}
+│  ├─ workflows/{ci.yml,release-artifacts.yml,release.yml,release-please.yml}
 │  ├─ dependabot.yml
 │  ├─ ISSUE_TEMPLATE/{bug_report.yml,feature_request.yml}
 │  └─ pull_request_template.md
@@ -74,8 +74,10 @@ media-manager/
 │  ├─ ui/                        # presentación Ink (App, components, views, hooks)
 │  └─ shared/                    # errores, logger, rutas
 ├─ scripts/
-│  ├─ build/standalone.mjs       # artefacto portable
+│  ├─ build/{standalone,fetch-node,notices,platform}.mjs
+│  ├─ build/node-version.txt     # versión exacta del runtime incluido
 │  └─ test/smoke-pack.mjs        # smoke del tarball
+├─ install.sh  uninstall.sh      # instaladores POSIX
 ├─ tests/
 │  ├─ unit/                      # lógica pura, sin I/O
 │  ├─ integration/               # SQLite real, fs real, render de Ink
@@ -167,24 +169,28 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 - Job `verify`: matriz Node 22 / 24 / 26 → `npm ci` → lint → format:check → typecheck →
   build → test. Artefacto `dist` en Node 24.
 - Job `smoke`: instala el tarball real con `npm run smoke` en Node 24.
+- Job `installers`: `sh -n`, `dash -n` y `shellcheck` sobre `install.sh` y `uninstall.sh`.
 - Job `coverage`: `npm run coverage` → subida a Codecov (no bloquea si el token no está).
 - `concurrency` con `cancel-in-progress` para no gastar minutos en pushes seguidos.
 - `permissions: contents: read` (mínimo privilegio).
 
-### `release.yml` + `publish.yml`
+### `release.yml` + `release-artifacts.yml`
 
 - `release.yml` se dispara con `release: published` y delega en el workflow reutilizable
-  `publish.yml` con el tag de la release.
-- `publish.yml` comprueba que el tag coincide con `package.json`, ejecuta `verify` y el
-  smoke del tarball, y exige `NPM_TOKEN`.
-- `npm publish --provenance --access public` con `NODE_AUTH_TOKEN` y `id-token: write`.
+  `release-artifacts.yml` con el tag de la release.
+- `release-artifacts.yml` construye el bundle en la matriz Linux x64/arm64 con el Node
+  oficial verificado, ejecuta `verify`, comprueba el `.sha256`, atesta la procedencia y
+  sube los assets sin `--clobber`.
+- Un job independiente genera y sube el SBOM CycloneDX.
+- No se publica en npm ni se necesita `NPM_TOKEN`.
 
 ### `release-please.yml`
 
 - Observa los pushes a `main` y abre la PR de release con `CHANGELOG` y bump de versión.
 - La configuración vive en `release-please-config.json` y `.release-please-manifest.json`.
-- Si la release se crea, invoca `publish.yml` como workflow reutilizable para publicar en
-  el mismo run (los eventos de `GITHUB_TOKEN` no disparan otros workflows).
+- Si la release se crea, invoca `release-artifacts.yml` como workflow reutilizable para
+  publicar los assets en el mismo run (los eventos de `GITHUB_TOKEN` no disparan otros
+  workflows).
 
 ### Dependabot
 
@@ -479,8 +485,8 @@ el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto e
 
 **Tareas**
 
-- [ ] Empaquetado y publicación en npm con _provenance_ (empaquetado listo; falta `NPM_TOKEN`)
-- [x] Binario standalone opcional
+- [x] Artefactos portables con Node oficial verificado y checksums
+- [x] Instaladores `install.sh` / `uninstall.sh` con verificación de integridad
 - [x] `CHANGELOG.md` con release-please
 - [x] README con demo, `SECURITY.md` y `CONTRIBUTING.md`
 - [x] Workflow de release
@@ -496,25 +502,22 @@ el [ADR 0007](./docs/adr/0007-logging-errores-y-mantenimiento.md); presupuesto e
 > [`docs/plans/version-2.0.md`](./docs/plans/version-2.0.md). Se ejecuta cuando M8 y el
 > plan de instaladores estén cerrados.
 
-**Alcance:** empaquetado y publicación en npm con _provenance_ · binario standalone
-opcional · `CHANGELOG.md` (release-please) · README con demo · `SECURITY.md` ·
-`CONTRIBUTING.md` · workflow de release.
+**Alcance:** bundles portables con Node oficial verificado · instaladores POSIX ·
+checksums, SBOM y atestaciones de procedencia · `CHANGELOG.md` (release-please) · README
+con demo · `SECURITY.md` · `CONTRIBUTING.md` · workflow de release.
 
 **A testear:** _smoke post-build_: `npm pack` → instalar el tarball en un directorio
 temporal → ejecutar `--version`, `config --validate` e `index --dry-run`.
 
-**DoD:** tag `v1.0.0` · release de GitHub con notas · paquete publicado y verificado ·
-`npm run verify` verde en los 3 nodos.
+**DoD:** tag `v1.0.0` · release de GitHub con assets, checksums, SBOM y atestación ·
+instalación verificada sin Node · `npm run verify` verde en los 3 nodos.
 
-**Estado:** preparación completada en `feat/release-v1`; la publicación sigue bloqueada
-porque no hay `NPM_TOKEN` en el repositorio ni sesión de npm en la máquina. El paquete se
-llama `media-manager-cli` (el nombre `media-manager` está ocupado) y el binario sigue
-siendo `mm`. Incluye `files`/`prepack`, smoke del tarball en CI, distribución portable
-opcional, release-please, `CHANGELOG.md`, demo, `SECURITY.md`, `CONTRIBUTING.md` y
-[`docs/guides/release.md`](./docs/guides/release.md). Decisiones en el
-[ADR 0008](./docs/adr/0008-publicacion-y-distribucion.md). Al añadir el token: crear el tag
-`v1.0.0`, publicar la GitHub Release y dejar que `.github/workflows/publish.yml` publique
-con provenance.
+**Estado:** artefactos e instaladores completados; falta publicar. El canal oficial es
+GitHub Releases (ADR 0009): bundles Linux x64/arm64 con Node oficial, checksum SHA-256,
+SBOM CycloneDX y atestación de procedencia. `install.sh` y `uninstall.sh` verifican la
+integridad y están cubiertos por tests de integración. Queda crear el tag `v1.0.0`,
+publicar la release, probar la instalación en un entorno limpio y anotar el resultado en
+[`docs/guides/release.md`](./docs/guides/release.md).
 
 ## 8. Comandos de inicialización
 
