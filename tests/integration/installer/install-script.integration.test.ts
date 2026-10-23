@@ -1,5 +1,13 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readlinkSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readlinkSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -171,6 +179,39 @@ describeLinux('install.sh (integración)', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Simulación');
+    expect(existsSync(prefix)).toBe(false);
+  });
+
+  it('respeta --bindir y el wrapper funciona desde otro directorio', () => {
+    const bundle = artifact();
+    const bindir = path.join(workDir, 'bin personalizado');
+    const args = installArgs(bundle, prefix, ['--bindir', bindir]);
+
+    expect(runScript(INSTALL_SCRIPT, args, baseEnv(home)).status).toBe(0);
+    const version = spawnSync(path.join(bindir, 'mm'), ['--version'], {
+      cwd: tmpdir(),
+      encoding: 'utf8',
+    });
+    expect(version.stdout.trim()).toBe(bundle.version);
+  });
+
+  it('falla si la atestación de procedencia no es válida', () => {
+    const bundle = artifact();
+    const fakeBin = path.join(workDir, 'gh-fallido');
+    mkdirSync(fakeBin, { recursive: true });
+    writeFileSync(path.join(fakeBin, 'gh'), '#!/bin/sh\nexit 1\n');
+    chmodSync(path.join(fakeBin, 'gh'), 0o755);
+    const env = baseEnv(home);
+    env.PATH = `${fakeBin}${path.delimiter}${env.PATH ?? ''}`;
+
+    const result = runScript(
+      INSTALL_SCRIPT,
+      installArgs(bundle, prefix, ['--verify-attestation']),
+      env,
+    );
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('atestación');
     expect(existsSync(prefix)).toBe(false);
   });
 
