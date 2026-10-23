@@ -212,3 +212,7 @@ El siguiente paso es M13 (Release v2.0.0).
   tabla de estado de `PLAN.md` y del `README.md`.
 - **No pasar al siguiente hito hasta que la PR del hito actual esté mergeada y en `main`.**
   Cada hito debe cerrar su PR y verificarse en CI antes de empezar el siguiente.
+- **Revisión y merge automático de PR:** al crear la PR al finalizar un hito, el agente
+  debe hacer una **preview/revisión completa** de la PR (diff, tests, CI, documentación)
+  y, **si la CI está en verde y no hay bloqueadores**, proceder al **merge con squash**
+  (`gh pr merge --squash --delete-branch`) y limpiar la rama remota.
