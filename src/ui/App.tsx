@@ -52,7 +52,7 @@ const VIEW_TITLE: Record<ViewName, string> = {
  * Mantiene el estado de navegación local (vista, sección, selección y búsqueda) y
  * delega todas las consultas en `LibraryService`. No escribe SQL ni conoce SQLite.
  */
-export function App({
+function AppImpl({
   config,
   library,
   onQuit,
@@ -272,3 +272,6 @@ function playbackLabel(title: string, file: MediaFileRow): string {
   const episode = `E${String(file.episode).padStart(2, '0')}`;
   return `${title} · ${season}${episode}`;
 }
+
+/** Exportación nombrada para compatibilidad con ESM y verbatimModuleSyntax. */
+export { AppImpl as App };
