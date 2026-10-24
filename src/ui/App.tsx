@@ -102,6 +102,15 @@ function AppImpl({
     setSelected(0);
   }, [view, section, query]);
 
+  // Sincronización automática de metadatos expirados al montar la TUI
+  useEffect(() => {
+    if (view !== 'library') return;
+    const expiredCount = library.getExpiredMetadataCount();
+    if (expiredCount > 0 && library.hasMetadataProviderConfigured()) {
+      setStatus(`Hay ${expiredCount} metadatos expirados. Pulsa «R» para actualizar todos.`);
+    }
+  }, [library, config.metadata?.cacheTtlHours, view]);
+
   const exitApp = (): void => {
     if (onQuit !== undefined) {
       onQuit();
@@ -205,6 +214,29 @@ function AppImpl({
     setStatus('No hay títulos con metadatos en esta sección.');
   };
 
+  const handleRefreshAllMetadata = (): void => {
+    if (view !== 'library') return;
+    setRefreshingMetadata(true);
+    setStatus('Refrescando metadatos expirados…');
+    void library
+      .refreshExpiredMetadata()
+      .then(
+        ({ refreshed, failed }) => {
+          if (refreshed === 0 && failed === 0) {
+            setStatus('No hay metadatos expirados para actualizar.');
+          } else {
+            setStatus(`Metadatos actualizados: ${refreshed} actualizados, ${failed} fallidos.`);
+          }
+        },
+        () => {
+          setStatus('No se pudieron refrescar los metadatos.');
+        },
+      )
+      .finally(() => {
+        setRefreshingMetadata(false);
+      });
+  };
+
   const handleEscape = (): void => {
     if (view !== 'library') {
       setView('library');
@@ -225,6 +257,7 @@ function AppImpl({
       play: handlePlay,
       nextSection: handleNextSection,
       refreshMetadata: handleRefreshMetadata,
+      refreshAll: handleRefreshAllMetadata,
       gotoTaggedMedia: handleGotoTaggedMedia,
       up: () => {
         if (view !== 'settings') setSelected((index) => Math.max(0, index - 1));

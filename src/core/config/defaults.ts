@@ -43,6 +43,7 @@ export const defaultConfig: AppConfig = {
     search: '/',
     play: 'p',
     refresh: 'r',
+    refreshAll: 'R',
     nextSection: 'tab',
     settings: 's',
     up: 'up',

@@ -18,6 +18,7 @@ const ACTIONS: readonly { key: string; label: string }[] = [
   { key: 'down', label: 'título siguiente' },
   { key: 'play', label: 'reproducir (M6)' },
   { key: 'refreshMetadata', label: 'refrescar metadatos' },
+  { key: 'refreshAll', label: 'refrescar todos los metadatos' },
   { key: 'gotoTaggedMedia', label: 'siguiente con metadatos' },
   { key: 'escape', label: 'cerrar o volver atrás' },
 ];
