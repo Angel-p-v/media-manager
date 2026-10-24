@@ -14,6 +14,7 @@ import type { PlaybackRepository } from '../../../src/core/db/repositories/playb
 import type { PreferenceRepository } from '../../../src/core/db/repositories/preferencesRepo.js';
 import type { TagRepository } from '../../../src/core/db/repositories/tagRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../../../src/core/db/types.js';
+import type { MetadataService } from '../../../src/core/metadata/service.js';
 
 const dark: MediaRow = {
   id: 1,
@@ -154,7 +155,7 @@ function fakeMetadataRepository(): MetadataRepository {
       mediaId: 0,
       provider: 'tmdb',
       externalId: 0,
-      title: null,
+      title: '',
       overview: null,
       posterPath: null,
       backdropPath: null,
@@ -169,6 +170,92 @@ function fakeMetadataRepository(): MetadataRepository {
   };
 }
 
+function fakeMetadataService(): MetadataService {
+  return {
+    config: {
+      logger: {
+        debug: () => {
+          void 0;
+        },
+        warn: () => {
+          void 0;
+        },
+        error: () => {
+          void 0;
+        },
+      },
+    },
+    searchTmdb: async () => {
+      await Promise.resolve();
+      return [];
+    },
+    getTmdbDetails: async () => {
+      await Promise.resolve();
+      return {
+        mediaId: 0,
+        provider: 'tmdb',
+        externalId: 0,
+        title: '',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        fetchedAt: '',
+        updatedAt: '',
+      };
+    },
+    searchTvdb: async () => {
+      await Promise.resolve();
+      return [];
+    },
+    getTvdbDetails: async () => {
+      await Promise.resolve();
+      return {
+        mediaId: 0,
+        provider: 'tvdb',
+        externalId: 0,
+        title: '',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        fetchedAt: '',
+        updatedAt: '',
+      };
+    },
+    search: async () => {
+      await Promise.resolve();
+      return [];
+    },
+    getDetails: async () => {
+      await Promise.resolve();
+      return {
+        mediaId: 0,
+        provider: 'tmdb',
+        externalId: 0,
+        title: '',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        fetchedAt: '',
+        updatedAt: '',
+      };
+    },
+    hasProviderConfigured: () => false,
+    isProviderConfigured: () => false,
+  } as unknown as MetadataService;
+}
+
 function service(
   overrides: Partial<MediaRepository> = {},
   files: Partial<Record<number, MediaFileRow[]>> = {},
@@ -181,6 +268,8 @@ function service(
     preferenceRepo: fakePreferenceRepository(),
     tagRepo: fakeTagRepository(),
     metadataRepo: fakeMetadataRepository(),
+    metadataService: fakeMetadataService(),
+    metadataConfig: { cacheTtlHours: 24 },
   });
 }
 
@@ -293,6 +382,8 @@ describe('createLibraryService', () => {
         preferenceRepo: fakePreferenceRepository(),
         tagRepo: fakeTagRepository(),
         metadataRepo: fakeMetadataRepository(),
+        metadataService: fakeMetadataService(),
+        metadataConfig: { cacheTtlHours: 24 },
       });
 
       expect(library.stats()).toEqual({

@@ -184,6 +184,10 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       updatedAt: '',
     }),
     removeMetadata: () => false,
+    getOrFetchMetadata: async () => {
+      await Promise.resolve();
+      return undefined;
+    },
   };
 }
 

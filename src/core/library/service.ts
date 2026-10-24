@@ -1,6 +1,6 @@
 import { AmbiguousError, NotFoundError } from '../../shared/errors.js';
 
-import type { MediaType } from '../config/schema.js';
+import type { MediaType, MetadataConfig } from '../config/schema.js';
 import type { FileRepository } from '../db/repositories/fileRepo.js';
 import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import type { ListMediaOptions, MediaRepository } from '../db/repositories/mediaRepo.js';
@@ -9,6 +9,7 @@ import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
 import type { PreferenceRepository } from '../db/repositories/preferencesRepo.js';
 import type { TagRepository, TagRow } from '../db/repositories/tagRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../db/types.js';
+import type { MetadataService } from '../metadata/service.js';
 
 /** Repositorios que necesita la capa de consulta, inyectados por el llamante. */
 export type LibraryRepositories = {
@@ -19,6 +20,8 @@ export type LibraryRepositories = {
   preferenceRepo: PreferenceRepository;
   tagRepo: TagRepository;
   metadataRepo: MetadataRepository;
+  metadataService: MetadataService;
+  metadataConfig: MetadataConfig;
 };
 
 export type SearchMediaOptions = {
@@ -83,6 +86,8 @@ export type LibraryService = {
   }): MediaMetadataRow;
   /** Elimina metadatos externos de un título. */
   removeMetadata(mediaId: number): boolean;
+  /** Obtiene metadatos de un título, refrescándolos automáticamente si están expirados según el TTL configurado. */
+  getOrFetchMetadata(mediaId: number): Promise<MediaMetadataRow | undefined>;
 };
 
 /**
@@ -95,8 +100,17 @@ export type LibraryService = {
 
 /** Crea el servicio de biblioteca sobre un conjunto de repositorios. */
 export function createLibraryService(repositories: LibraryRepositories): LibraryService {
-  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo, tagRepo, metadataRepo } =
-    repositories;
+  const {
+    mediaRepo,
+    fileRepo,
+    indexRunRepo,
+    playbackRepo,
+    preferenceRepo,
+    tagRepo,
+    metadataRepo,
+    metadataService,
+    metadataConfig,
+  } = repositories;
 
   const detailsFor = (media: MediaRow): MediaDetails => ({
     media,
@@ -247,6 +261,67 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     removeMetadata(mediaId: number): boolean {
       return metadataRepo.remove(mediaId);
+    },
+
+    /**
+     * Obtiene metadatos de un título, refrescándolos automáticamente si están
+     * expirados según el TTL configurado. Si no hay API key configurada, devuelve
+     * los metadatos almacenados (o undefined si no existen).
+     */
+    async getOrFetchMetadata(mediaId: number): Promise<MediaMetadataRow | undefined> {
+      await Promise.resolve();
+      const existing = metadataRepo.get(mediaId);
+      const ttlHours = metadataConfig.cacheTtlHours ?? 24;
+      const now = new Date();
+
+      // Si existen metadatos y no han expirado, devolverlos directamente
+      if (existing) {
+        const fetchedAt = new Date(existing.fetchedAt);
+        const ageHours = (now.getTime() - fetchedAt.getTime()) / (1000 * 60 * 60);
+        if (ageHours < ttlHours) {
+          return existing;
+        }
+      }
+
+      // Si hay API key configurada, intentar refrescar desde la API externa
+      if (metadataService.hasProviderConfigured()) {
+        // Intentar TMDB primero, luego TVDB
+        for (const provider of ['tmdb', 'tvdb'] as const) {
+          if (!metadataService.isProviderConfigured(provider)) continue;
+
+          try {
+            // Buscar por título para obtener el externalId (simplificado: usamos el existing o buscamos)
+            // Nota: en una implementación completa necesitaríamos buscar por título del media
+            // Aquí solo refrescamos si ya tenemos externalId guardado
+            if (existing?.externalId) {
+              const mediaType = existing.provider === 'tvdb' ? 'tv' : 'movie';
+              const details = await metadataService.getDetails(
+                existing.externalId,
+                provider,
+                mediaType,
+              );
+              return metadataRepo.set({
+                mediaId,
+                provider,
+                externalId: details.externalId,
+                title: details.title,
+                overview: details.overview,
+                posterPath: details.posterPath,
+                backdropPath: details.backdropPath,
+                voteAverage: details.voteAverage,
+                releaseDate: details.releaseDate,
+                originalLanguage: details.originalLanguage,
+                updatedAt: now.toISOString(),
+              });
+            }
+          } catch {
+            // Si falla un proveedor, probar el siguiente
+            continue;
+          }
+        }
+      }
+
+      return existing;
     },
   };
 }
