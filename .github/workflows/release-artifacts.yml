@@ -87,7 +87,16 @@ jobs:
       - name: Verificar la atestación
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify build/standalone/${{ startsWith(matrix.platform, 'windows-') && '*.zip' || '*.tar.gz' }} --repo "${{ github.repository }}"
+        shell: bash
+        run: |
+          set -eu
+          version="$(node -p "require('./package.json').version")"
+          if [[ "${{ matrix.platform }}" == windows-* ]]; then
+            ext="zip"
+          else
+            ext="tar.gz"
+          fi
+          gh attestation verify "build/standalone/media-manager-cli-${version}-${{ matrix.platform }}.${ext}" --repo "${{ github.repository }}"
       - name: Publicar los assets
         env:
           GH_TOKEN: ${{ github.token }}
