@@ -4,8 +4,24 @@ import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 export const APP_NAME = 'media-manager-cli';
-export const INSTALL_SCRIPT = path.resolve(import.meta.dirname, '..', '..', '..', 'install.sh');
-export const UNINSTALL_SCRIPT = path.resolve(import.meta.dirname, '..', '..', '..', 'uninstall.sh');
+export const INSTALL_SCRIPT = path.resolve(
+  import.meta.dirname,
+  '..',
+  '..',
+  '..',
+  'installers',
+  'linux',
+  'install.sh',
+);
+export const UNINSTALL_SCRIPT = path.resolve(
+  import.meta.dirname,
+  '..',
+  '..',
+  '..',
+  'installers',
+  'linux',
+  'uninstall.sh',
+);
 
 export type ArtifactOptions = {
   root: string;
