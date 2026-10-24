@@ -46,11 +46,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
-        if: matrix.platform != 'windows-*'
+        if: "!startsWith(matrix.platform, 'windows-')"
       - name: Construir el bundle con el Node oficial
         run: npm run standalone -- --node-source official
       - name: Verificar checksum (Linux)
-        if: matrix.platform != 'windows-*'
+        if: "!startsWith(matrix.platform, 'windows-')"
         shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
@@ -63,7 +63,7 @@ jobs:
           cd build/standalone
           sha256sum -c "${asset}.sha256"
       - name: Verificar checksum (Windows)
-        if: matrix.platform == 'windows-*'
+        if: startsWith(matrix.platform, 'windows-')
         shell: pwsh
         env:
           PLATFORM: ${{ matrix.platform }}
