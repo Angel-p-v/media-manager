@@ -188,8 +188,8 @@ function remove_within($path, $parent) {
 }
 
 if (Test-Path $BINARY) {
-    $content = Get-Content $BINARY -TotalCount 1 -ErrorAction SilentlyContinue
-    if ($content -ne $MARKER) {
+    $content = Get-Content $BINARY -Raw -ErrorAction SilentlyContinue
+    if (-not $content.Contains($MARKER)) {
         warn "$BINARY no lo gestiona este instalador; no se elimina"
     } else {
         step "eliminando $BINARY"
