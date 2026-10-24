@@ -101,6 +101,9 @@ if (-not (Test-Path $CURRENT_LINK -PathType Container)) {
     die 1 "${APP_DIR} existe pero no tiene un enlace 'current' válido; revísalo manualmente"
 }
 $CURRENT_REAL = (Get-Item $CURRENT_LINK).Target
+if (-not [System.IO.Path]::IsPathRooted($CURRENT_REAL)) {
+    $CURRENT_REAL = Join-Path $APP_DIR $CURRENT_REAL
+}
 if (-not (Test-Path $CURRENT_REAL -PathType Container)) {
     die 1 "el enlace 'current' apunta a una ruta inexistente; revísalo manualmente"
 }
