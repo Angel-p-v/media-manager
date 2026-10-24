@@ -32,6 +32,45 @@ type TmdbDetails = {
   original_language: string | null;
 };
 
+/** Respuesta de búsqueda de TVDB. */
+type TvdbSearchResponse = {
+  results: TvdbSearchResult[];
+};
+
+/** Resultado de búsqueda de TVDB. */
+type TvdbSearchResult = {
+  id: number;
+  name: string;
+  overview: string | null;
+  slug: string;
+  first_aired: string | null;
+  original_language: string | null;
+  type: 'series' | 'movie' | 'person';
+  backdrop_path: string | null;
+  artwork: TvdbArtwork | null;
+};
+
+type TvdbArtwork = {
+  '240'?: TvdbArtworkItem;
+  '1071'?: TvdbArtworkItem;
+};
+
+type TvdbArtworkItem = {
+  original: string;
+};
+
+/** Detalles de TVDB para una serie o película. */
+type TvdbDetails = {
+  id: number;
+  name: string;
+  overview: string | null;
+  first_aired: string | null;
+  original_language: string | null;
+  type: 'series' | 'movie' | 'person';
+  backdrop_path: string | null;
+  artwork: TvdbArtwork | null;
+};
+
 /** Configuración del servicio de metadatos. */
 export type MetadataServiceConfig = {
   tmdbApiKey?: string;
@@ -147,9 +186,147 @@ export class MetadataService {
   }
 
   /**
+   * Busca títulos en TVDB por consulta de texto.
+   * Devuelve resultados mapeados a un formato común.
+   */
+  async searchTvdb(query: string): Promise<MetadataSearchResult[]> {
+    if (!this.config.tvdbApiKey) {
+      throw new Error('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
+    }
+
+    // TVDB v4 API requiere autenticación con Bearer token
+    const url = new URL('https://api.thetvdb.com/v4/search');
+    url.searchParams.set('query', query);
+    url.searchParams.set('type', 'movie,series');
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${this.config.tvdbApiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`TVDB API respondió ${response.status}`);
+    }
+
+    const data = (await response.json()) as TvdbSearchResponse;
+
+    return data.results.map((r) => {
+      const posterPath = r.artwork?.['240']?.original ?? null;
+      const backdropPath = r.artwork?.['1071']?.original ?? null;
+      return {
+        provider: 'tvdb' as const,
+        externalId: r.id,
+        title: r.name,
+        overview: r.overview,
+        posterPath,
+        backdropPath,
+        voteAverage: null, // TVDB no proporciona calificación promedio en búsqueda
+        releaseDate: r.first_aired,
+        originalLanguage: r.original_language,
+      };
+    });
+  }
+
+  /**
+   * Obtiene detalles de un título de TVDB por ID externo.
+   */
+  async getTvdbDetails(
+    externalId: number,
+    mediaType: 'movie' | 'tv' = 'tv',
+  ): Promise<MetadataSearchResult> {
+    if (!this.config.tvdbApiKey) {
+      throw new Error('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
+    }
+
+    const url = new URL(`https://api.thetvdb.com/v4/${mediaType}/${externalId}`);
+
+    const response = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${this.config.tvdbApiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`TVDB API respondió ${response.status}`);
+    }
+
+    const data = (await response.json()) as TvdbDetails;
+    const posterPath = data.artwork?.['240']?.original ?? null;
+    const backdropPath = data.artwork?.['1071']?.original ?? null;
+
+    return {
+      provider: 'tvdb',
+      externalId: data.id,
+      title: data.name,
+      overview: data.overview,
+      posterPath,
+      backdropPath,
+      voteAverage: null,
+      releaseDate: data.first_aired,
+      originalLanguage: data.original_language,
+    };
+  }
+
+  /**
+   * Busca en todos los proveedores configurados (TMDB primero, luego TVDB).
+   */
+  async search(query: string): Promise<MetadataSearchResult[]> {
+    const results: MetadataSearchResult[] = [];
+
+    if (this.config.tmdbApiKey) {
+      try {
+        const tmdbResults = await this.searchTmdb(query);
+        results.push(...tmdbResults);
+      } catch (error) {
+        this.config.logger.warn('TMDB búsqueda falló', {
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    if (this.config.tvdbApiKey) {
+      try {
+        const tvdbResults = await this.searchTvdb(query);
+        results.push(...tvdbResults);
+      } catch (error) {
+        this.config.logger.warn('TVDB búsqueda falló', {
+          error: (error as Error).message,
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Obtiene detalles de un título en todos los proveedores configurados.
+   * Devuelve el primer resultado exitoso.
+   */
+  async getDetails(
+    externalId: number,
+    provider: 'tmdb' | 'tvdb',
+    mediaType: 'movie' | 'tv' = 'movie',
+  ): Promise<MetadataSearchResult> {
+    if (provider === 'tmdb') {
+      return this.getTmdbDetails(externalId, mediaType);
+    }
+    return this.getTvdbDetails(externalId, mediaType === 'tv' ? 'tv' : 'movie');
+  }
+
+  /**
    * Verifica si hay al menos un proveedor configurado.
    */
   hasProviderConfigured(): boolean {
     return !!this.config.tmdbApiKey || !!this.config.tvdbApiKey;
+  }
+
+  /**
+   * Verifica si un proveedor específico está configurado.
+   */
+  isProviderConfigured(provider: 'tmdb' | 'tvdb'): boolean {
+    return provider === 'tmdb' ? !!this.config.tmdbApiKey : !!this.config.tvdbApiKey;
   }
 }

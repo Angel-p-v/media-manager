@@ -16,13 +16,13 @@ export type MetadataCommandOptions = CommandOptions & {
 
 /** Implementa `mm metadata`: gestiona metadatos externos (TMDB/TVDB). */
 export async function runMetadataCommand(options: MetadataCommandOptions): Promise<void> {
-  await withCommandContext(options, async ({ library, logger }) => {
-    const config: MetadataServiceConfig = {
+  await withCommandContext(options, async ({ library, logger, config }) => {
+    const configValues: MetadataServiceConfig = {
       logger,
-      ...(process.env.MM_TMDB_API_KEY ? { tmdbApiKey: process.env.MM_TMDB_API_KEY } : {}),
-      ...(process.env.MM_TVDB_API_KEY ? { tvdbApiKey: process.env.MM_TVDB_API_KEY } : {}),
+      ...(config.metadata?.tmdbApiKey ? { tmdbApiKey: config.metadata.tmdbApiKey } : {}),
+      ...(config.metadata?.tvdbApiKey ? { tvdbApiKey: config.metadata.tvdbApiKey } : {}),
     };
-    const service = new MetadataService(config);
+    const service = new MetadataService(configValues);
 
     switch (options.action) {
       case 'search': {
@@ -45,7 +45,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
         }
 
         try {
-          const results = await service.searchTmdb(options.query);
+          const results = await service.search(options.query);
           if (options.json) {
             console.log(JSON.stringify({ query: options.query, results }, null, 2));
           } else {
@@ -61,7 +61,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
             }
           }
         } catch (error) {
-          console.error(pc.red(`Error buscando en TMDB: ${(error as Error).message}`));
+          console.error(pc.red(`Error buscando: ${(error as Error).message}`));
           process.exitCode = 1;
         }
         return;
@@ -75,10 +75,10 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
           return;
         }
 
-        if (!service.hasProviderConfigured()) {
+        if (!service.isProviderConfigured(options.provider)) {
           console.error(
             pc.red(
-              'No hay claves API configuradas. Añade metadata.tmdb_api_key o metadata.tvdb_api_key a tu config.yaml.',
+              `Proveedor ${options.provider} no configurado. Añade metadata.${options.provider}_api_key a tu config.yaml.`,
             ),
           );
           process.exitCode = 1;
@@ -86,8 +86,9 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
         }
 
         try {
-          const details = await service.getTmdbDetails(
+          const details = await service.getDetails(
             options.externalId,
+            options.provider,
             options.provider === 'tvdb' ? 'tv' : 'movie',
           );
 
