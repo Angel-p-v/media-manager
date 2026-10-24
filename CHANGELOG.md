@@ -6,6 +6,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.0.6](https://github.com/Angel-p-v/media-manager/compare/v3.0.5...v3.0.6) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** compara checksum en minúsculas en install.ps1 de Windows ([#96](https://github.com/Angel-p-v/media-manager/issues/96)) ([01a9f79](https://github.com/Angel-p-v/media-manager/commit/01a9f797552ffaabbcb4556362de48ed333384d6))
+* **ci:** compara hash real contra token correcto en install.ps1 de Windows ([#98](https://github.com/Angel-p-v/media-manager/issues/98)) ([e434dc2](https://github.com/Angel-p-v/media-manager/commit/e434dc22f99a2716016facc1cccb2bdaa96d1021))
+* **ci:** usa tipo ZipFile correcto para PowerShell 7 en instalador Windows ([#99](https://github.com/Angel-p-v/media-manager/issues/99)) ([eca442f](https://github.com/Angel-p-v/media-manager/commit/eca442f8dc6ac94c2ac6a879ca27d6b767aa35c9))
+
 ## [3.0.5](https://github.com/Angel-p-v/media-manager/compare/v3.0.4...v3.0.5) (2026-10-24)
 
 
