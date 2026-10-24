@@ -1,7 +1,17 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
-import { access, chmod, copyFile, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import {
+  access,
+  chmod,
+  copyFile,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+} from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -83,7 +93,7 @@ export async function fetchNodeRuntime(options) {
 
     const extractionDirectory = path.join(workspace, 'extract');
     await mkdir(extractionDirectory, { recursive: true });
-    extract(archivePath, extractionDirectory, [`${root}/bin/node`, `${root}/LICENSE`]);
+    await extract(archivePath, extractionDirectory, [`${root}/bin/node`, `${root}/LICENSE`]);
 
     await mkdir(cacheDirectory, { recursive: true });
     await copyFile(path.join(extractionDirectory, 'bin', 'node'), binaryPath);
@@ -130,23 +140,29 @@ async function sha256File(filePath) {
     .digest('hex');
 }
 
-function extract(archivePath, destination, members) {
+async function extract(archivePath, destination, members) {
   const isZip = archivePath.endsWith('.zip');
   if (isZip && process.platform === 'win32') {
-    // Windows: usar PowerShell Expand-Archive para .zip
+    // Windows: Expand-Archive no tiene --strip-components; extrae a una carpeta
+    // temporal y aclara su contenido al destino para que quede plano.
+    const tmpDir = path.join(destination, '__extract_tmp');
+    await mkdir(tmpDir, { recursive: true });
     const result = spawnSync(
       'powershell.exe',
       [
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        `Expand-Archive -Path "${archivePath}" -DestinationPath "${destination}" -Force`,
+        `Expand-Archive -Path "${archivePath}" -DestinationPath "${tmpDir}" -Force`,
       ],
       { encoding: 'utf8' },
     );
     if (result.status !== 0) {
       throw new Error(`No se pudo extraer ${archivePath}: ${result.stderr}`);
     }
+    const [inner] = await readdir(tmpDir);
+    await cp(path.join(tmpDir, inner), destination, { recursive: true });
+    await rm(tmpDir, { recursive: true, force: true });
     return;
   }
   const result = spawnSync(
