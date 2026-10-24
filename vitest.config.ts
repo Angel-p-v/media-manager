@@ -45,6 +45,7 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/cli.tsx',
         'src/ui/**',
+        'src/commands/completion.ts',
         'src/commands/continue.ts',
         'src/commands/doctor.ts',
         'src/commands/favorite.ts',

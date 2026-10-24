@@ -3,6 +3,7 @@ import process from 'node:process';
 
 import { Command, CommanderError } from 'commander';
 
+import { generateCompletion } from './commands/completion.js';
 import { runConfigCommand } from './commands/config.js';
 import { runContinueCommand } from './commands/continue.js';
 import { runDbOptimizeCommand, runDbStatsCommand } from './commands/db.js';
@@ -204,6 +205,18 @@ program
   .option('-e, --external-id <id>', 'id externo (requerido para fetch)')
   .option('--json', 'salida en formato JSON')
   .action(runMetadataCommand);
+
+program
+  .command('completion <shell>')
+  .description('genera script de autocompletado para shell')
+  .action((shell: string) => {
+    try {
+      console.log(generateCompletion(shell));
+    } catch (error: unknown) {
+      console.error((error as Error).message);
+      process.exitCode = 1;
+    }
+  });
 
 const dbCommand = program.command('db').description('operaciones sobre la base de datos local');
 
