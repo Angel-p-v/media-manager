@@ -82,22 +82,29 @@ jobs:
       - name: Atestar la procedencia
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-path: build/standalone/*.{tar.gz,zip}
+          subject-path: ${{ matrix.platform == 'windows-*' && 'build/standalone/*.zip' || 'build/standalone/*.tar.gz' }}
       - name: Verificar la atestación
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify build/standalone/*.{tar.gz,zip} --repo "${{ github.repository }}"
+        run: gh attestation verify "build/standalone/${{ matrix.platform == 'windows-*' && '*.zip' || '*.tar.gz' }}" --repo "${{ github.repository }}"
       - name: Publicar los assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -eu
-          gh release upload "${{ inputs.tag }}" \
-            build/standalone/*.tar.gz \
-            build/standalone/*.zip \
-            build/standalone/*.sha256 \
-            --clobber \
-            --repo "${{ github.repository }}"
+          if [[ "${{ matrix.platform }}" == windows-* ]]; then
+            gh release upload "${{ inputs.tag }}" \
+              build/standalone/*.zip \
+              build/standalone/*.sha256 \
+              --clobber \
+              --repo "${{ github.repository }}"
+          else
+            gh release upload "${{ inputs.tag }}" \
+              build/standalone/*.tar.gz \
+              build/standalone/*.sha256 \
+              --clobber \
+              --repo "${{ github.repository }}"
+          fi
 
   install-test:
     name: install (${{ matrix.os }}, sin Node)
