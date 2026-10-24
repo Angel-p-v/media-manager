@@ -7,6 +7,12 @@ on:
         description: Tag de la release que recibe los assets
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag de la release que recibe los assets
+        required: true
+        type: string
 
 permissions:
   contents: read
