@@ -17,8 +17,11 @@ describe('herramientas de construcción', () => {
       expect(normalizePlatform('darwin', 'arm64')).toBe('macos-arm64');
     });
 
+    it('traduce Windows a windows-x64', () => {
+      expect(normalizePlatform('win32', 'x64')).toBe('windows-x64');
+    });
+
     it('rechaza plataformas sin bundle', () => {
-      expect(() => normalizePlatform('win32', 'x64')).toThrow('win32-x64');
       expect(() => normalizePlatform('linux', 'ia32')).toThrow('linux-ia32');
     });
   });
@@ -27,14 +30,18 @@ describe('herramientas de construcción', () => {
     it('usa el nombre oficial de las distribuciones de Node', () => {
       expect(nodePlatform('linux', 'x64')).toBe('linux-x64');
       expect(nodePlatform('darwin', 'arm64')).toBe('darwin-arm64');
+      expect(nodePlatform('win32', 'x64')).toBe('win32-x64');
     });
   });
 
   describe('nombres de artefactos', () => {
     it('incluye versión y plataforma', () => {
       expect(artifactName('1.2.3', 'linux-x64')).toBe('media-manager-cli-1.2.3-linux-x64.tar.gz');
+      expect(artifactName('1.2.3', 'windows-x64')).toBe('media-manager-cli-1.2.3-windows-x64.zip');
       expect(bundleName('1.2.3', 'linux-x64')).toBe('media-manager-cli-1.2.3-linux-x64');
+      expect(bundleName('1.2.3', 'windows-x64')).toBe('media-manager-cli-1.2.3-windows-x64');
       expect(nodeArchiveName('24.22.1', 'linux', 'arm64')).toBe('node-v24.22.1-linux-arm64.tar.gz');
+      expect(nodeArchiveName('24.22.1', 'win32', 'x64')).toBe('node-v24.22.1-win32-x64.zip');
     });
   });
 

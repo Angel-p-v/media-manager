@@ -11,6 +11,7 @@ export default tseslint.config(
       'node_modules/**',
       'release/**',
       'tests/unit/playback/mpvTracker.test.ts',
+      'tests/unit/core/playback/mpvTracker-windows.test.ts',
     ],
   },
   js.configs.recommended,

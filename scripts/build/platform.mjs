@@ -1,7 +1,7 @@
 import process from 'node:process';
 
-const OS_NAMES = { darwin: 'macos', linux: 'linux' };
-const NODE_OS_NAMES = { darwin: 'darwin', linux: 'linux' };
+const OS_NAMES = { darwin: 'macos', linux: 'linux', win32: 'windows' };
+const NODE_OS_NAMES = { darwin: 'darwin', linux: 'linux', win32: 'win32' };
 const ARCH_NAMES = { arm64: 'arm64', x64: 'x64' };
 
 /**
@@ -42,7 +42,8 @@ export function nodePlatform(system = process.platform, arch = process.arch) {
  * @returns {string}
  */
 export function artifactName(version, platform) {
-  return `media-manager-cli-${version}-${platform}.tar.gz`;
+  const ext = platform.startsWith('windows') ? '.zip' : '.tar.gz';
+  return `media-manager-cli-${version}-${platform}${ext}`;
 }
 
 /**
@@ -61,5 +62,6 @@ export function bundleName(version, platform) {
  * @returns {string}
  */
 export function nodeArchiveName(version, system = process.platform, arch = process.arch) {
-  return `node-v${version}-${nodePlatform(system, arch)}.tar.gz`;
+  const ext = system === 'win32' ? '.zip' : '.tar.gz';
+  return `node-v${version}-${nodePlatform(system, arch)}${ext}`;
 }

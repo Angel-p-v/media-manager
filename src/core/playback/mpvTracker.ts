@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { createServer, type Socket } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import process from 'node:process';
 
 import type { Logger } from '../../shared/logger.js';
 import type { PlaybackConfig } from '../config/schema.js';
@@ -89,11 +90,13 @@ export class MpvTracker {
       await this.flushPosition();
     }
 
-    // Limpieza del directorio del socket
-    try {
-      await rm(this.socketDir, { recursive: true, force: true });
-    } catch {
-      // Ignorado
+    // Limpieza del socket / pipe
+    if (process.platform !== 'win32') {
+      try {
+        await rm(this.socketDir, { recursive: true, force: true });
+      } catch {
+        // Ignorado
+      }
     }
 
     this.options.logger.debug('mpv-tracker: detenido');
@@ -227,10 +230,17 @@ export class MpvTracker {
 }
 
 /**
- * Crea un directorio temporal seguro para el socket IPC.
- * Devuelve la ruta completa del socket.
+ * Crea una ruta de IPC para mpv.
+ *
+ * En POSIX (Linux/macOS) devuelve la ruta de un socket Unix en el filesystem.
+ * En Windows devuelve el nombre de un named pipe (`\\.\pipe\mm-mpv-<aleatorio>`),
+ * que mpv en Windows usa vía `--input-ipc-server`.
  */
 export async function createSocketPath(): Promise<string> {
+  if (process.platform === 'win32') {
+    const pipeName = `mm-mpv-${crypto.randomUUID().replaceAll('-', '')}`;
+    return `\\\\.\\pipe\\${pipeName}`;
+  }
   const base = process.env.XDG_RUNTIME_DIR ?? (await mkdtemp(path.join(tmpdir(), 'mm-ipc-')));
   const socketDir = await mkdtemp(path.join(base, 'mm-mpv-'));
   return path.join(socketDir, 'socket');
