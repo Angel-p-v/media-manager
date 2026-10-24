@@ -55,24 +55,34 @@ jobs:
         run: |
           set -eu
           version="$(node -p "require('./package.json').version")"
+          echo "DEBUG: PLATFORM=${PLATFORM}"
+          echo "DEBUG: matrix.platform=${{ matrix.platform }}"
           if [[ "$PLATFORM" == windows-* ]]; then
             asset="media-manager-cli-${version}-${PLATFORM}.zip"
           else
             asset="media-manager-cli-${version}-${PLATFORM}.tar.gz"
           fi
+          echo "DEBUG: asset=${asset}"
           test -f "build/standalone/${asset}"
           test -f "build/standalone/${asset}.sha256"
+          echo "DEBUG: PLATFORM=${PLATFORM}, asset=${asset}"
           if [[ "$PLATFORM" == windows-* ]]; then
             # En Windows no hay sha256sum de coreutils; usar certutil o powershell
             powershell -Command "certutil -hashfile build/standalone/${asset} SHA256" | Select-String '[0-9a-fA-F]{64}' | ForEach-Object { $_.ToString().Trim() } > expected.hash
             actual=$(cat expected.hash)
             expected=$(awk '{print $1}' build/standalone/${asset}.sha256)
+            echo "DEBUG: actual=${actual}"
+            echo "DEBUG: expected=${expected}"
             if [ "$actual" != "$expected" ]; then
               echo "Checksum mismatch: $actual != $expected"
               exit 1
             fi
           else
-            cd build/standalone && sha256sum -c "${asset}.sha256" && cd ../..
+            cd build/standalone
+            echo "DEBUG: Verificando $(pwd)/${asset}.sha256"
+            cat "${asset}.sha256"
+            sha256sum -c "${asset}.sha256"
+            cd ../..
           fi
       - name: Atestar la procedencia
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
