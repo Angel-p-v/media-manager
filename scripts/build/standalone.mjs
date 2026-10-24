@@ -156,7 +156,10 @@ async function main() {
     const archiveName = artifactName(version, platform);
     const archivePath = path.join(outputDirectory, archiveName);
     if (isWindows) {
-      // Windows: .zip con PowerShell (Expand-Archive nativo)
+      // Windows: .zip con PowerShell (Expand-Archive nativo).
+      // Se comprime el directorio completo (sin `/*`) para que las entradas
+      // del ZIP lleven el nombre del directorio como raíz única y el
+      // instalador pueda validar una estructura con un solo directorio raíz.
       const zipExe = 'powershell.exe';
       run(
         zipExe,
@@ -164,7 +167,7 @@ async function main() {
           '-NoProfile',
           '-NonInteractive',
           '-Command',
-          `Compress-Archive -Path "${path.join(outputDirectory, name)}/*" -DestinationPath "${archivePath}" -Force`,
+          `Compress-Archive -Path "${path.join(outputDirectory, name)}" -DestinationPath "${archivePath}" -Force`,
         ],
         ROOT,
       );
