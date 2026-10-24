@@ -6,6 +6,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.0.7](https://github.com/Angel-p-v/media-manager/compare/v3.0.6...v3.0.7) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** añade paréntesis a Test-Path en condicional de instalador Windows ([#103](https://github.com/Angel-p-v/media-manager/issues/103)) ([a7ed85c](https://github.com/Angel-p-v/media-manager/commit/a7ed85ca71dcec4e3065312c9405e179a3977b1d))
+* **ci:** busca marcador en todo el wrapper mm.bat en uninstall.ps1 ([#105](https://github.com/Angel-p-v/media-manager/issues/105)) ([80bbb19](https://github.com/Angel-p-v/media-manager/commit/80bbb197322acfbb1ffffb6e0c1e849e2604191e))
+* **ci:** reemplaza Test-Path -Container por Get-Item en instalador Windows ([#102](https://github.com/Angel-p-v/media-manager/issues/102)) ([44cfd03](https://github.com/Angel-p-v/media-manager/commit/44cfd03f0668d124e80834304aa18ba1d83a0382))
+* **ci:** resuelve target relativo del symlink current en uninstall.ps1 ([#104](https://github.com/Angel-p-v/media-manager/issues/104)) ([894e626](https://github.com/Angel-p-v/media-manager/commit/894e62621d10dec5eed5582270aece325cd133da))
+* **ci:** tolera ZIP plano y corrige estructura de bundles Windows ([#100](https://github.com/Angel-p-v/media-manager/issues/100)) ([301eea6](https://github.com/Angel-p-v/media-manager/commit/301eea64c60ea26bdc625d2407cceea847f6cde8))
+
 ## [3.0.6](https://github.com/Angel-p-v/media-manager/compare/v3.0.5...v3.0.6) (2026-10-24)
 
 
