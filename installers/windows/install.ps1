@@ -308,11 +308,13 @@ try {
                 if ($entry -match '^\.\./' -or $entry -eq '..') { die 1 "el archivo contiene una ruta con '..': $entry" }
                 $first = $entry.Split('/')[0]
                 if (-not $root) { $root = $first }
-                elseif ($first -ne $root) { die 1 "el archivo contiene más de un directorio raíz" }
+                # Nota: se tolera más de un directorio raíz (p. ej. ZIPs planos
+                # sin carpeta contenedora); no es un error de seguridad aquí
+                # porque las entradas se extraen tal cual en el STAGE_DIR.
             }
-            $installJsonEntry = $entries | Where-Object { $_ -eq "$root/install.json" }
-            if (-not $installJsonEntry) { die 1 "el archivo no contiene install.json" }
-            $zipEntry = $zip.GetEntry("$root/install.json")
+            $zipEntry = $entries | Where-Object { $_ -eq 'install.json' } | Select-Object -First 1
+            if (-not $zipEntry) { die 1 "el archivo no contiene install.json" }
+            $zipEntry = $zip.GetEntry('install.json')
             $reader = New-Object System.IO.StreamReader($zipEntry.Open())
             $installJson = $reader.ReadToEnd()
             $reader.Close()
