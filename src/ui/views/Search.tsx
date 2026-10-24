@@ -7,7 +7,7 @@ import { MediaList } from '../components/MediaList.js';
 import { theme } from '../theme.js';
 
 import type { MediaRow } from '../../core/db/types.js';
-import type { MediaDetails as Details } from '../../core/library/service.js';
+import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 export type SearchViewProps = {
   query: string;
@@ -16,6 +16,7 @@ export type SearchViewProps = {
   selected: number;
   details: Details | null;
   showDetails: boolean;
+  library: LibraryService;
 };
 
 /** Vista de búsqueda: el texto filtra la biblioteca mientras se escribe. */
@@ -26,6 +27,7 @@ export function SearchView({
   selected,
   details,
   showDetails,
+  library,
 }: SearchViewProps): React.JSX.Element {
   return (
     <Box flexDirection="column" flexGrow={1}>
@@ -47,7 +49,7 @@ export function SearchView({
             : `Sin resultados para «${query.trim()}».`
         }
       />
-      {showDetails ? <MediaDetails details={details} /> : null}
+      {showDetails ? <MediaDetails details={details} library={library} /> : null}
     </Box>
   );
 }

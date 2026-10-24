@@ -17,6 +17,8 @@ const ACTIONS: readonly { key: string; label: string }[] = [
   { key: 'up', label: 'título anterior' },
   { key: 'down', label: 'título siguiente' },
   { key: 'play', label: 'reproducir (M6)' },
+  { key: 'refreshMetadata', label: 'refrescar metadatos' },
+  { key: 'gotoTaggedMedia', label: 'siguiente con metadatos' },
   { key: 'escape', label: 'cerrar o volver atrás' },
 ];
 
