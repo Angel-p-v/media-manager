@@ -100,6 +100,7 @@ jobs:
       - name: Publicar los assets
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
           set -eu
           if [[ "${{ matrix.platform }}" == windows-* ]]; then
