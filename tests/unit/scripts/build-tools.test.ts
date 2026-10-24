@@ -30,7 +30,7 @@ describe('herramientas de construcción', () => {
     it('usa el nombre oficial de las distribuciones de Node', () => {
       expect(nodePlatform('linux', 'x64')).toBe('linux-x64');
       expect(nodePlatform('darwin', 'arm64')).toBe('darwin-arm64');
-      expect(nodePlatform('win32', 'x64')).toBe('win32-x64');
+      expect(nodePlatform('win32', 'x64')).toBe('win-x64');
     });
   });
 
@@ -41,7 +41,7 @@ describe('herramientas de construcción', () => {
       expect(bundleName('1.2.3', 'linux-x64')).toBe('media-manager-cli-1.2.3-linux-x64');
       expect(bundleName('1.2.3', 'windows-x64')).toBe('media-manager-cli-1.2.3-windows-x64');
       expect(nodeArchiveName('24.22.1', 'linux', 'arm64')).toBe('node-v24.22.1-linux-arm64.tar.gz');
-      expect(nodeArchiveName('24.22.1', 'win32', 'x64')).toBe('node-v24.22.1-win32-x64.zip');
+      expect(nodeArchiveName('24.22.1', 'win32', 'x64')).toBe('node-v24.22.1-win-x64.zip');
     });
   });
 
