@@ -235,7 +235,8 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅          | 7/7      |
 | M14  | Release `v2.1` (Windows + auto-update + tags)         | ✅          | 3/3      |
 | M15  | Metadatos externos (TMDB/TVDB)                        | ✅          | 6/6      |
-| M16  | Config YAML metadatos + TVDB proveedor secundario     | 🟡 en curso |
+| M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅          | 6/6      |
+| M17  | Sincronización auto + TUI metadatos visuales          | ☐ pendiente |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -788,6 +789,23 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 **Alcance:** Completar la integración de metadatos externos con configuración declarativa y soporte multi-proveedor.
 
 **DoD:** Configuración YAML funciona para claves API; TVDB disponible como proveedor secundario; `npm run verify` verde en 3 nodos.
+
+---
+
+### M17 — Sincronización automática + TUI con metadatos visuales · `2.2.0` · pendiente
+
+**Objetivo:** Completar v2.2 con sincronización automática de metadatos y visualización en la TUI.
+
+**Tareas:**
+
+- [ ] Sincronización automática/periódica de metadatos (caché con TTL)
+- [ ] TUI: mostrar metadatos en panel de detalles (sinopsis, póster, calificación)
+- [ ] TUI: vista de metadatos para títulos sin información externa
+- [ ] TUI: comando para refrescar metadatos de un título
+
+**Alcance:** Experiencia completa de metadatos con actualización automática y visualización en TUI.
+
+**DoD:** Los metadatos se sincronizan automáticamente según cacheTtlHours; TUI muestra sinopsis, póster y calificación; `npm run verify` verde en 3 nodos.
 
 ---
 

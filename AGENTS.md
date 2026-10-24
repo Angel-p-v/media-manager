@@ -168,24 +168,26 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado   |
-| ---- | ----------------------------------------------------- | -------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho |
-| M4   | CLI headless + búsqueda                               | ✅ hecho |
-| M5   | TUI (Ink)                                             | ✅ hecho |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho |
-| M7   | Robustez y rendimiento                                | ✅ hecho |
-| M8   | Release v1.0.0                                        | ✅ hecho |
-| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho |
-| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho |
-| M12  | macOS y experiencia v2                                | ✅ hecho |
-| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho |
-| M14  | v2.1: Windows + auto-update + tags                    | ✅ hecho |
-| M15  | Metadatos externos TMDB/TVDB                          | ✅ hecho |
+| Hito | Contenido                                             | Estado      |
+| ---- | ----------------------------------------------------- | ----------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho    |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
+| M4   | CLI headless + búsqueda                               | ✅ hecho    |
+| M5   | TUI (Ink)                                             | ✅ hecho    |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
+| M7   | Robustez y rendimiento                                | ✅ hecho    |
+| M8   | Release v1.0.0                                        | ✅ hecho    |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho    |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho    |
+| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho    |
+| M12  | macOS y experiencia v2                                | ✅ hecho    |
+| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho    |
+| M14  | v2.1: Windows + auto-update + tags                    | ✅ hecho    |
+| M15  | Metadatos externos TMDB/TVDB                          | ✅ hecho    |
+| M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅ hecho    |
+| M17  | Sincronización auto + TUI metadatos visuales          | ☐ pendiente |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
