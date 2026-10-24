@@ -86,7 +86,7 @@ jobs:
       - name: Verificar la atestación
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify "build/standalone/${{ matrix.platform == 'windows-*' && '*.zip' || '*.tar.gz' }}" --repo "${{ github.repository }}"
+        run: gh attestation verify build/standalone/${{ matrix.platform == 'windows-*' && '*.zip' || '*.tar.gz' }} --repo "${{ github.repository }}"
       - name: Publicar los assets
         env:
           GH_TOKEN: ${{ github.token }}
