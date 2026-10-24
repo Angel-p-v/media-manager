@@ -72,7 +72,7 @@ jobs:
               exit 1
             fi
           else
-            (cd build/standalone && sha256sum -c "${asset}.sha256")
+            cd build/standalone && sha256sum -c "${asset}.sha256" && cd ../..
           fi
       - name: Atestar la procedencia
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
@@ -91,6 +91,7 @@ jobs:
             build/standalone/*.tar.gz \
             build/standalone/*.zip \
             build/standalone/*.sha256 \
+            --clobber \
             --repo "${{ github.repository }}"
 
   install-test:
@@ -232,4 +233,4 @@ jobs:
       - name: Publicar el SBOM
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ inputs.tag }}" sbom.cdx.json --repo "${{ github.repository }}"
+        run: gh release upload "${{ inputs.tag }}" sbom.cdx.json --clobber --repo "${{ github.repository }}"
