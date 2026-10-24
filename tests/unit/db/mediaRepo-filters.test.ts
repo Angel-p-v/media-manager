@@ -2,11 +2,13 @@ import { describe, expect, it, vi, beforeAll, afterAll } from 'vitest';
 
 import { openDatabase } from '../../../src/core/db/connection.js';
 import { createMediaRepository } from '../../../src/core/db/repositories/mediaRepo.js';
+import { createTagRepository } from '../../../src/core/db/repositories/tagRepo.js';
 
 import type { Db } from '../../../src/core/db/connection.js';
 import type { MediaRepository } from '../../../src/core/db/repositories/mediaRepo.js';
 import type { PlaybackRepository } from '../../../src/core/db/repositories/playbackRepo.js';
 import type { PreferenceRepository } from '../../../src/core/db/repositories/preferencesRepo.js';
+import type { TagRepository } from '../../../src/core/db/repositories/tagRepo.js';
 
 function createTestDb(): Db {
   const db = openDatabase(':memory:');
@@ -58,6 +60,19 @@ function createTestDb(): Db {
     CREATE INDEX IF NOT EXISTS idx_playback_state_last_played_at ON playback_state(last_played_at);
     CREATE INDEX IF NOT EXISTS idx_playback_state_completed_at ON playback_state(completed_at);
     CREATE INDEX IF NOT EXISTS idx_media_preferences_favorite ON media_preferences(favorite);
+    CREATE TABLE IF NOT EXISTS tags (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL UNIQUE,
+      color TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS media_tags (
+      media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+      tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (media_id, tag_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag_id);
+    CREATE INDEX IF NOT EXISTS idx_media_tags_media ON media_tags(media_id);
     CREATE VIRTUAL TABLE IF NOT EXISTS media_fts USING fts5(title, content='media', content_rowid='id');
     CREATE TRIGGER IF NOT EXISTS media_fts_ai AFTER INSERT ON media BEGIN
       INSERT INTO media_fts(rowid, title) VALUES (new.id, new.title);
@@ -240,6 +255,24 @@ function setupTestData(db: Db) {
     updated_at: now,
   });
 
+  // Tags: tag 1 = "favorito" (m1, m2, m6), tag 2 = "por-ver" (m3, m5)
+  const insertTag = db.prepare(
+    `INSERT INTO tags (name, color, created_at) VALUES (@name, @color, @created_at)`,
+  );
+  const insertMediaTag = db.prepare(
+    `INSERT INTO media_tags (media_id, tag_id) VALUES (@media_id, @tag_id)`,
+  );
+
+  const t1 = insertTag.run({ name: 'favorito', color: '#ffd700', created_at: now });
+  const t2 = insertTag.run({ name: 'por-ver', color: '#ff6b6b', created_at: now });
+
+  for (const mid of [m1.lastInsertRowid, m2.lastInsertRowid, m6.lastInsertRowid]) {
+    insertMediaTag.run({ media_id: mid, tag_id: t1.lastInsertRowid });
+  }
+  for (const mid of [m3.lastInsertRowid, m5.lastInsertRowid]) {
+    insertMediaTag.run({ media_id: mid, tag_id: t2.lastInsertRowid });
+  }
+
   db.pragma('optimize');
   return { m1, m2, m3, m4, m5, m6, f1, f2, f3, f4, f5, f6 };
 }
@@ -249,6 +282,7 @@ describe('MediaRepository filters', () => {
   let mediaRepo: MediaRepository;
   let playbackRepo: PlaybackRepository;
   let preferenceRepo: PreferenceRepository;
+  let tagRepo: TagRepository;
 
   beforeAll(() => {
     db = createTestDb();
@@ -380,7 +414,8 @@ describe('MediaRepository filters', () => {
       setFavorite: vi.fn(),
       remove: vi.fn(),
     };
-    mediaRepo = createMediaRepository(db, { playbackRepo, preferenceRepo });
+    tagRepo = createTagRepository(db);
+    mediaRepo = createMediaRepository(db, { playbackRepo, preferenceRepo, tagRepo });
   }, 60_000);
 
   afterAll(() => {
@@ -622,6 +657,37 @@ describe('MediaRepository filters', () => {
       expect(page2.length).toBe(1);
       const allIds = [...page1, ...page2].map((r) => r.id).sort((a, b) => a - b);
       expect(new Set(allIds).size).toBe(3);
+    });
+  });
+
+  describe('tags filter', () => {
+    it('returns titles that have the specified tag', () => {
+      const results = mediaRepo.list({ tags: [1] });
+      const titles = results.map((r) => r.title).sort();
+      expect(titles).toEqual(['Anime F', 'Series A', 'Series B']);
+    });
+
+    it('returns empty when no media has the tag', () => {
+      const results = mediaRepo.list({ tags: [999] });
+      expect(results).toHaveLength(0);
+    });
+
+    it('returns intersection when multiple tags specified (AND)', () => {
+      // No media has both tag 1 (favorito) and tag 2 (por-ver)
+      const results = mediaRepo.list({ tags: [1, 2] });
+      expect(results).toHaveLength(0);
+    });
+
+    it('returns empty when tagRepo is missing', () => {
+      const noTagRepo = createMediaRepository(db, { playbackRepo, preferenceRepo });
+      const results = noTagRepo.list({ tags: [1] });
+      expect(results).toHaveLength(0);
+    });
+
+    it('combines with type filter', () => {
+      const results = mediaRepo.list({ tags: [1], type: 'series' });
+      const titles = results.map((r) => r.title).sort();
+      expect(titles).toEqual(['Series A', 'Series B']);
     });
   });
 });
