@@ -167,24 +167,12 @@ function fakeMetadataRepository(): MetadataRepository {
       updatedAt: '',
     }),
     remove: () => false,
+    listExpired: () => [],
   };
 }
 
 function fakeMetadataService(): MetadataService {
   return {
-    config: {
-      logger: {
-        debug: () => {
-          void 0;
-        },
-        warn: () => {
-          void 0;
-        },
-        error: () => {
-          void 0;
-        },
-      },
-    },
     searchTmdb: async () => {
       await Promise.resolve();
       return [];

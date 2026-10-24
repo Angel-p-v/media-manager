@@ -57,6 +57,8 @@ export type MetadataRepository = {
   set(input: SetMetadataInput): MediaMetadataRow;
   /** Elimina metadatos de un título. */
   remove(mediaId: number): boolean;
+  /** Obtiene metadatos cuyo fetched_at es anterior a ttlHours horas (expirados). */
+  listExpired(ttlHours: number): MediaMetadataRow[];
 };
 
 /** Crea el repositorio de metadatos sobre una conexión SQLite dada. */
@@ -141,6 +143,17 @@ export function createMetadataRepository(db: Db): MetadataRepository {
 
     remove(mediaId: number): boolean {
       return removeStatement.run(mediaId).changes > 0;
+    },
+
+    /** Obtiene metadatos cuyo fetched_at es anterior a ttlHours horas (expirados). */
+    listExpired(ttlHours: number): MediaMetadataRow[] {
+      const cutoff = new Date(Date.now() - ttlHours * 60 * 60 * 1000).toISOString();
+      const rows = db
+        .prepare<[string], MetadataDbRow>(
+          'SELECT * FROM media_metadata WHERE fetched_at < ? ORDER BY fetched_at ASC',
+        )
+        .all(cutoff);
+      return rows.map(toMetadataRow);
     },
   };
 }

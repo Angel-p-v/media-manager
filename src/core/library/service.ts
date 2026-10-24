@@ -86,8 +86,21 @@ export type LibraryService = {
   }): MediaMetadataRow;
   /** Elimina metadatos externos de un título. */
   removeMetadata(mediaId: number): boolean;
-  /** Obtiene metadatos de un título, refrescándolos automáticamente si están expirados según el TTL configurado. */
+  /**
+   * Obtiene metadatos de un título, refrescándolos automáticamente si están
+   * expirados según el TTL configurado. Si no hay API key configurada, devuelve
+   * los metadatos almacenados (o undefined si no existen).
+   */
   getOrFetchMetadata(mediaId: number): Promise<MediaMetadataRow | undefined>;
+  /**
+   * Refresca todos los metadatos cuyo caché ha expirado según el TTL configurado.
+   * Devuelve cuántos se refrescaron y cuántos fallaron.
+   */
+  refreshExpiredMetadata(): Promise<{ refreshed: number; failed: number }>;
+  /** Devuelve la cantidad de metadatos expirados según el TTL configurado. */
+  getExpiredMetadataCount(): number;
+  /** Devuelve true si hay algún proveedor de metadatos configurado. */
+  hasMetadataProviderConfigured(): boolean;
 };
 
 /**
@@ -322,6 +335,75 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       }
 
       return existing;
+    },
+
+    /**
+     * Refresca todos los metadatos cuyo caché ha expirado según el TTL configurado.
+     * Devuelve cuántos se refrescaron y cuántos fallaron.
+     */
+    async refreshExpiredMetadata(): Promise<{ refreshed: number; failed: number }> {
+      const ttlHours = metadataConfig.cacheTtlHours ?? 24;
+      const expired = metadataRepo.listExpired(ttlHours);
+
+      let refreshed = 0;
+      let failed = 0;
+
+      for (const existing of expired) {
+        if (!metadataService.hasProviderConfigured()) {
+          failed++;
+          continue;
+        }
+
+        let updated = false;
+        for (const provider of ['tmdb', 'tvdb'] as const) {
+          if (!metadataService.isProviderConfigured(provider)) continue;
+
+          try {
+            const mediaType = existing.provider === 'tvdb' ? 'tv' : 'movie';
+            const details = await metadataService.getDetails(
+              existing.externalId,
+              provider,
+              mediaType,
+            );
+            metadataRepo.set({
+              mediaId: existing.mediaId,
+              provider,
+              externalId: details.externalId,
+              title: details.title,
+              overview: details.overview,
+              posterPath: details.posterPath,
+              backdropPath: details.backdropPath,
+              voteAverage: details.voteAverage,
+              releaseDate: details.releaseDate,
+              originalLanguage: details.originalLanguage,
+              updatedAt: new Date().toISOString(),
+            });
+            refreshed++;
+            updated = true;
+            break;
+          } catch {
+            // Si falla un proveedor, probar el siguiente
+            continue;
+          }
+        }
+
+        if (!updated) {
+          failed++;
+        }
+      }
+
+      return { refreshed, failed };
+    },
+
+    /** Devuelve la cantidad de metadatos expirados según el TTL configurado. */
+    getExpiredMetadataCount(): number {
+      const ttlHours = metadataConfig.cacheTtlHours ?? 24;
+      return metadataRepo.listExpired(ttlHours).length;
+    },
+
+    /** Devuelve true si hay algún proveedor de metadatos configurado. */
+    hasMetadataProviderConfigured(): boolean {
+      return metadataService.hasProviderConfigured();
     },
   };
 }
