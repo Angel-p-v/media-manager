@@ -6,6 +6,14 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.0.4](https://github.com/Angel-p-v/media-manager/compare/v3.0.3...v3.0.4) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** corrige sintaxis de switch en instaladores Windows ([#91](https://github.com/Angel-p-v/media-manager/issues/91)) ([ca48c16](https://github.com/Angel-p-v/media-manager/commit/ca48c16101936fecd74e43d0001f6b9a8d3b6c89))
+* **ci:** usa cláusulas separadas en switch de instaladores Windows ([#93](https://github.com/Angel-p-v/media-manager/issues/93)) ([655d3ab](https://github.com/Angel-p-v/media-manager/commit/655d3ab36ea95af2247fdf18b2a64452bed62b2b))
+
 ## [3.0.3](https://github.com/Angel-p-v/media-manager/compare/v3.0.2...v3.0.3) (2026-10-24)
 
 
