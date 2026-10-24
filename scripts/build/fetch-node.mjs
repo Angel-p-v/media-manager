@@ -161,7 +161,12 @@ async function extract(archivePath, destination, members) {
       throw new Error(`No se pudo extraer ${archivePath}: ${result.stderr}`);
     }
     const [inner] = await readdir(tmpDir);
-    await cp(path.join(tmpDir, inner), destination, { recursive: true });
+    const innerPath = path.join(tmpDir, inner);
+    for (const entry of await readdir(innerPath)) {
+      await cp(path.join(innerPath, entry), path.join(destination, entry), {
+        recursive: true,
+      });
+    }
     await rm(tmpDir, { recursive: true, force: true });
     return;
   }
