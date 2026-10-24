@@ -297,10 +297,13 @@ function step(message) {
 }
 
 function run(command, args, cwd) {
-  const result = spawnSync(command, args, {
+  // En Windows, npm es npm.cmd y spawnSync no lo resuelve sin extensión.
+  const cmd = process.platform === 'win32' && !path.extname(command) ? `${command}.cmd` : command;
+  const result = spawnSync(cmd, args, {
     cwd,
     encoding: 'utf8',
     env: { ...process.env, NO_COLOR: '1' },
+    shell: process.platform === 'win32',
     timeout: 300_000,
   });
 
