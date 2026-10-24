@@ -219,7 +219,7 @@ jobs:
             $prefix = "$env:LOCALAPPDATA\media-manager-cli-test"
             $bindir = "$prefix\bin"
             New-Item -ItemType Directory -Path $bindir -Force | Out-Null
-            .\install.ps1 --version $tag --prefix $prefix --bindir $bindir --no-path-check
+            & "$tempDir\install.ps1" --version $tag --prefix $prefix --bindir $bindir --no-path-check
             $mm = Join-Path $bindir "mm.bat"
             $installedVersion = & $mm --version | Select-Object -First 1
             if ($installedVersion.Trim() -ne $version) {
@@ -229,7 +229,7 @@ jobs:
             Write-Output "Windows install-test OK: $installedVersion"
 
             # Desinstalar
-            .\uninstall.ps1 --prefix $prefix --bindir $bindir --yes
+            & "$tempDir\uninstall.ps1" --prefix $prefix --bindir $bindir --yes
             if (Test-Path $mm) { Write-Error "mm.bat still exists after uninstall"; exit 1 }
             Write-Output "Windows uninstall-test OK"
           }
