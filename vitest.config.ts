@@ -58,10 +58,8 @@ export default defineConfig({
         'src/commands/watch.ts',
         'src/core/db/repositories/metadataRepo.ts',
         'src/core/db/repositories/tagRepo.ts',
-        'src/core/indexer/watcher.ts',
         'src/core/library/service.ts',
         'src/core/metadata/**',
-        'src/core/playback/**',
       ],
       thresholds: {
         lines: 85,
