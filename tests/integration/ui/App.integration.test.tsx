@@ -167,6 +167,23 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
     assignTag: () => undefined,
     unassignTag: () => undefined,
     listTagsForMedia: () => [],
+    getMetadata: () => undefined,
+    setMetadata: () => ({
+      mediaId: 0,
+      provider: 'tmdb',
+      externalId: 0,
+      title: null,
+      overview: null,
+      posterPath: null,
+      backdropPath: null,
+      voteAverage: null,
+      firstAirDate: null,
+      releaseDate: null,
+      originalLanguage: null,
+      fetchedAt: '',
+      updatedAt: '',
+    }),
+    removeMetadata: () => false,
   };
 }
 

@@ -185,6 +185,7 @@ Hitos del plan (ver `PLAN.md` §7):
 | M12  | macOS y experiencia v2                                | ✅ hecho |
 | M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho |
 | M14  | v2.1: Windows + auto-update + tags                    | ✅ hecho |
+| M15  | Metadatos externos TMDB/TVDB                          | ✅ hecho |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
@@ -206,7 +207,15 @@ M13 está completado: release v2.0.1 publicada en GitHub Releases con assets Lin
 
 macOS sin assets oficiales en v2.1 (sin hardware macOS).
 
-Todos los hitos M0–M14 están completados.
+**M15 completado:** Metadatos externos TMDB/TVDB:
+
+- Migración v5: tabla media_metadata
+- metadataRepo: CRUD de metadatos externos
+- MetadataService: llamadas a API de TMDB (búsqueda y detalles)
+- CLI: mm metadata fetch/search/clear [--json]
+- LibraryService: getMetadata, setMetadata, removeMetadata
+
+Todos los hitos M0–M15 están completados.
 
 ## Reglas para el agente
 

@@ -9,6 +9,7 @@ import type {
   MediaRepository,
   SearchMediaOptions,
 } from '../../../src/core/db/repositories/mediaRepo.js';
+import type { MetadataRepository } from '../../../src/core/db/repositories/metadataRepo.js';
 import type { PlaybackRepository } from '../../../src/core/db/repositories/playbackRepo.js';
 import type { PreferenceRepository } from '../../../src/core/db/repositories/preferencesRepo.js';
 import type { TagRepository } from '../../../src/core/db/repositories/tagRepo.js';
@@ -145,6 +146,29 @@ function fakeTagRepository(): TagRepository {
   };
 }
 
+function fakeMetadataRepository(): MetadataRepository {
+  return {
+    get: () => undefined,
+    searchByExternalId: () => undefined,
+    set: () => ({
+      mediaId: 0,
+      provider: 'tmdb',
+      externalId: 0,
+      title: null,
+      overview: null,
+      posterPath: null,
+      backdropPath: null,
+      voteAverage: null,
+      firstAirDate: null,
+      releaseDate: null,
+      originalLanguage: null,
+      fetchedAt: '',
+      updatedAt: '',
+    }),
+    remove: () => false,
+  };
+}
+
 function service(
   overrides: Partial<MediaRepository> = {},
   files: Partial<Record<number, MediaFileRow[]>> = {},
@@ -156,6 +180,7 @@ function service(
     playbackRepo: fakePlaybackRepository(),
     preferenceRepo: fakePreferenceRepository(),
     tagRepo: fakeTagRepository(),
+    metadataRepo: fakeMetadataRepository(),
   });
 }
 
@@ -267,6 +292,7 @@ describe('createLibraryService', () => {
         playbackRepo: fakePlaybackRepository(),
         preferenceRepo: fakePreferenceRepository(),
         tagRepo: fakeTagRepository(),
+        metadataRepo: fakeMetadataRepository(),
       });
 
       expect(library.stats()).toEqual({

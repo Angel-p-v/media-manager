@@ -13,6 +13,7 @@ import { runHistoryCommand } from './commands/history.js';
 import { runIndexCommand } from './commands/index.js';
 import { runListCommand } from './commands/list.js';
 import { runMarkCommand } from './commands/mark.js';
+import { runMetadataCommand } from './commands/metadata.js';
 import {
   parseMediaType,
   parseNonNegativeInteger,
@@ -191,6 +192,18 @@ program
   .option('--check', 'solo comprueba si hay actualización disponible')
   .option('--dry-run', 'muestra qué se descargaría sin instalar')
   .action(runSelfUpdateCommand);
+
+program
+  .command('metadata')
+  .description('gestiona metadatos externos (TMDB/TVDB)')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-a, --action <fetch|search|clear>', 'acción: fetch, search o clear')
+  .option('-m, --media <id>', 'id del título (requerido para fetch/clear)')
+  .option('-q, --query <texto>', 'consulta de búsqueda (requerido para search)')
+  .option('-p, --provider <tmdb|tvdb>', 'proveedor de metadatos')
+  .option('-e, --external-id <id>', 'id externo (requerido para fetch)')
+  .option('--json', 'salida en formato JSON')
+  .action(runMetadataCommand);
 
 const dbCommand = program.command('db').description('operaciones sobre la base de datos local');
 
