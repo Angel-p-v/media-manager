@@ -90,6 +90,8 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | 📋 Sección "Continuar" en la TUI                                 | ✅     |
 | 📡 Tracker IPC mpv (socket Unix, eventos property-change)        | ✅     |
 | 🧪 Tests E2E con IPC falso y `--dry-run`                         | ✅     |
+| 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación) | ✅     |
+| 🔄 Sincronización automática de metadatos con TTL                | ✅     |
 
 ---
 
@@ -124,7 +126,7 @@ mm --version
 
 #### macOS (x64, arm64)
 
-> **Nota:** No hay assets oficiales de macOS en v2.1. Consulta [`installers/macos/README.md`](./installers/macos/README.md) para más información.
+> **Nota:** No hay assets oficiales de macOS en v3.0.0. Consulta [`installers/macos/README.md`](./installers/macos/README.md) para más información.
 
 Para compilar en macOS:
 
@@ -144,7 +146,7 @@ npm run standalone -- --node-source official
 > ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: sin assets oficiales (compila localmente)**
 
 > **Plataformas con assets oficiales:** Linux (x64, arm64) · Windows (x64)  
-> **macOS:** sin assets oficiales en v2.1 (compila localmente)
+> **macOS:** sin assets oficiales en v3.0.0 (compila localmente)
 
 ### 🔐 Verificar descarga manual
 
@@ -218,6 +220,11 @@ mm list --tag 1                    # filtra por etiqueta (repetible para AND)
 mm self-update --check             # comprueba si hay actualización
 mm self-update                     # descarga e instala la nueva versión
 mm self-update --dry-run           # muestra qué se haría sin instalar
+
+# 🎞️ Metadatos externos (TMDB/TVDB)
+mm metadata search "cowboy bebop"  # busca en TMDB/TVDB
+mm metadata fetch 12345            # obtiene y guarda metadatos por ID
+mm metadata clear                  # limpia metadatos de un título
 ```
 
 ---
