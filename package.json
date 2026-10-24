@@ -42,6 +42,8 @@
     "dist",
     "config",
     "docs",
+    "install.ps1",
+    "uninstall.ps1",
     "README.md",
     "PLAN.md",
     "CHANGELOG.md",

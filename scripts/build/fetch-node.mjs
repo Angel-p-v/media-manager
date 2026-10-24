@@ -131,6 +131,24 @@ async function sha256File(filePath) {
 }
 
 function extract(archivePath, destination, members) {
+  const isZip = archivePath.endsWith('.zip');
+  if (isZip && process.platform === 'win32') {
+    // Windows: usar PowerShell Expand-Archive para .zip
+    const result = spawnSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        `Expand-Archive -Path "${archivePath}" -DestinationPath "${destination}" -Force`,
+      ],
+      { encoding: 'utf8' },
+    );
+    if (result.status !== 0) {
+      throw new Error(`No se pudo extraer ${archivePath}: ${result.stderr}`);
+    }
+    return;
+  }
   const result = spawnSync(
     'tar',
     ['-xzf', archivePath, '-C', destination, '--strip-components=1', ...members],

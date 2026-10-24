@@ -27,8 +27,8 @@ jobs:
             platform: linux-x64
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
-          - runner: macos-14
-            platform: macos-arm64
+          - runner: windows-latest
+            platform: windows-x64
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -43,23 +43,39 @@ jobs:
       - name: Construir el bundle con el Node oficial
         run: npm run standalone -- --node-source official
       - name: Verificar el artefacto y su checksum
+        shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
           set -eu
           version="$(node -p "require('./package.json').version")"
-          asset="media-manager-cli-${version}-${PLATFORM}.tar.gz"
+          if [[ "$PLATFORM" == windows-* ]]; then
+            asset="media-manager-cli-${version}-${PLATFORM}.zip"
+          else
+            asset="media-manager-cli-${version}-${PLATFORM}.tar.gz"
+          fi
           test -f "build/standalone/${asset}"
           test -f "build/standalone/${asset}.sha256"
-          (cd build/standalone && sha256sum -c "${asset}.sha256")
+          if [[ "$PLATFORM" == windows-* ]]; then
+            # En Windows no hay sha256sum de coreutils; usar certutil o powershell
+            powershell -Command "certutil -hashfile build/standalone/${asset} SHA256" | Select-String '[0-9a-fA-F]{64}' | ForEach-Object { $_.ToString().Trim() } > expected.hash
+            actual=$(cat expected.hash)
+            expected=$(awk '{print $1}' build/standalone/${asset}.sha256)
+            if [ "$actual" != "$expected" ]; then
+              echo "Checksum mismatch: $actual != $expected"
+              exit 1
+            fi
+          else
+            (cd build/standalone && sha256sum -c "${asset}.sha256")
+          fi
       - name: Atestar la procedencia
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
-          subject-path: build/standalone/*.tar.gz
+          subject-path: build/standalone/*.{tar.gz,zip}
       - name: Verificar la atestación
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh attestation verify build/standalone/*.tar.gz --repo "${{ github.repository }}"
+        run: gh attestation verify build/standalone/*.{tar.gz,zip} --repo "${{ github.repository }}"
       - name: Publicar los assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,6 +83,7 @@ jobs:
           set -eu
           gh release upload "${{ inputs.tag }}" \
             build/standalone/*.tar.gz \
+            build/standalone/*.zip \
             build/standalone/*.sha256 \
             --repo "${{ github.repository }}"
 
@@ -80,6 +97,9 @@ jobs:
           - os: ubuntu-24.04
             label: ubuntu
             use-docker: 'true'
+          - os: windows-latest
+            label: windows
+            use-docker: 'false'
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -116,6 +136,73 @@ jobs:
               sh /uninstall.sh --prefix /root/.local --yes
               test -f /root/.config/media-manager/config.yaml
             '
+      - name: Instalar y desinstalar desde la release (Windows)
+        if: matrix.use-docker == 'false'
+        env:
+          TAG: ${{ inputs.tag }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:TAG
+          $version = $tag.TrimStart('v')
+          $platform = "windows-x64"
+          $artifact = "media-manager-cli-${version}-${platform}.zip"
+          $tempDir = Join-Path $env:TEMP "mm-install-test-$([System.IO.Path]::GetRandomFileName())"
+          New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+          try {
+            # Descargar desde release
+            $url = "https://github.com/${env:GITHUB_REPOSITORY}/releases/download/${tag}/${artifact}"
+            & curl --fail --silent --show-error --location --retry 3 --output (Join-Path $tempDir $artifact) $url
+            & curl --fail --silent --show-error --location --retry 3 --output (Join-Path $tempDir "$artifact.sha256") "$url.sha256"
+
+            # Verificar checksum
+            $checksumContent = Get-Content (Join-Path $tempDir "$artifact.sha256") -TotalCount 1
+            $expected = $checksumContent.Split(' ')[0].Trim()
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $actual = & certutil -hashfile (Join-Path $tempDir $artifact) SHA256
+            $actualHash = ($actual | Select-String '[0-9a-fA-F]{64}').ToString().Trim()
+            if ($actualHash -ne $expected) {
+              Write-Error "Checksum mismatch: $actualHash != $expected"
+              exit 1
+            }
+
+            # Extraer
+            [System.IO.ZipFile]::ExtractToDirectory((Join-Path $tempDir $artifact), $tempDir)
+
+            # Leer install.json para plataforma
+            $entries = [System.IO.ZipFile]::OpenRead((Join-Path $tempDir $artifact)).Entries
+            $root = ($entries.FullName | Select-Object -First 1).Split('/')[0]
+            $zipEntry = $entries | Where-Object { $_.FullName -eq "$root/install.json" }
+            $reader = New-Object System.IO.StreamReader($zipEntry.Open())
+            $installJson = $reader.ReadToEnd()
+            $reader.Close()
+            $installObj = $installJson | ConvertFrom-Json
+            if ($installObj.platform -ne $platform) {
+              Write-Error "Plataforma mismatch: $($installObj.platform) != $platform"
+              exit 1
+            }
+
+            # Instalar
+            $prefix = "$env:LOCALAPPDATA\media-manager-cli-test"
+            $bindir = "$prefix\bin"
+            New-Item -ItemType Directory -Path $bindir -Force | Out-Null
+            .\install.ps1 --version $tag --prefix $prefix --bindir $bindir --no-path-check
+            $mm = Join-Path $bindir "mm.bat"
+            $installedVersion = & $mm --version | Select-Object -First 1
+            if ($installedVersion.Trim() -ne $version) {
+              Write-Error "Version mismatch: $installedVersion != $version"
+              exit 1
+            }
+            Write-Output "Windows install-test OK: $installedVersion"
+
+            # Desinstalar
+            .\uninstall.ps1 --prefix $prefix --bindir $bindir --yes
+            if (Test-Path $mm) { Write-Error "mm.bat still exists after uninstall"; exit 1 }
+            Write-Output "Windows uninstall-test OK"
+          }
+          finally {
+            Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
+          }
 
   sbom:
     name: sbom (CycloneDX)

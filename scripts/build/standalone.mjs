@@ -126,21 +126,51 @@ async function main() {
     await writeFile(path.join(bundleDirectory, 'THIRD_PARTY_NOTICES.md'), notices);
 
     const packagePath = packageJson.name.split('/').join(path.sep);
-    const launcher = createPosixLauncher(packagePath);
-    const launcherPath = path.join(bundleDirectory, 'mm');
-    await writeFile(launcherPath, launcher);
-    await chmod(launcherPath, 0o755);
+    const isWindows = platform.startsWith('windows');
+    if (isWindows) {
+      const launcher = createWindowsLauncher(packagePath);
+      const launcherPath = path.join(bundleDirectory, 'mm.bat');
+      await writeFile(launcherPath, launcher);
+    } else {
+      const launcher = createPosixLauncher(packagePath);
+      const launcherPath = path.join(bundleDirectory, 'mm');
+      await writeFile(launcherPath, launcher);
+      await chmod(launcherPath, 0o755);
+    }
 
     step('comprobando el lanzador');
-    const reportedVersion = run(launcherPath, ['--version'], bundleDirectory).stdout.trim();
-    if (reportedVersion !== version) {
-      throw new Error(`El lanzador devolvió ${reportedVersion} y se esperaba ${version}`);
+    const launcherName = isWindows ? 'mm.bat' : 'mm';
+    const launcherPath = path.join(bundleDirectory, launcherName);
+    // Solo verificar el lanzador si estamos construyendo para la plataforma actual
+    // (no se puede ejecutar .bat en Linux ni .sh en Windows sin WSL).
+    if (process.platform === (isWindows ? 'win32' : process.platform)) {
+      const reportedVersion = run(launcherPath, ['--version'], bundleDirectory).stdout.trim();
+      if (reportedVersion !== version) {
+        throw new Error(`El lanzador devolvió ${reportedVersion} y se esperaba ${version}`);
+      }
+    } else {
+      step(`lanzador ${launcherName} generado (verificación omitida en compilación cruzada)`);
     }
 
     step('creando el archivo portable y el checksum');
     const archiveName = artifactName(version, platform);
     const archivePath = path.join(outputDirectory, archiveName);
-    run('tar', ['-czf', archivePath, '-C', outputDirectory, name], ROOT);
+    if (isWindows) {
+      // Windows: .zip con PowerShell (Expand-Archive nativo)
+      const zipExe = 'powershell.exe';
+      run(
+        zipExe,
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          `Compress-Archive -Path "${path.join(outputDirectory, name)}/*" -DestinationPath "${archivePath}" -Force`,
+        ],
+        ROOT,
+      );
+    } else {
+      run('tar', ['-czf', archivePath, '-C', outputDirectory, name], ROOT);
+    }
     const hash = createHash('sha256')
       .update(await readFile(archivePath))
       .digest('hex');
@@ -244,6 +274,22 @@ function createPosixLauncher(packagePath) {
     `exec "$HERE/node" "$HERE/node_modules/${packagePath}/dist/cli.js" "$@"`,
     '',
   ].join('\n');
+}
+
+/**
+ * Crea un launcher .bat para Windows que apunta al Node incluido y al CLI.
+ */
+function createWindowsLauncher(packagePath) {
+  return (
+    [
+      '@echo off',
+      'setlocal',
+      'set HERE=%~dp0',
+      `set NODE_CMD="%HERE%node.exe"`,
+      `set CLI_CMD="%HERE%node_modules\\${packagePath.replaceAll('/', '\\')}\\dist\\cli.js"`,
+      '%NODE_CMD% %CLI_CMD% %*',
+    ].join('\r\n') + '\r\n'
+  );
 }
 
 function step(message) {
