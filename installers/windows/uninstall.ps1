@@ -68,8 +68,8 @@ while ($i -lt $argsCopy.Count) {
         }
         "--purge" { $PURGE = $true; $i++ }
         "--dry-run" { $DRY_RUN = $true; $i++ }
-        "--yes" | "-y" { $ASSUME_YES = $true; $i++ }
-        "--help" | "-h" { usage }
+        "--yes", "-y" { $ASSUME_YES = $true; $i++ }
+        "--help", "-h" { usage }
         "--" { $i++; break }
         default { die 2 "opción desconocida: $arg (usa --help)" }
     }

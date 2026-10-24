@@ -167,7 +167,7 @@ while ($i -lt $argsCopy.Count) {
         "--dry-run" { $DRY_RUN = $true; $i++ }
         "--verify-attestation" { $VERIFY_ATTESTATION = $true; $i++ }
         "--no-path-check" { $NO_PATH_CHECK = $true; $i++ }
-        "--help" | "-h" { usage }
+        "--help", "-h" { usage }
         "--" { $i++; break }
         default { die 2 "opción desconocida: $arg (usa --help)" }
     }
