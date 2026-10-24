@@ -104,8 +104,28 @@ CREATE INDEX IF NOT EXISTS idx_playback_completed ON playback_state(completed_at
 CREATE INDEX IF NOT EXISTS idx_preferences_favorite ON media_preferences(favorite);
 `;
 
+// v4: etiquetas/colecciones. Aditiva: tabla tags + media_tags (muchos-a-muchos).
+const tagsSql = `
+CREATE TABLE IF NOT EXISTS tags (
+  id         INTEGER PRIMARY KEY,
+  name       TEXT    NOT NULL UNIQUE,
+  color      TEXT,
+  created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS media_tags (
+  media_id INTEGER NOT NULL REFERENCES media(id) ON DELETE CASCADE,
+  tag_id   INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (media_id, tag_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_media_tags_media ON media_tags(media_id);
+`;
+
 export const migrations: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'performance-indexes', sql: performanceIndexesSql },
   { version: 3, name: 'playback-and-preferences', sql: playbackAndPreferencesSql },
+  { version: 4, name: 'tags-and-collections', sql: tagsSql },
 ];

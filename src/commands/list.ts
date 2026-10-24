@@ -17,6 +17,7 @@ export type ListCommandOptions = CommandOptions & {
   inProgress?: boolean;
   unwatched?: boolean;
   watched?: boolean;
+  tags?: number[];
 };
 
 const DEFAULT_LIMIT = 50;
@@ -37,6 +38,7 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
       ...(options.inProgress === true ? { inProgress: true } : {}),
       ...(options.unwatched === true ? { unwatched: true } : {}),
       ...(options.watched === true ? { watched: true } : {}),
+      ...(options.tags && options.tags.length > 0 ? { tags: options.tags } : {}),
     });
     const total = library.count(options.type);
 
@@ -80,6 +82,7 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
     if (options.inProgress) filterParts.push('en curso');
     if (options.unwatched) filterParts.push('no vistos');
     if (options.watched) filterParts.push('vistos');
+    if (options.tags && options.tags.length > 0) filterParts.push(`tag: ${options.tags.join(',')}`);
     const filterStr = filterParts.length > 0 ? pc.dim(` · ${filterParts.join(', ')}`) : '';
     console.log(
       pc.bold(`${total} títulos`) +
@@ -100,9 +103,18 @@ export function parseListOptions(raw: {
   inProgress?: boolean;
   unwatched?: boolean;
   watched?: boolean;
+  tags?: string[];
 }): Pick<
   ListCommandOptions,
-  'type' | 'sort' | 'limit' | 'offset' | 'favorites' | 'inProgress' | 'unwatched' | 'watched'
+  | 'type'
+  | 'sort'
+  | 'limit'
+  | 'offset'
+  | 'favorites'
+  | 'inProgress'
+  | 'unwatched'
+  | 'watched'
+  | 'tags'
 > {
   return {
     ...(raw.type === undefined ? {} : { type: parseMediaType(raw.type) }),
@@ -113,5 +125,6 @@ export function parseListOptions(raw: {
     ...(raw.inProgress === undefined ? {} : { inProgress: raw.inProgress }),
     ...(raw.unwatched === undefined ? {} : { unwatched: raw.unwatched }),
     ...(raw.watched === undefined ? {} : { watched: raw.watched }),
+    ...(raw.tags === undefined ? {} : { tags: raw.tags.map(Number).filter((n) => !isNaN(n)) }),
   };
 }

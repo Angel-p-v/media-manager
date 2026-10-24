@@ -6,6 +6,7 @@ import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import type { ListMediaOptions, MediaRepository } from '../db/repositories/mediaRepo.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
 import type { PreferenceRepository } from '../db/repositories/preferencesRepo.js';
+import type { TagRepository, TagRow } from '../db/repositories/tagRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../db/types.js';
 
 /** Repositorios que necesita la capa de consulta, inyectados por el llamante. */
@@ -15,6 +16,7 @@ export type LibraryRepositories = {
   indexRunRepo: IndexRunRepository;
   playbackRepo: PlaybackRepository;
   preferenceRepo: PreferenceRepository;
+  tagRepo: TagRepository;
 };
 
 export type SearchMediaOptions = {
@@ -51,6 +53,16 @@ export type LibraryService = {
   stats(): LibraryStats;
   /** Número de títulos marcados como favoritos. */
   countFavorites(): number;
+  /** Lista todos los tags disponibles. */
+  listTags(): TagRow[];
+  /** Obtiene un tag por nombre. */
+  getTagByName(name: string): TagRow | undefined;
+  /** Asigna un tag a un título. */
+  assignTag(mediaId: number, tagName: string): void;
+  /** Quita un tag de un título. */
+  unassignTag(mediaId: number, tagName: string): void;
+  /** Lista los tags de un título. */
+  listTagsForMedia(mediaId: number): TagRow[];
 };
 
 /**
@@ -63,7 +75,7 @@ export type LibraryService = {
 
 /** Crea el servicio de biblioteca sobre un conjunto de repositorios. */
 export function createLibraryService(repositories: LibraryRepositories): LibraryService {
-  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo } = repositories;
+  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo, tagRepo } = repositories;
 
   const detailsFor = (media: MediaRow): MediaDetails => ({
     media,
@@ -147,6 +159,36 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     countFavorites(): number {
       return preferenceRepo.countFavorites();
+    },
+
+    listTags(): TagRow[] {
+      return tagRepo.list();
+    },
+
+    getTagByName(name: string): TagRow | undefined {
+      return tagRepo.getByName(name);
+    },
+
+    assignTag(mediaId: number, tagName: string): void {
+      const tag = tagRepo.getByName(tagName);
+      if (!tag) {
+        // Crear el tag si no existe
+        const created = tagRepo.create({ name: tagName });
+        tagRepo.assign(mediaId, created.id);
+      } else {
+        tagRepo.assign(mediaId, tag.id);
+      }
+    },
+
+    unassignTag(mediaId: number, tagName: string): void {
+      const tag = tagRepo.getByName(tagName);
+      if (tag) {
+        tagRepo.unassign(mediaId, tag.id);
+      }
+    },
+
+    listTagsForMedia(mediaId: number): TagRow[] {
+      return tagRepo.listByMedia(mediaId);
     },
   };
 }
