@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.0.1](https://github.com/Angel-p-v/media-manager/compare/v3.0.0...v3.0.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** usa nombre de tipo completo System.IO.Compression.ZipFile en install-test Windows ([#84](https://github.com/Angel-p-v/media-manager/issues/84)) ([350a919](https://github.com/Angel-p-v/media-manager/commit/350a919cc4dbcf848c7110f19ddd9fd1dc7a21f2))
+
 ## [3.0.0](https://github.com/Angel-p-v/media-manager/compare/v2.0.0...v3.0.0) (2026-10-24)
 
 
