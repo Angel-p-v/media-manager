@@ -92,6 +92,15 @@ export const playbackConfigSchema = z.object({
 
 export type PlaybackConfig = z.infer<typeof playbackConfigSchema>;
 
+/** Configuración de metadatos externos (TMDB/TVDB). */
+export const metadataConfigSchema = z.object({
+  tmdbApiKey: z.string().min(1).optional(),
+  tvdbApiKey: z.string().min(1).optional(),
+  cacheTtlHours: z.number().int().min(1).default(24),
+});
+
+export type MetadataConfig = z.infer<typeof metadataConfigSchema>;
+
 /** Esquema completo del archivo de configuración. */
 export const configSchema = z.object({
   version: z.literal(1).default(1),
@@ -113,6 +122,7 @@ export const configSchema = z.object({
   ui: uiConfigSchema.prefault({}),
   logging: loggingConfigSchema.prefault({}),
   playback: playbackConfigSchema.prefault({}),
+  metadata: metadataConfigSchema.prefault({}),
   keybindings: z.record(z.string(), z.string()).default({}),
 });
 

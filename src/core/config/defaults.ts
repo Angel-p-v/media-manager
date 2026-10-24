@@ -1,4 +1,4 @@
-import { defaultPlayers, playbackConfigSchema } from './schema.js';
+import { defaultPlayers, metadataConfigSchema, playbackConfigSchema } from './schema.js';
 
 import type { AppConfig } from './schema.js';
 
@@ -32,6 +32,7 @@ export const defaultConfig: AppConfig = {
     showDetails: true,
   },
   playback: playbackConfigSchema.parse({}),
+  metadata: metadataConfigSchema.parse({}),
   logging: {
     level: 'warn',
     format: 'text',

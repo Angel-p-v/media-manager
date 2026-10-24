@@ -217,24 +217,25 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 >
 > **Leyenda:** ✅ completado · 🟡 en curso · ☐ pendiente
 
-| Hito | Contenido                                             | Estado | Progreso |
-| ---- | ----------------------------------------------------- | ------ | -------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅     | 6/6      |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅     | 5/5      |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅     | 5/5      |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅     | 9/9      |
-| M4   | CLI _headless_ + búsqueda                             | ✅     | 10/10    |
-| M5   | TUI (Ink)                                             | ✅     | 7/7      |
-| M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
-| M7   | Robustez y rendimiento                                | ✅     | 6/6      |
-| M8   | Release `v1.0.0`                                      | ✅     | 7/7      |
-| M9   | Esquema v3, estado reproducción, doctor               | ✅     | 6/6      |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅     | 6/6      |
-| M11  | Biblioteca sana y descubrimiento                      | ✅     | 6/6      |
-| M12  | macOS y experiencia v2                                | ✅     | 7/7      |
-| M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅     | 7/7      |
-| M14  | Release `v2.1` (Windows + auto-update + tags)         | ✅     | 3/3      |
-| M15  | Metadatos externos (TMDB/TVDB)                        | ✅     | 6/6      |
+| Hito | Contenido                                             | Estado      | Progreso |
+| ---- | ----------------------------------------------------- | ----------- | -------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅          | 6/6      |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅          | 5/5      |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅          | 5/5      |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅          | 9/9      |
+| M4   | CLI _headless_ + búsqueda                             | ✅          | 10/10    |
+| M5   | TUI (Ink)                                             | ✅          | 7/7      |
+| M6   | Reproductor + modo _watch_                            | ✅          | 6/6      |
+| M7   | Robustez y rendimiento                                | ✅          | 6/6      |
+| M8   | Release `v1.0.0`                                      | ✅          | 7/7      |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅          | 6/6      |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅          | 6/6      |
+| M11  | Biblioteca sana y descubrimiento                      | ✅          | 6/6      |
+| M12  | macOS y experiencia v2                                | ✅          | 7/7      |
+| M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅          | 7/7      |
+| M14  | Release `v2.1` (Windows + auto-update + tags)         | ✅          | 3/3      |
+| M15  | Metadatos externos (TMDB/TVDB)                        | ✅          | 6/6      |
+| M16  | Config YAML metadatos + TVDB proveedor secundario     | 🟡 en curso |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -756,17 +757,37 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 - [x] ADR 0016: metadatos externos (diseño, caché, rate-limiting, claves API)
 - [x] Migración v5: tabla `media_metadata`
 - [x] `metadataRepo`: CRUD de metadatos (get, set, remove, searchByExternalId)
-- [ ] Configuración `metadata` en schema Zod (tmdb_api_key, tvdb_api_key, cache_ttl_hours)
+- [x] Configuración `metadata` en schema Zod (tmdb_api_key, tvdb_api_key, cache_ttl_hours)
 - [x] Servicio de metadatos con llamada a API externa y caché (TMDB)
 - [x] Comandos CLI: `mm metadata fetch <id>`, `mm metadata search <query>`, `mm metadata clear`
 - [x] Integración en LibraryService para devolver metadatos
 - [x] Tests actualizados para migración v5 y service
 
-**Alcance:** Integración opcional de metadatos externos. Sin claves API, la aplicación funciona igual que antes (solo datos locales). Configuración vía variables de entorno `MM_TMDB_API_KEY` y `MM_TVDB_API_KEY`.
+**Alcance:** Integración opcional de metadatos externos. Sin claves API, la aplicación funciona igual que antes (solo datos locales). Configuración vía variables de entorno `MM_TMDB_API_KEY` y `MM_TVDB_API_KEY` o config.yaml.
 
-**Fuera de v2.2:** Configuración YAML para claves API, sincronización automática, TUI con metadatos visuales (pósteres), TVDB como proveedor secundario.
+**Fuera de v2.2:** Sincronización automática, TUI con metadatos visuales (pósteres).
 
 **DoD:** `mm metadata fetch <id>` obtiene y guarda metadatos de TMDB; `mm metadata search <query>` busca en API externa; `mm metadata clear` limpia caché; `npm run verify` verde en 3 nodos.
+
+---
+
+### M16 — Config YAML metadatos + TVDB proveedor secundario · `2.2.0` · en curso
+
+**Objetivo:** Completar la integración de metadatos externos con configuración YAML completa y soporte para TVDB como proveedor secundario.
+
+**Decisión registrada en [ADR 0016](./docs/adr/0016-metadata-externo.md): versión objetivo `v2.2` (menor).**
+
+**Tareas:**
+
+- [ ] Agregar configuración `metadata` al schema Zod (tmdb_api_key, tvdb_api_key, cache_ttl_hours)
+- [ ] Agregar TVDB como proveedor secundario en MetadataService
+- [ ] Actualizar MetadataService para leer claves API del config YAML (no solo variables de entorno)
+- [ ] Actualizar comando `metadata` para usar config en lugar de solo env vars
+- [ ] Tests para TVDB y configuración YAML
+
+**Alcance:** Completar la integración de metadatos externos con configuración declarativa y soporte multi-proveedor.
+
+**DoD:** Configuración YAML funciona para claves API; TVDB disponible como proveedor secundario; `npm run verify` verde en 3 nodos.
 
 ---
 
