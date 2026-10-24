@@ -123,9 +123,31 @@ CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_media_tags_media ON media_tags(media_id);
 `;
 
+// v5: metadatos externos (TMDB/TVDB). Aditiva: tabla media_metadata.
+const metadataSql = `
+CREATE TABLE IF NOT EXISTS media_metadata (
+  media_id         INTEGER PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE,
+  provider         TEXT    NOT NULL CHECK (provider IN ('tmdb', 'tvdb')),
+  external_id      INTEGER NOT NULL,
+  title            TEXT,
+  overview         TEXT,
+  poster_path      TEXT,
+  backdrop_path    TEXT,
+  vote_average     REAL,
+  first_air_date   TEXT,
+  release_date     TEXT,
+  original_language TEXT,
+  fetched_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_metadata_provider ON media_metadata(provider, external_id);
+`;
+
 export const migrations: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'performance-indexes', sql: performanceIndexesSql },
   { version: 3, name: 'playback-and-preferences', sql: playbackAndPreferencesSql },
   { version: 4, name: 'tags-and-collections', sql: tagsSql },
+  { version: 5, name: 'external-metadata', sql: metadataSql },
 ];

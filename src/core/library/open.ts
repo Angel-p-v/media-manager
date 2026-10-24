@@ -5,6 +5,10 @@ import { createFileRepository } from '../db/repositories/fileRepo.js';
 import { createIndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import { createMediaRepository } from '../db/repositories/mediaRepo.js';
 import {
+  createMetadataRepository,
+  type MetadataRepository,
+} from '../db/repositories/metadataRepo.js';
+import {
   createPlaybackRepository,
   type PlaybackRepository,
 } from '../db/repositories/playbackRepo.js';
@@ -14,11 +18,12 @@ import {
 } from '../db/repositories/preferencesRepo.js';
 import { createTagRepository, type TagRepository } from '../db/repositories/tagRepo.js';
 
-/** Repositorios extendidos que incluyen reproducción, preferencias y etiquetas. */
+/** Repositorios extendidos que incluyen reproducción, preferencias, etiquetas y metadatos. */
 export type ExtendedLibraryRepositories = LibraryRepositories & {
   playbackRepo: PlaybackRepository;
   preferenceRepo: PreferenceRepository;
   tagRepo: TagRepository;
+  metadataRepo: MetadataRepository;
 };
 
 /** Biblioteca abierta y lista para consultar, con su ciclo de vida. */
@@ -29,6 +34,7 @@ export type OpenedLibrary = {
   playbackRepo: PlaybackRepository;
   preferenceRepo: PreferenceRepository;
   tagRepo: TagRepository;
+  metadataRepo: MetadataRepository;
   close: () => void;
 };
 
@@ -45,6 +51,7 @@ export function openLibrary(databasePath: string): OpenedLibrary {
   const playbackRepo = createPlaybackRepository(db);
   const preferenceRepo = createPreferenceRepository(db);
   const tagRepo = createTagRepository(db);
+  const metadataRepo = createMetadataRepository(db);
   const mediaRepo = createMediaRepository(db, {
     preferenceRepo,
     playbackRepo,
@@ -58,6 +65,7 @@ export function openLibrary(databasePath: string): OpenedLibrary {
     playbackRepo,
     preferenceRepo,
     tagRepo,
+    metadataRepo,
   };
 
   return {
@@ -67,6 +75,7 @@ export function openLibrary(databasePath: string): OpenedLibrary {
     playbackRepo,
     preferenceRepo,
     tagRepo,
+    metadataRepo,
     close: () => closeDatabase(db),
   };
 }

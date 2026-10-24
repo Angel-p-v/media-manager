@@ -4,6 +4,7 @@ import type { MediaType } from '../config/schema.js';
 import type { FileRepository } from '../db/repositories/fileRepo.js';
 import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
 import type { ListMediaOptions, MediaRepository } from '../db/repositories/mediaRepo.js';
+import type { MetadataRepository, MediaMetadataRow } from '../db/repositories/metadataRepo.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
 import type { PreferenceRepository } from '../db/repositories/preferencesRepo.js';
 import type { TagRepository, TagRow } from '../db/repositories/tagRepo.js';
@@ -17,6 +18,7 @@ export type LibraryRepositories = {
   playbackRepo: PlaybackRepository;
   preferenceRepo: PreferenceRepository;
   tagRepo: TagRepository;
+  metadataRepo: MetadataRepository;
 };
 
 export type SearchMediaOptions = {
@@ -63,6 +65,24 @@ export type LibraryService = {
   unassignTag(mediaId: number, tagName: string): void;
   /** Lista los tags de un título. */
   listTagsForMedia(mediaId: number): TagRow[];
+  /** Obtiene metadatos externos de un título. */
+  getMetadata(mediaId: number): MediaMetadataRow | undefined;
+  /** Establece o actualiza metadatos externos de un título. */
+  setMetadata(input: {
+    mediaId: number;
+    provider: 'tmdb' | 'tvdb';
+    externalId: number;
+    title?: string | null;
+    overview?: string | null;
+    posterPath?: string | null;
+    backdropPath?: string | null;
+    voteAverage?: number | null;
+    firstAirDate?: string | null;
+    releaseDate?: string | null;
+    originalLanguage?: string | null;
+  }): MediaMetadataRow;
+  /** Elimina metadatos externos de un título. */
+  removeMetadata(mediaId: number): boolean;
 };
 
 /**
@@ -75,7 +95,8 @@ export type LibraryService = {
 
 /** Crea el servicio de biblioteca sobre un conjunto de repositorios. */
 export function createLibraryService(repositories: LibraryRepositories): LibraryService {
-  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo, tagRepo } = repositories;
+  const { mediaRepo, fileRepo, indexRunRepo, playbackRepo, preferenceRepo, tagRepo, metadataRepo } =
+    repositories;
 
   const detailsFor = (media: MediaRow): MediaDetails => ({
     media,
@@ -189,6 +210,43 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     listTagsForMedia(mediaId: number): TagRow[] {
       return tagRepo.listByMedia(mediaId);
+    },
+
+    getMetadata(mediaId: number): MediaMetadataRow | undefined {
+      return metadataRepo.get(mediaId);
+    },
+
+    setMetadata(input: {
+      mediaId: number;
+      provider: 'tmdb' | 'tvdb';
+      externalId: number;
+      title?: string | null;
+      overview?: string | null;
+      posterPath?: string | null;
+      backdropPath?: string | null;
+      voteAverage?: number | null;
+      firstAirDate?: string | null;
+      releaseDate?: string | null;
+      originalLanguage?: string | null;
+    }): MediaMetadataRow {
+      return metadataRepo.set({
+        mediaId: input.mediaId,
+        provider: input.provider,
+        externalId: input.externalId,
+        title: input.title ?? null,
+        overview: input.overview ?? null,
+        posterPath: input.posterPath ?? null,
+        backdropPath: input.backdropPath ?? null,
+        voteAverage: input.voteAverage ?? null,
+        firstAirDate: input.firstAirDate ?? null,
+        releaseDate: input.releaseDate ?? null,
+        originalLanguage: input.originalLanguage ?? null,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+
+    removeMetadata(mediaId: number): boolean {
+      return metadataRepo.remove(mediaId);
     },
   };
 }

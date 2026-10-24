@@ -38,6 +38,7 @@ describe('migraciones de esquema (integración)', () => {
         { version: 2, name: 'performance-indexes' },
         { version: 3, name: 'playback-and-preferences' },
         { version: 4, name: 'tags-and-collections' },
+        { version: 5, name: 'external-metadata' },
       ]);
 
       expect(db.prepare('SELECT COUNT(*) AS total FROM media').get()).toEqual({ total: 1 });
@@ -57,7 +58,7 @@ describe('migraciones de esquema (integración)', () => {
       // Aplicar de nuevo no duplica filas ni vuelve a ejecutar la migración.
       runMigrations(db);
       expect(db.prepare('SELECT COUNT(*) AS total FROM schema_migrations').get()).toEqual({
-        total: 4,
+        total: 5,
       });
     } finally {
       db.close();
@@ -93,6 +94,7 @@ describe('migraciones de esquema (integración)', () => {
         { version: 2, name: 'performance-indexes' },
         { version: 3, name: 'playback-and-preferences' },
         { version: 4, name: 'tags-and-collections' },
+        { version: 5, name: 'external-metadata' },
       ]);
 
       const tables = db

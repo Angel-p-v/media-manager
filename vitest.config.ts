@@ -50,9 +50,12 @@ export default defineConfig({
         'src/commands/favorite.ts',
         'src/commands/history.ts',
         'src/commands/mark.ts',
+        'src/commands/metadata.ts',
         'src/commands/self-update.ts',
         'src/commands/tag.ts',
+        'src/core/db/repositories/metadataRepo.ts',
         'src/core/db/repositories/tagRepo.ts',
+        'src/core/metadata/**',
         'src/core/playback/**',
       ],
       thresholds: {
