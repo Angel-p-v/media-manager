@@ -344,35 +344,35 @@ src/
 
 ```mermaid
 flowchart TD
-    A[["Usuario ejecuta mm"]] --> B{["TUI o CLI"]}
+    A[["Usuario ejecuta mm"]] --> B{"TUI o CLI"}
 
-    B -->|TUI| C[["src/ui/App.tsx<br/>Ink + React"]]
-    B -->|CLI| D[["src/cli.tsx<br/>Commander"]]
+    B -->|TUI| C[["Interfaz TUI<br/>Ink + React"]]
+    B -->|CLI| D[["CLI headless<br/>Commander"]]
 
-    C --> E[["useLibrary hook<br/>useKeymap hook"]]
-    D --> F[["Subcomando: index | search | show | list | play | tag | ..."]]
+    C --> E[["Hooks de biblioteca"]]
+    D --> F[["Subcomandos<br/>index, search, show, list, play, tag, metadata"]]
 
-    E --> G[["LibraryService<br/>src/core/library/service.ts"]]
+    E --> G[["Servicio de biblioteca<br/>LibraryService"]]
     F --> G
 
-    G --> H{["Que operacion"]}
+    G --> H{"Operacion"}
 
-    H -->|Listar Buscar| I[["mediaRepo.list / search<br/>SQLite + FTS5"]]
-    H -->|Reproducir| J[["Player Launcher<br/>src/core/player/launcher.ts"]]
-    H -->|Etiquetas| K[["tagRepo<br/>src/core/db/repositories/tagRepo.ts"]]
-    H -->|Estado reproduccion| L[["playbackRepo<br/>src/core/db/repositories/playbackRepo.ts"]]
+    H -->|Listar / Buscar| I[["Repositorio de medios<br/>SQLite + FTS5"]]
+    H -->|Reproducir| J[["Lanzador de reproductor<br/>mpv / vlc"]]
+    H -->|Etiquetas| K[["Repositorio de etiquetas<br/>tagRepo"]]
+    H -->|Estado reproduccion| L[["Repositorio de reproduccion<br/>playbackRepo"]]
 
-    I --> M[["SQLite DB<br/>WAL + FTS5"]]
-    J --> N[["spawn mpv / vlc<br/>shell: false"]]
+    I --> M[["Base de datos SQLite<br/>WAL + FTS5"]]
+    J --> N[["Proceso reproductor<br/>spawn sin shell"]]
     K --> M
     L --> M
 
-    N --> O[["Tracker IPC mpv<br/>src/core/playback/mpvTracker.ts"]]
-    O --> P[["Guarda posicion cada 5s<br/>playback_state"]]
+    N --> O[["Tracker IPC mpv<br/>Guarda posicion cada 5s"]]
+    O --> P[["Estado de reproduccion<br/>playback_state"]]
     P --> M
 
-    Q[["Indexacion automatica<br/>mm watch / mm index"]] --> R[["Scanner + Classifier<br/>src/core/indexer/"]]
-    R --> S[["Parsers: episode / movie<br/>S01E02, 1x02, T1E2..."]]
+    Q[["Indexacion automatica<br/>mm watch / mm index"]] --> R[["Scanner + Clasificador<br/>src/core/indexer/"]]
+    R --> S[["Parsers: episodio / pelicula<br/>S01E02, 1x02, T1E2..."]]
     S --> M
 
     style A fill:#f9f,stroke:#333
