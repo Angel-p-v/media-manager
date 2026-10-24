@@ -93,12 +93,19 @@ export function parseTagOptions(raw: {
   media?: string;
   tag?: string;
   json?: boolean;
-}): TagCommandOptions {
+}): TagCommandOptions | null {
   const action = (raw.action ?? 'list') as 'add' | 'remove' | 'list';
+
+  const mediaId = raw.media === undefined ? undefined : Number(raw.media);
+  if (mediaId !== undefined && (isNaN(mediaId) || mediaId <= 0)) {
+    console.error(pc.red('El ID de medio debe ser un número positivo.'));
+    process.exitCode = 2;
+    return null;
+  }
 
   return {
     action,
-    ...(raw.media === undefined ? {} : { mediaId: Number(raw.media) }),
+    ...(mediaId === undefined ? {} : { mediaId }),
     ...(raw.tag === undefined ? {} : { tagName: raw.tag }),
     ...(raw.json === undefined ? {} : { json: raw.json }),
   };

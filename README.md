@@ -85,6 +85,8 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | ▶️ Estado de reproducción (continuar, historial, marcas)         | ✅     |
 | 📡 Tracker IPC mpv y reanudación automática                      | ✅     |
 | 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`  | ✅     |
+| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`          | ✅     |
+| 🔄 Auto-actualización con `self-update`                          | ✅     |
 | 📋 Sección "Continuar" en la TUI                                 | ✅     |
 | 📡 Tracker IPC mpv (socket Unix, eventos property-change)        | ✅     |
 | 🧪 Tests E2E con IPC falso y `--dry-run`                         | ✅     |
@@ -93,7 +95,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ## 🚀 Instalación rápida
 
-### 📦 Instalador oficial (recomendado — **Linux x64/arm64, macOS x64/arm64**)
+### 📦 Instalador oficial (recomendado — Linux, Windows, macOS)
 
 ```bash
 # 1. Descarga el instalador y revísalo
@@ -107,6 +109,29 @@ sh /tmp/mm-install.sh
 mm --version
 ```
 
+#### Windows (x64)
+
+```powershell
+# 1. Descarga el instalador y revísalo
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/install.ps1 -o /tmp/mm-install.ps1
+
+# 2. Ejecútalo
+.\install.ps1
+
+# 3. Verifica
+mm --version
+```
+
+#### macOS (x64, arm64)
+
+> **Nota:** No hay assets oficiales de macOS en v2.1. Puedes compilar localmente con `npm run standalone` o usar el binario Linux vía Rosetta 2 / Docker.
+
+Para compilar en macOS:
+
+```bash
+npm run standalone -- --node-source official
+```
+
 > **Opciones útiles:**
 >
 > ```bash
@@ -118,15 +143,18 @@ mm --version
 
 > ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: quita cuarentena automáticamente**
 
-> **Plataformas soportadas:** Linux (x64, arm64) · macOS (x64, arm64)  
-> **Windows:** próximamente en v2.1
+> **Plataformas con assets oficiales:** Linux (x64, arm64) · Windows (x64)  
+> **macOS:** sin assets oficiales en v2.1 (compila localmente)
 
 ### 🔐 Verificar descarga manual
 
 ```bash
-# Descarga el .tar.gz y su .sha256 desde la release de GitHub
+# Linux/macOS: Descarga el .tar.gz y su .sha256 desde la release de GitHub
 sha256sum -c media-manager-cli-<version>-<platform>.tar.gz.sha256
 gh attestation verify media-manager-cli-<version>-<platform>.tar.gz --repo Angel-p-v/media-manager
+
+# Windows: Descarga el .zip y su .sha256 desde la release de GitHub
+certutil -hashfile media-manager-cli-<version>-windows-x64.zip SHA256
 ```
 
 ### 🗑️ Desinstalar
@@ -179,6 +207,17 @@ mm doctor --prune-missing              # limpia entradas rotas
 
 # 👀 Modo vigilancia
 mm watch                           # reindexa automáticamente al detectar cambios
+
+# 🏷️ Etiquetas y colecciones
+mm tag list                        # lista todas las etiquetas
+mm tag add 1 "por-ver"             # asigna etiqueta al título #1
+mm tag remove 1 "por-ver"          # quita etiqueta del título #1
+mm list --tag 1                    # filtra por etiqueta (repetible para AND)
+
+# 🔄 Auto-actualización
+mm self-update --check             # comprueba si hay actualización
+mm self-update                     # descarga e instala la nueva versión
+mm self-update --dry-run           # muestra qué se haría sin instalar
 ```
 
 ---
@@ -301,13 +340,57 @@ src/
 
 ---
 
+## 📊 Diagrama de flujos
+
+```mermaid
+flowchart TD
+    A[Usuario ejecuta mm] --> B{¿TUI o CLI?}
+
+    B -->|TUI| C[src/ui/App.tsx<br/>Ink + React]
+    B -->|CLI| D[src/cli.tsx<br/>Commander]
+
+    C --> E[useLibrary hook<br/>useKeymap hook]
+    D --> F[Subcomando:<br/>index | search | show | list | play | tag | ...]
+
+    E --> G[LibraryService<br/>src/core/library/service.ts]
+    F --> G
+
+    G --> H{¿Qué operación?}
+
+    H -->|Listar / Buscar| I[mediaRepo.list / search<br/>SQLite + FTS5]
+    H -->|Reproducir| J[Player Launcher<br/>src/core/player/launcher.ts]
+    H -->|Etiquetas| K[tagRepo<br/>src/core/db/repositories/tagRepo.ts]
+    H -->|Estado reproducción| L[playbackRepo<br/>src/core/db/repositories/playbackRepo.ts]
+
+    I --> M[(SQLite DB<br/>WAL + FTS5)]
+    J --> N[spawn mpv / vlc<br/>shell: false]
+    K --> M
+    L --> M
+
+    N --> O[Tracker IPC mpv<br/>src/core/playback/mpvTracker.ts]
+    O --> P[Guarda posición cada 5s<br/>playback_state]
+    P --> M
+
+    Q[Indexación automática<br/>mm watch / mm index] --> R[Scanner + Classifier<br/>src/core/indexer/]
+    R --> S[Parsers: episode / movie<br/>S01E02, 1x02, T1E2...]
+    S --> M
+
+    style A fill:#f9f,stroke:#333
+    style M fill:#bbf,stroke:#333
+    style J fill:#ffb,stroke:#333
+    style C fill:#bfb,stroke:#333
+    style D fill:#bfb,stroke:#333
+```
+
+---
+
 ## 🛠️ Desarrollo
 
 ```bash
 npm install          # instala dependencias (prepara hooks Husky)
 npm run dev          # CLI en modo watch
 npm run verify       # lint + formato + tipos + tests (gate local)
-npm test             # suite completa (412 tests)
+npm test             # suite completa (450 tests)
 npm run test:unit    # solo unitarias
 npm run test:integration
 npm run test:e2e
