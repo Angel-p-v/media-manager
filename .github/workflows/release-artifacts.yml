@@ -48,32 +48,37 @@ jobs:
       - run: npm run verify
       - name: Construir el bundle con el Node oficial
         run: npm run standalone -- --node-source official
-      - name: Verificar el artefacto y su checksum
+      - name: Verificar checksum (Linux)
+        if: matrix.platform != 'windows-*'
         shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
         run: |
           set -eu
           version="$(node -p "require('./package.json').version")"
-          if [[ "$PLATFORM" == windows-* ]]; then
-            asset="media-manager-cli-${version}-${PLATFORM}.zip"
-          else
-            asset="media-manager-cli-${version}-${PLATFORM}.tar.gz"
-          fi
+          asset="media-manager-cli-${version}-${PLATFORM}.tar.gz"
           test -f "build/standalone/${asset}"
           test -f "build/standalone/${asset}.sha256"
-          if [[ "$PLATFORM" == windows-* ]]; then
-            # En Windows no hay sha256sum de coreutils; usar certutil o powershell
-            powershell -Command "certutil -hashfile build/standalone/${asset} SHA256" | Select-String '[0-9a-fA-F]{64}' | ForEach-Object { $_.ToString().Trim() } > expected.hash
-            actual=$(cat expected.hash)
-            expected=$(awk '{print $1}' build/standalone/${asset}.sha256)
-            if [ "$actual" != "$expected" ]; then
-              echo "Checksum mismatch: $actual != $expected"
-              exit 1
-            fi
-          else
-            cd build/standalone && sha256sum -c "${asset}.sha256" && cd ../..
-          fi
+          cd build/standalone
+          sha256sum -c "${asset}.sha256"
+      - name: Verificar checksum (Windows)
+        if: matrix.platform == 'windows-*'
+        shell: pwsh
+        env:
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          $version = (node -p "require('./package.json').version")
+          $asset = "media-manager-cli-${version}-${env:PLATFORM}.zip"
+          if (-not (Test-Path "build/standalone/$asset")) { throw "Asset no encontrado: $asset" }
+          if (-not (Test-Path "build/standalone/$asset.sha256")) { throw "Checksum no encontrado: $asset.sha256" }
+          $expected = (Get-Content "build/standalone/$asset.sha256").Split(' ')[0]
+          $hash = Get-FileHash -Path "build/standalone/$asset" -Algorithm SHA256
+          $actual = $hash.Hash.ToLower()
+          $expected = (Get-Content "build/standalone/$asset.sha256").Split(' ')[0].ToLower()
+          if ($actual -ne $expected) {
+            Write-Error "Checksum mismatch: $actual != $expected"
+            exit 1
+          }
       - name: Atestar la procedencia
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4
         with:
