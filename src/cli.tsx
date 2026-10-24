@@ -21,6 +21,7 @@ import {
 } from './commands/options.js';
 import { runPlayCommand } from './commands/play.js';
 import { runSearchCommand } from './commands/search.js';
+import { runSelfUpdateCommand } from './commands/self-update.js';
 import { runShowCommand } from './commands/show.js';
 import { runWatchCommand } from './commands/watch.js';
 import { loadConfig } from './core/config/loader.js';
@@ -158,6 +159,14 @@ program
   .description('vigila las raíces y reindexa al detectar cambios')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .action(runWatchCommand);
+
+program
+  .command('self-update')
+  .description('busca e instala actualizaciones desde GitHub Releases')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--check', 'solo comprueba si hay actualización disponible')
+  .option('--dry-run', 'muestra qué se descargaría sin instalar')
+  .action(runSelfUpdateCommand);
 
 const dbCommand = program.command('db').description('operaciones sobre la base de datos local');
 

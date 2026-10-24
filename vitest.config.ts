@@ -50,6 +50,7 @@ export default defineConfig({
         'src/commands/favorite.ts',
         'src/commands/history.ts',
         'src/commands/mark.ts',
+        'src/commands/self-update.ts',
         'src/core/playback/**',
       ],
       thresholds: {
