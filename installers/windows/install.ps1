@@ -121,7 +121,7 @@ function assert_checksum_name($checksumFile, $expectedName, $tmpDir) {
     }
     $fullPath = Join-Path $tmpDir $expectedName
     $actual = sha256_of $fullPath
-    if ($actual -ne $listed) { die 1 "el checksum SHA-256 no coincide" }
+    if ($actual.ToLower() -ne $listed.ToLower()) { die 1 "el checksum SHA-256 no coincide" }
 }
 
 function is_our_wrapper($path) {
