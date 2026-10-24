@@ -187,10 +187,10 @@ jobs:
 
             # Verificar checksum
             $checksumContent = Get-Content (Join-Path $tempDir "$artifact.sha256") -TotalCount 1
-            $expected = $checksumContent.Split(' ')[0].Trim()
+            $expected = $checksumContent.Split(' ')[0].Trim().ToLower()
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             $actual = & certutil -hashfile (Join-Path $tempDir $artifact) SHA256
-            $actualHash = ($actual | Select-String '[0-9a-fA-F]{64}').ToString().Trim()
+            $actualHash = ($actual | Select-String '[0-9a-fA-F]{64}').ToString().Trim().ToLower()
             if ($actualHash -ne $expected) {
               Write-Error "Checksum mismatch: $actualHash != $expected"
               exit 1
