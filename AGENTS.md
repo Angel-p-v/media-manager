@@ -184,7 +184,7 @@ Hitos del plan (ver `PLAN.md` §7):
 | M11  | Biblioteca sana y descubrimiento                      | ✅ hecho           |
 | M12  | macOS y experiencia v2                                | ✅ hecho           |
 | M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho           |
-| M14  | v2.1: multi-plataforma + auto-update + tags           | 🟡 en curso (M14a) |
+| M14  | v2.1: Windows + auto-update + tags                    | 🟡 en curso (M14b) |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
@@ -198,10 +198,9 @@ M12 está completado: CI con runners macOS, instalador POSIX con eliminación au
 
 M13 está completado: release v2.0.1 publicada en GitHub Releases con assets Linux x64/arm64, checksums SHA-256, SBOM CycloneDX y atestaciones de procedencia. El asset macOS arm64 quedó pendiente por limitación de capacidad de runners de GitHub Actions (exit code 127).
 
-**M14 en curso:** decidido alcance v2.1 (menor) en [ADR 0013](./docs/adr/0013-m14-scope-definition.md). Sub-hitos:
+**M14 en curso:** decidido alcance v2.1 (menor) en [ADR 0013](./docs/adr/0013-m14-scope-definition.md). **macOS: no habrá assets oficiales en v2.1** (sin hardware macOS). Sub-hitos:
 
-- **M14a** — Asset macOS arm64/x64 (build local) → _siguiente_
-- **M14b** — Windows (instalador PowerShell, .zip, named pipes IPC)
+- **M14b** — Windows (instalador PowerShell, .zip, named pipes IPC) → _siguiente_
 - **M14c** — Auto-actualización (`mm self-update`)
 - **M14d** — Etiquetas/colecciones (migración v4, CLI, TUI)
 

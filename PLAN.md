@@ -669,41 +669,24 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ### M14 — Próxima versión: v2.1 (menor) · en curso
 
-**Objetivo:** Entregar cobertura multiplataforma completa (macOS + Windows) + auto-actualización + etiquetas/colecciones.
+**Objetivo:** Entregar **Windows + auto-actualización + etiquetas/colecciones** (Linux + Windows).  
+**macOS: no habrá assets oficiales en v2.1** — el autor no tiene acceso a hardware macOS y los runners de GitHub Actions tienen capacidad limitada (exit code 127). Usuarios macOS compilan local (`npm run standalone`) o usan binario Linux vía Rosetta 2/Docker. Documentado en README/releases.
 
 **Decisión registrada en [ADR 0013](./docs/adr/0013-m14-scope-definition.md): versión objetivo `v2.1` (menor), no v3.0.**
 
 **Sub-hitos planificados:**
 
-| Sub-hito | Contenido                                             | Estado      |
-| -------- | ----------------------------------------------------- | ----------- |
-| M14a     | Asset macOS arm64/x64 (build local)                   | ☐ pendiente |
-| M14b     | Windows: instalador PowerShell, .zip, named pipes IPC | ☐ pendiente |
-| M14c     | Auto-actualización (`mm self-update`)                 | ☐ pendiente |
-| M14d     | Etiquetas/colecciones (migración v4, CLI, TUI)        | ☐ pendiente |
+| Sub-hito | Contenido                                             | Estado           |
+| -------- | ----------------------------------------------------- | ---------------- |
+| **M14b** | Windows: instalador PowerShell, .zip, named pipes IPC | 🟡 **siguiente** |
+| M14c     | Auto-actualización (`mm self-update`)                 | ☐ pendiente      |
+| M14d     | Etiquetas/colecciones (migración v4, CLI, TUI)        | ☐ pendiente      |
 
 **Fuera de v2.1 (para v2.2 / v3.0):**
 
 - Metadatos externos (TMDB, TVDB) — requiere diseño de caché, rate-limiting, claves API.
 - TypeScript 7 / Biome 2.6 — bloqueado por `typescript-eslint` peer range (`<6.1.0`).
 - Tests E2E con `node-pty` — mejora de infra, no feature de usuario.
-
----
-
-### M14a — Asset macOS arm64/x64 · `2.1.0`
-
-**Tareas**
-
-- [ ] Build local de artifacts macOS (x64 + arm64) con Node oficial verificado.
-- [ ] Verificar instalación en macOS (Gatekeeper, cuarentena, `install.sh`).
-- [ ] Subir assets a GitHub Release v2.1.0 (o actualizar v2.0.1 si es patch).
-- [ ] Checksums SHA-256, SBOM CycloneDX, atestaciones de procedencia.
-
-**Alcance:** Completar la deuda de M12/M13. Los runners de GitHub Actions tienen capacidad limitada (exit code 127); se hará build local en macOS y se subirán los assets manualmente o via workflow disparado a mano.
-
-**A testear:** `npm run verify` en macOS local; `install-test` en macOS nativo; checksums y atestaciones verificables.
-
-**DoD:** Release v2.1.0 publica 4 assets (linux-x64, linux-arm64, macos-x64, macos-arm64) con checksums, SBOM y atestaciones; usuario macOS instala con `sh install.sh` y reproduce sin Node.
 
 ---
 
