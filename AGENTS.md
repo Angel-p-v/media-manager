@@ -168,22 +168,23 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado   |
-| ---- | ----------------------------------------------------- | -------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho |
-| M4   | CLI headless + búsqueda                               | ✅ hecho |
-| M5   | TUI (Ink)                                             | ✅ hecho |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho |
-| M7   | Robustez y rendimiento                                | ✅ hecho |
-| M8   | Release v1.0.0                                        | ✅ hecho |
-| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho |
-| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho |
-| M12  | macOS y experiencia v2                                | ✅ hecho |
-| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho |
+| Hito | Contenido                                             | Estado             |
+| ---- | ----------------------------------------------------- | ------------------ |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho           |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho           |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho           |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho           |
+| M4   | CLI headless + búsqueda                               | ✅ hecho           |
+| M5   | TUI (Ink)                                             | ✅ hecho           |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho           |
+| M7   | Robustez y rendimiento                                | ✅ hecho           |
+| M8   | Release v1.0.0                                        | ✅ hecho           |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho           |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho           |
+| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho           |
+| M12  | macOS y experiencia v2                                | ✅ hecho           |
+| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho           |
+| M14  | v2.1: multi-plataforma + auto-update + tags           | 🟡 en curso (M14a) |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
@@ -197,7 +198,14 @@ M12 está completado: CI con runners macOS, instalador POSIX con eliminación au
 
 M13 está completado: release v2.0.1 publicada en GitHub Releases con assets Linux x64/arm64, checksums SHA-256, SBOM CycloneDX y atestaciones de procedencia. El asset macOS arm64 quedó pendiente por limitación de capacidad de runners de GitHub Actions (exit code 127).
 
-El siguiente paso es **M14** — decidir el alcance de la siguiente versión (v2.1 o v3.0) y completar el asset macOS pendiente.
+**M14 en curso:** decidido alcance v2.1 (menor) en [ADR 0013](./docs/adr/0013-m14-scope-definition.md). Sub-hitos:
+
+- **M14a** — Asset macOS arm64/x64 (build local) → _siguiente_
+- **M14b** — Windows (instalador PowerShell, .zip, named pipes IPC)
+- **M14c** — Auto-actualización (`mm self-update`)
+- **M14d** — Etiquetas/colecciones (migración v4, CLI, TUI)
+
+Fuera de v2.1: metadatos externos (TMDB/TVDB), TypeScript 7/Biome, tests E2E con `node-pty`.
 
 ## Reglas para el agente
 

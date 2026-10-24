@@ -667,21 +667,100 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ---
 
-### M14 — Próxima versión (v2.1 o v3.0) · pendiente
+### M14 — Próxima versión: v2.1 (menor) · en curso
 
-**Objetivo:** Definir y ejecutar el alcance de la siguiente versión mayor/menor.
+**Objetivo:** Entregar cobertura multiplataforma completa (macOS + Windows) + auto-actualización + etiquetas/colecciones.
 
-**Tareas candidatas**
+**Decisión registrada en [ADR 0013](./docs/adr/0013-m14-scope-definition.md): versión objetivo `v2.1` (menor), no v3.0.**
 
-- [ ] Completar asset macOS arm64/x64 (esperar capacidad runners o build local).
-- [ ] Windows (instalador PowerShell, .zip, named pipes para IPC).
-- [ ] Etiquetas/colecciones (más allá de favoritos).
-- [ ] Metadatos externos opcionales (TMDB, TVDB) con claves API.
-- [ ] Auto-actualización del binario instalado.
-- [ ] Migración a TypeScript 7 / Biome 2.6 cuando linter lo soporte.
-- [ ] Tests E2E interactivos con `node-pty` (TTY real).
+**Sub-hitos planificados:**
 
-**Decisión:** Evaluar prioridades tras M13 y actualizar `docs/adr/` y `PLAN.md` antes de iniciar.
+| Sub-hito | Contenido                                             | Estado      |
+| -------- | ----------------------------------------------------- | ----------- |
+| M14a     | Asset macOS arm64/x64 (build local)                   | ☐ pendiente |
+| M14b     | Windows: instalador PowerShell, .zip, named pipes IPC | ☐ pendiente |
+| M14c     | Auto-actualización (`mm self-update`)                 | ☐ pendiente |
+| M14d     | Etiquetas/colecciones (migración v4, CLI, TUI)        | ☐ pendiente |
+
+**Fuera de v2.1 (para v2.2 / v3.0):**
+
+- Metadatos externos (TMDB, TVDB) — requiere diseño de caché, rate-limiting, claves API.
+- TypeScript 7 / Biome 2.6 — bloqueado por `typescript-eslint` peer range (`<6.1.0`).
+- Tests E2E con `node-pty` — mejora de infra, no feature de usuario.
+
+---
+
+### M14a — Asset macOS arm64/x64 · `2.1.0`
+
+**Tareas**
+
+- [ ] Build local de artifacts macOS (x64 + arm64) con Node oficial verificado.
+- [ ] Verificar instalación en macOS (Gatekeeper, cuarentena, `install.sh`).
+- [ ] Subir assets a GitHub Release v2.1.0 (o actualizar v2.0.1 si es patch).
+- [ ] Checksums SHA-256, SBOM CycloneDX, atestaciones de procedencia.
+
+**Alcance:** Completar la deuda de M12/M13. Los runners de GitHub Actions tienen capacidad limitada (exit code 127); se hará build local en macOS y se subirán los assets manualmente o via workflow disparado a mano.
+
+**A testear:** `npm run verify` en macOS local; `install-test` en macOS nativo; checksums y atestaciones verificables.
+
+**DoD:** Release v2.1.0 publica 4 assets (linux-x64, linux-arm64, macos-x64, macos-arm64) con checksums, SBOM y atestaciones; usuario macOS instala con `sh install.sh` y reproduce sin Node.
+
+---
+
+### M14b — Windows (instalador + IPC) · `2.1.0`
+
+**Tareas**
+
+- [ ] ADR para Windows: named pipes para IPC mpv, rutas, instalador.
+- [ ] `install.ps1` (PowerShell) con verificación de checksum, eliminación de zona de seguridad.
+- [ ] Empaquetado `.zip` en release (equivalente al `.tar.gz`).
+- [ ] `MpvTracker` con named pipes (`\\.\pipe\mpv-<pid>`) en lugar de Unix sockets.
+- [ ] CI: build Windows (runners `windows-latest`) y smoke test básico.
+- [ ] Documentación Windows en README (reproductores, instalador, limitaciones).
+
+**Alcance:** Soporte nativo Windows como cuarta plataforma. Instalador PowerShell equivalente a `install.sh`, release asset `.zip`, y adaptación del tracker IPC a named pipes.
+
+**A testear:** Build en runner Windows; `install.ps1` en Windows limpio; `mm play --dry-run` muestra comando correcto; tracker IPC con named pipe fake.
+
+**DoD:** Usuario Windows instala con `.\install.ps1`, ejecuta `mm`, indexa y reproduce con mpv/VLC; release publica asset Windows + checksums + SBOM.
+
+---
+
+### M14c — Auto-actualización (`mm self-update`) · `2.1.0`
+
+**Tareas**
+
+- [ ] Comando `mm self-update [--check|--dry-run]` que consulta GitHub Releases API.
+- [ ] Descarga del asset correspondiente a la plataforma/arquitectura actual.
+- [ ] Verificación de checksum SHA-256 y atestación (opcional, requiere `sigstore`/`cosign`).
+- [ ] Reemplazo atómico del binario instalado (escritura a temp + rename).
+- [ ] Rollback automático si el nuevo binario falla en `--version`.
+- [ ] Notificación en TUI si hay actualización disponible (opcional, flag `--notify`).
+
+**Alcance:** Auto-update usa el mismo canal GitHub Releases (ADR 0009). El binario instalado sabe su versión (`package.json` embebido) y plataforma. No requiere servidor propio.
+
+**A testear:** `mm self-update --check` detecta versión nueva; `--dry-run` muestra qué se descargaría; flujo completo en directorio temporal; rollback si binario corrupto.
+
+**DoD:** `mm self-update` actualiza de v2.0.x a v2.1.0 sin intervención manual; funciona en Linux/macOS/Windows; TUI opcionalmente notifica.
+
+---
+
+### M14d — Etiquetas/colecciones · `2.1.0`
+
+**Tareas**
+
+- [ ] Migración BD v4: tablas `tags` (id, name, color?, created_at) y `media_tags` (media_id, tag_id).
+- [ ] Repositorio `tagRepo` (CRUD, listado, asignación/desasignación masiva).
+- [ ] Comandos CLI: `mm tag add <media> <tag>`, `mm tag remove`, `mm tag list`, `mm tag rename`.
+- [ ] Filtro en `LibraryService.list` por tag(s) (AND/OR).
+- [ ] TUI: vista "Etiquetas" en sidebar, asignación rápida (`t` key), filtro combinado con favoritos/estado.
+- [ ] Migración de favoritos existentes → tag especial `favorite` (opcional, backward-compat).
+
+**Alcance:** Generaliza "favoritos" a un sistema de etiquetas flexible. Una media puede tener múltiples tags. Favoritos se convierte en tag reservado `⭐ favorite`.
+
+**A testear:** Migración v3→v4 con datos; CRUD tags; filtros combinados (tipo + tag + estado); TUI navega tags y asigna/quita.
+
+**DoD:** `mm tag` funcional; `mm list --tag "por ver"` filtra correctamente; TUI muestra sección Etiquetas con contadores; `npm run verify` verde en 3 nodos + Windows.
 
 ## 9. Flujo de trabajo Git
 
