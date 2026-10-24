@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.0.3](https://github.com/Angel-p-v/media-manager/compare/v3.0.2...v3.0.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** copia install.ps1 y uninstall.ps1 al tempDir en el install-test Windows ([#89](https://github.com/Angel-p-v/media-manager/issues/89)) ([d9936d2](https://github.com/Angel-p-v/media-manager/commit/d9936d264819aba32cd7a4d7624b4cbd7ae455e0))
+
 ## [3.0.2](https://github.com/Angel-p-v/media-manager/compare/v3.0.1...v3.0.2) (2026-10-24)
 
 
