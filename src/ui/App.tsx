@@ -66,6 +66,7 @@ function AppImpl({
   const [query, setQuery] = useState('');
   const [helpVisible, setHelpVisible] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [refreshingMetadata, setRefreshingMetadata] = useState(false);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -171,6 +172,39 @@ function AppImpl({
     setStatus(null);
   };
 
+  const handleRefreshMetadata = (): void => {
+    if (view !== 'library' || selectedMedia === undefined) return;
+    setRefreshingMetadata(true);
+    setStatus('Obteniendo metadatos…');
+    void library.getOrFetchMetadata(selectedMedia.id).then(
+      () => {
+        setStatus('Metadatos actualizados.');
+        setRefreshingMetadata(false);
+      },
+      () => {
+        setStatus('No se pudieron obtener metadatos.');
+        setRefreshingMetadata(false);
+      },
+    );
+  };
+
+  const handleGotoTaggedMedia = (): void => {
+    if (view !== 'library') return;
+    const start = (selected + 1) % items.length;
+    for (let i = 0; i < items.length; i++) {
+      const idx = (start + i) % items.length;
+      const media = items[idx];
+      if (media === undefined) continue;
+      const meta = library.getMetadata(media.id);
+      if (meta) {
+        setSelected(idx);
+        setStatus(`Metadatos disponibles para "${media.title}".`);
+        return;
+      }
+    }
+    setStatus('No hay títulos con metadatos en esta sección.');
+  };
+
   const handleEscape = (): void => {
     if (view !== 'library') {
       setView('library');
@@ -190,6 +224,8 @@ function AppImpl({
       settings: handleSettings,
       play: handlePlay,
       nextSection: handleNextSection,
+      refreshMetadata: handleRefreshMetadata,
+      gotoTaggedMedia: handleGotoTaggedMedia,
       up: () => {
         if (view !== 'settings') setSelected((index) => Math.max(0, index - 1));
       },
@@ -237,6 +273,7 @@ function AppImpl({
             counts={counts}
             details={details}
             showDetails={config.ui.showDetails}
+            library={library}
           />
         ) : null}
         {!helpVisible && view === 'search' ? (
@@ -250,6 +287,7 @@ function AppImpl({
             selected={safeSelected}
             details={details}
             showDetails={config.ui.showDetails}
+            library={library}
           />
         ) : null}
         {!helpVisible && view === 'settings' ? <SettingsView config={config} /> : null}
@@ -260,6 +298,11 @@ function AppImpl({
         </Box>
       )}
       <StatusBar bindings={keybindings} message={status} />
+      {refreshingMetadata && (
+        <Box paddingX={1}>
+          <Text>{theme.muted('  actualizando metadatos…')}</Text>
+        </Box>
+      )}
     </Box>
   );
 }
