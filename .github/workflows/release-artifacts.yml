@@ -199,6 +199,11 @@ jobs:
             # Extraer
             [System.IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $tempDir $artifact), $tempDir)
 
+            # Copiar los instaladores de Windows desde el checkout del repo
+            # (no están incluidos en el bundle portable ZIP)
+            Copy-Item -Path "installers/windows/install.ps1" -Destination (Join-Path $tempDir "install.ps1") -Force
+            Copy-Item -Path "installers/windows/uninstall.ps1" -Destination (Join-Path $tempDir "uninstall.ps1") -Force
+
             # Leer install.json para plataforma
             $entries = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $tempDir $artifact)).Entries
             $zipEntry = $entries | Where-Object { $_.Name -eq 'install.json' } | Select-Object -First 1
