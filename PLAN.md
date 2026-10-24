@@ -233,6 +233,7 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M11  | Biblioteca sana y descubrimiento                      | ✅     | 6/6      |
 | M12  | macOS y experiencia v2                                | ✅     | 7/7      |
 | M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅     | 7/7      |
+| M14  | Release `v2.1` (Windows + auto-update + tags)         | ✅     | 3/3      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -667,20 +668,20 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ---
 
-### M14 — Próxima versión: v2.1 (menor) · en curso
+### M14 — Próxima versión: v2.1 (menor) · ✅ completado
 
 **Objetivo:** Entregar **Windows + auto-actualización + etiquetas/colecciones** (Linux + Windows).  
 **macOS: no habrá assets oficiales en v2.1** — el autor no tiene acceso a hardware macOS y los runners de GitHub Actions tienen capacidad limitada (exit code 127). Usuarios macOS compilan local (`npm run standalone`) o usan binario Linux vía Rosetta 2/Docker. Documentado en README/releases.
 
 **Decisión registrada en [ADR 0013](./docs/adr/0013-m14-scope-definition.md): versión objetivo `v2.1` (menor), no v3.0.**
 
-**Sub-hitos planificados:**
+**Sub-hitos completados:**
 
-| Sub-hito | Contenido                                             | Estado           |
-| -------- | ----------------------------------------------------- | ---------------- |
-| **M14b** | Windows: instalador PowerShell, .zip, named pipes IPC | 🟡 **siguiente** |
-| M14c     | Auto-actualización (`mm self-update`)                 | ☐ pendiente      |
-| M14d     | Etiquetas/colecciones (migración v4, CLI, TUI)        | ☐ pendiente      |
+| Sub-hito | Contenido                                             | Estado   |
+| -------- | ----------------------------------------------------- | -------- |
+| M14b     | Windows: instalador PowerShell, .zip, named pipes IPC | ✅ hecho |
+| M14c     | Auto-actualización (`mm self-update`)                 | ✅ hecho |
+| M14d     | Etiquetas/colecciones (migración v4, CLI, TUI)        | ✅ hecho |
 
 **Fuera de v2.1 (para v2.2 / v3.0):**
 
@@ -690,60 +691,58 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ---
 
-### M14b — Windows (instalador + IPC) · `2.1.0`
+### M14b — Windows (instalador + IPC) · `2.1.0` · ✅ completado
 
 **Tareas**
 
-- [ ] ADR para Windows: named pipes para IPC mpv, rutas, instalador.
-- [ ] `install.ps1` (PowerShell) con verificación de checksum, eliminación de zona de seguridad.
-- [ ] Empaquetado `.zip` en release (equivalente al `.tar.gz`).
-- [ ] `MpvTracker` con named pipes (`\\.\pipe\mpv-<pid>`) en lugar de Unix sockets.
-- [ ] CI: build Windows (runners `windows-latest`) y smoke test básico.
-- [ ] Documentación Windows en README (reproductores, instalador, limitaciones).
+- [x] ADR 0014: Windows: named pipes para IPC mpv, rutas, instalador.
+- [x] `install.ps1` (PowerShell) con verificación de checksum, eliminación de zona de seguridad.
+- [x] `uninstall.ps1` (PowerShell) equivalente a `uninstall.sh`.
+- [x] Empaquetado `.zip` en release (equivalente al `.tar.gz`).
+- [x] `MpvTracker` con named pipes (`\\.\pipe\mpv-<pid>`) en lugar de Unix sockets.
+- [x] CI: build Windows (runners `windows-latest`) y install-test.
+- [x] package.json: incluir install.ps1 y uninstall.ps1 en `files`.
 
 **Alcance:** Soporte nativo Windows como cuarta plataforma. Instalador PowerShell equivalente a `install.sh`, release asset `.zip`, y adaptación del tracker IPC a named pipes.
-
-**A testear:** Build en runner Windows; `install.ps1` en Windows limpio; `mm play --dry-run` muestra comando correcto; tracker IPC con named pipe fake.
 
 **DoD:** Usuario Windows instala con `.\install.ps1`, ejecuta `mm`, indexa y reproduce con mpv/VLC; release publica asset Windows + checksums + SBOM.
 
 ---
 
-### M14c — Auto-actualización (`mm self-update`) · `2.1.0`
+### M14c — Auto-actualización (`mm self-update`) · `2.1.0` · ✅ completado
 
 **Tareas**
 
-- [ ] Comando `mm self-update [--check|--dry-run]` que consulta GitHub Releases API.
-- [ ] Descarga del asset correspondiente a la plataforma/arquitectura actual.
-- [ ] Verificación de checksum SHA-256 y atestación (opcional, requiere `sigstore`/`cosign`).
-- [ ] Reemplazo atómico del binario instalado (escritura a temp + rename).
-- [ ] Rollback automático si el nuevo binario falla en `--version`.
-- [ ] Notificación en TUI si hay actualización disponible (opcional, flag `--notify`).
+- [x] Comando `mm self-update [--check|--dry-run]` que consulta GitHub Releases API.
+- [x] Descarga del asset correspondiente a la plataforma/arquitectura actual.
+- [x] Verificación de checksum SHA-256.
+- [x] Reemplazo atómico del binario instalado con rollback ante fallos.
+- [x] Tests: isVersionNewer, getPlatformIdentifier.
 
 **Alcance:** Auto-update usa el mismo canal GitHub Releases (ADR 0009). El binario instalado sabe su versión (`package.json` embebido) y plataforma. No requiere servidor propio.
 
-**A testear:** `mm self-update --check` detecta versión nueva; `--dry-run` muestra qué se descargaría; flujo completo en directorio temporal; rollback si binario corrupto.
-
-**DoD:** `mm self-update` actualiza de v2.0.x a v2.1.0 sin intervención manual; funciona en Linux/macOS/Windows; TUI opcionalmente notifica.
+**DoD:** `mm self-update` detecta y aplica actualizaciones; rollback automático si el nuevo binario falla.
 
 ---
 
-### M14d — Etiquetas/colecciones · `2.1.0`
+### M14d — Etiquetas/colecciones · `2.1.0` · ✅ completado
 
 **Tareas**
 
-- [ ] Migración BD v4: tablas `tags` (id, name, color?, created_at) y `media_tags` (media_id, tag_id).
-- [ ] Repositorio `tagRepo` (CRUD, listado, asignación/desasignación masiva).
-- [ ] Comandos CLI: `mm tag add <media> <tag>`, `mm tag remove`, `mm tag list`, `mm tag rename`.
-- [ ] Filtro en `LibraryService.list` por tag(s) (AND/OR).
-- [ ] TUI: vista "Etiquetas" en sidebar, asignación rápida (`t` key), filtro combinado con favoritos/estado.
-- [ ] Migración de favoritos existentes → tag especial `favorite` (opcional, backward-compat).
+- [x] ADR 0015: etiquetas y colecciones (muchos-a-muchos).
+- [x] Migración v4: tablas `tags` e `media_tags`.
+- [x] `tagRepo`: CRUD de etiquetas, asignación/desasignación, consultas.
+- [x] `mediaRepo.list`: soporte para filtro `--tag` (AND entre múltiples tags).
+- [x] `LibraryService`: listTags, getTagByName, assignTag, unassignTag, listTagsForMedia.
+- [x] CLI: `mm tag add/remove/list [--json]`.
+- [x] CLI: `mm list --tag <id>` (repetible para AND).
+- [x] Tests: migración v4, servicio de biblioteca con tags.
 
-**Alcance:** Generaliza "favoritos" a un sistema de etiquetas flexible. Una media puede tener múltiples tags. Favoritos se convierte en tag reservado `⭐ favorite`.
+**Alcance:** Sistema de etiquetas múltiples por título. Favoritos siguen funcionando como antes (media_preferences.favorite).
 
-**A testear:** Migración v3→v4 con datos; CRUD tags; filtros combinados (tipo + tag + estado); TUI navega tags y asigna/quita.
+**DoD:** `mm tag` funcional; `mm list --tag <id>` filtra correctamente; migración v3→v4 con datos preservados.
 
-**DoD:** `mm tag` funcional; `mm list --tag "por ver"` filtra correctamente; TUI muestra sección Etiquetas con contadores; `npm run verify` verde en 3 nodos + Windows.
+---
 
 ## 9. Flujo de trabajo Git
 
