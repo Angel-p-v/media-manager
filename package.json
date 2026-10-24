@@ -93,6 +93,7 @@
     "husky": "^9.1.7",
     "ink-testing-library": "^4.0.0",
     "lint-staged": "^17.6.0",
+    "node-pty": "^1.1.0",
     "prettier": "^3.9.10",
     "prettier-plugin-sort-package-json": "^1.1.0",
     "tsx": "^4.23.15",
@@ -103,6 +104,7 @@
   "allowScripts": {
     "better-sqlite3": true,
     "esbuild": true,
-    "unrs-resolver": true
+    "unrs-resolver": true,
+    "node-pty@1.1.0": true
   }
 }
