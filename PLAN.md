@@ -217,26 +217,31 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 >
 > **Leyenda:** ✅ completado · 🟡 en curso · ☐ pendiente
 
-| Hito | Contenido                                             | Estado      | Progreso |
-| ---- | ----------------------------------------------------- | ----------- | -------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅          | 6/6      |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅          | 5/5      |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅          | 5/5      |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅          | 9/9      |
-| M4   | CLI _headless_ + búsqueda                             | ✅          | 10/10    |
-| M5   | TUI (Ink)                                             | ✅          | 7/7      |
-| M6   | Reproductor + modo _watch_                            | ✅          | 6/6      |
-| M7   | Robustez y rendimiento                                | ✅          | 6/6      |
-| M8   | Release `v1.0.0`                                      | ✅          | 7/7      |
-| M9   | Esquema v3, estado reproducción, doctor               | ✅          | 6/6      |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅          | 6/6      |
-| M11  | Biblioteca sana y descubrimiento                      | ✅          | 6/6      |
-| M12  | macOS y experiencia v2                                | ✅          | 7/7      |
-| M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅          | 7/7      |
-| M14  | Release `v2.1` (Windows + auto-update + tags)         | ✅          | 3/3      |
-| M15  | Metadatos externos (TMDB/TVDB)                        | ✅          | 6/6      |
-| M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅          | 6/6      |
-| M17  | Sincronización auto + TUI metadatos visuales          | ☐ pendiente |
+| Hito | Contenido                                             | Estado | Progreso |
+| ---- | ----------------------------------------------------- | ------ | -------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅     | 6/6      |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅     | 5/5      |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅     | 5/5      |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅     | 9/9      |
+| M4   | CLI _headless_ + búsqueda                             | ✅     | 10/10    |
+| M5   | TUI (Ink)                                             | ✅     | 7/7      |
+| M6   | Reproductor + modo _watch_                            | ✅     | 6/6      |
+| M7   | Robustez y rendimiento                                | ✅     | 6/6      |
+| M8   | Release `v1.0.0`                                      | ✅     | 7/7      |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅     | 6/6      |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅     | 6/6      |
+| M11  | Biblioteca sana y descubrimiento                      | ✅     | 6/6      |
+| M12  | macOS y experiencia v2                                | ✅     | 7/7      |
+| M13  | Release `v2.0.1` (Linux + SBOM)                       | ✅     | 7/7      |
+| M14  | Release `v2.1` (Windows + auto-update + tags)         | ✅     | 3/3      |
+| M15  | Metadatos externos (TMDB/TVDB)                        | ✅     | 6/6      |
+| M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅     | 6/6      |
+| M17  | Sincronización automática + metadatos con TTL         | ✅     | 6/6      |
+| M18  | TUI con metadatos visuales (póster, sinopsis, calif.) | ☐      | 0/5      |
+| M19  | Sincronización en segundo plano (watch metadatos)     | ☐      | 0/4      |
+| M20  | Auto-completado de shell (bash, zsh, fish)            | ☐      | 0/5      |
+| M21  | E2E interactivos con TTY real (node-pty)              | ☐      | 0/4      |
+| M22  | Mejorar cobertura de pruebas (watch, play, watcher)   | ☐      | 0/4      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -772,19 +777,19 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ---
 
-### M16 — Config YAML metadatos + TVDB proveedor secundario · `2.2.0` · en curso
+### M16 — Config YAML metadatos + TVDB proveedor secundario · `2.2.0` · ✅ completado
 
 **Objetivo:** Completar la integración de metadatos externos con configuración YAML completa y soporte para TVDB como proveedor secundario.
 
 **Decisión registrada en [ADR 0016](./docs/adr/0016-metadata-externo.md): versión objetivo `v2.2` (menor).**
 
-**Tareas:**
+**Tareas completadas:**
 
-- [ ] Agregar configuración `metadata` al schema Zod (tmdb_api_key, tvdb_api_key, cache_ttl_hours)
-- [ ] Agregar TVDB como proveedor secundario en MetadataService
-- [ ] Actualizar MetadataService para leer claves API del config YAML (no solo variables de entorno)
-- [ ] Actualizar comando `metadata` para usar config en lugar de solo env vars
-- [ ] Tests para TVDB y configuración YAML
+- [x] Agregar configuración `metadata` al schema Zod (tmdb_api_key, tvdb_api_key, cache_ttl_hours)
+- [x] Agregar TVDB como proveedor secundario en MetadataService
+- [x] Actualizar MetadataService para leer claves API del config YAML (no solo variables de entorno)
+- [x] Actualizar comando `metadata` para usar config en lugar de solo env vars
+- [x] Tests para TVDB y configuración YAML
 
 **Alcance:** Completar la integración de metadatos externos con configuración declarativa y soporte multi-proveedor.
 
@@ -792,20 +797,120 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ---
 
-### M17 — Sincronización automática + TUI con metadatos visuales · `2.2.0` · pendiente
+### M17 — Sincronización automática + metadatos con TTL · `2.2.0` · ✅ completado
 
-**Objetivo:** Completar v2.2 con sincronización automática de metadatos y visualización en la TUI.
+**Objetivo:** Implementar sincronización automática de metadatos basada en TTL de caché y integración en LibraryService.
+
+**Decisión registrada en [ADR 0017](./docs/adr/0017-metadata-sync-tui.md): versión objetivo `v2.2` (menor).**
+
+**Tareas completadas:**
+
+- [x] `LibraryService.getOrFetchMetadata()`: verifica TTL y refresca automáticamente si expirado
+- [x] `MetadataService.search()` y `getDetails()`: métodos genéricos multi-proveedor (TMDB/TVDB)
+- [x] `openLibrary()` acepta config y logger para crear MetadataService con claves API
+- [x] `context.ts` y `run.tsx` pasan config y logger a openLibrary
+- [x] Tests actualizados para metadataService y metadataConfig
+
+**Alcance:** Los metadatos se refrescan automáticamente cuando están expirados según `cacheTtlHours`; sin claves API, se usan los metadatos almacenados.
+
+**DoD:** `getOrFetchMetadata()` devuelve metadatos frescos o los existentes; `npm run verify` verde en 3 nodos.
+
+---
+
+### M18 — TUI con metadatos visuales · `2.2.0` · pendiente
+
+**Objetivo:** Mostrar metadatos obtenidos (sinopsis, póster, calificación, año) en el panel de detalles de la TUI.
 
 **Tareas:**
 
-- [ ] Sincronización automática/periódica de metadatos (caché con TTL)
-- [ ] TUI: mostrar metadatos en panel de detalles (sinopsis, póster, calificación)
-- [ ] TUI: vista de metadatos para títulos sin información externa
-- [ ] TUI: comando para refrescar metadatos de un título
+- [ ] Panel de detalles en TUI muestra metadatos si existen (título, año, sinopsis, calificación, fecha estreno, idioma)
+- [ ] Mostrar información del proveedor (TMDB/TVDB) junto a los metadatos
+- [ ] Si no hay metadatos, mostrar opción para obtenerlos desde la TUI
+- [ ] Tecla `r` en detalles para refrescar metadatos del título actual (forzar descarga)
+- [ ] Tecla `m` en listado para navegar a detalles con metadatos si existen
 
-**Alcance:** Experiencia completa de metadatos con actualización automática y visualización en TUI.
+**Alcance:** Experiencia visual completa en la TUI con información enriquecida de TMDB/TVDB.
 
-**DoD:** Los metadatos se sincronizan automáticamente según cacheTtlHours; TUI muestra sinopsis, póster y calificación; `npm run verify` verde en 3 nodos.
+**A testear:** TUI renderiza metadatos correctamente; tecla `r` refresca; tecla `m` navega a detalles.
+
+**DoD:** TUI muestra sinopsis, póster y calificación; `npm run verify` verde en 3 nodos.
+
+---
+
+### M19 — Sincronización en segundo plano (watch metadatos) · `2.2.0` · pendiente
+
+**Objetivo:** Sincronizar metadatos automáticamente sin intervención del usuario.
+
+**Tareas:**
+
+- [ ] Watch de metadatos: al abrir la TUI, verificar qué títulos tienen metadatos expirados
+- [ ] Refrescar metadatos de títulos con caché expirado al iniciar la aplicación (opcional, configurable)
+- [ ] Manejo elegante de errores de red: no bloquear la TUI si la API externa falla
+- [ ] Rate-limiting respetado entre sincronizaciones automáticas
+
+**Alcance:** Los metadatos se mantienen actualizados sin que el usuario tenga que ejecutar comandos manuales.
+
+**A testear:** Sincronización no bloquea la TUI; errores de red se manejan sin fallar; rate-limiting respetado.
+
+**DoD:** Metadatos se refrescan automáticamente según `cacheTtlHours`; `npm run verify` verde en 3 nodos.
+
+---
+
+### M20 — Auto-completado de shell · `2.2.0` · pendiente
+
+**Objetivo:** Soporte para autocompletado de `mm` en bash, zsh y fish.
+
+**Tareas:**
+
+- [ ] Generar script de autocompletado para bash (`mm completion bash`)
+- [ ] Generar script de autocompletado para zsh (`mm completion zsh`)
+- [ ] Generar script de autocompletado para fish (`mm completion fish`)
+- [ ] Comando `mm completion <shell>` que imprime el script correspondiente
+- [ ] Documentar cómo instalar el autocompletado en cada shell
+
+**Alcance:** El usuario puede instalar autocompletado para navegar subcomandos y opciones con Tab.
+
+**A testear:** `mm completion bash|zsh|fish` genera script válido; instalación documentada.
+
+**DoD:** `mm completion` funcional para los 3 shells; documentado en README.
+
+---
+
+### M21 — E2E interactivos con TTY real · `2.2.0` · pendiente
+
+**Objetivo:** Tests E2E que usen una TTY real para validar la interacción con la TUI.
+
+**Tareas:**
+
+- [ ] Integrar `node-pty` para tests E2E con TTY real
+- [ ] Test de navegación por la TUI con teclas reales (flechas, q, /, p, etc.)
+- [ ] Test de selección y reproducción desde la TUI
+- [ ] Test de búsqueda interactiva con TextInput
+
+**Alcance:** Mayor confianza en que la TUI funciona correctamente en una terminal real.
+
+**A testear:** Navegación completa de la TUI con TTY real; selección y reproducción.
+
+**DoD:** Tests E2E interactivos pasan en CI; `npm run verify` verde en 3 nodos.
+
+---
+
+### M22 — Mejorar cobertura de pruebas · `2.2.0` · pendiente
+
+**Objetivo:** Subir la cobertura de pruebas en módulos con bajo porcentaje.
+
+**Tareas:**
+
+- [ ] Tests para `src/core/player/launcher.ts` (cobertura ~48%)
+- [ ] Tests para `src/core/indexer/watcher.ts` (cobertura ~69%)
+- [ ] Tests para `src/commands/watch.ts` (cobertura ~58%)
+- [ ] Tests para `src/core/indexer/service.ts` si tiene baja cobertura
+
+**Alcance:** Subir cobertura global y de módulos críticos a umbrales aceptables.
+
+**A testear:** Todos los nuevos tests pasan; cobertura global ≥ 85%.
+
+**DoD:** `npm run coverage` muestra cobertura ≥ umbrales en todos los módulos.
 
 ---
 

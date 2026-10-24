@@ -187,7 +187,12 @@ Hitos del plan (ver `PLAN.md` §7):
 | M14  | v2.1: Windows + auto-update + tags                    | ✅ hecho    |
 | M15  | Metadatos externos TMDB/TVDB                          | ✅ hecho    |
 | M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅ hecho    |
-| M17  | Sincronización auto + TUI metadatos visuales          | ☐ pendiente |
+| M17  | Sincronización automática + metadatos con TTL         | ✅ hecho    |
+| M18  | TUI con metadatos visuales                            | ☐ pendiente |
+| M19  | Sincronización en segundo plano (watch metadatos)     | ☐ pendiente |
+| M20  | Auto-completado de shell (bash, zsh, fish)            | ☐ pendiente |
+| M21  | E2E interactivos con TTY real (node-pty)              | ☐ pendiente |
+| M22  | Mejorar cobertura de pruebas (watch, play, watcher)   | ☐ pendiente |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
@@ -217,7 +222,46 @@ macOS sin assets oficiales en v2.1 (sin hardware macOS).
 - CLI: mm metadata fetch/search/clear [--json]
 - LibraryService: getMetadata, setMetadata, removeMetadata
 
-Todos los hitos M0–M15 están completados.
+**M17 completado:** Sincronización automática de metadatos:
+
+- LibraryService.getOrFetchMetadata(): verifica TTL y refresca automáticamente
+- MetadataService.search() y getDetails(): métodos genéricos multi-proveedor
+- openLibrary() acepta config y logger para crear MetadataService
+- context.ts y run.tsx pasan config y logger a openLibrary
+- Tests actualizados para metadataService y metadataConfig
+
+Todos los hitos M0–M17 están completados.
+
+**M18 — TUI con metadatos visuales · pendiente**
+
+- Panel de detalles en TUI muestra metadatos (título, año, sinopsis, calificación, fecha estreno, idioma)
+- Mostrar información del proveedor (TMDB/TVDB)
+- Si no hay metadatos, mostrar opción para obtenerlos desde la TUI
+- Tecla `r` en detalles para refrescar metadatos
+- Tecla `m` en listado para navegar a detalles
+
+**M19 — Sincronización en segundo plano · pendiente**
+
+- Watch de metadatos al abrir TUI
+- Refrescar metadatos expirados al iniciar (configurable)
+- Manejo elegante de errores de red
+- Rate-limiting respetado
+
+**M20 — Auto-completado de shell · pendiente**
+
+- `mm completion bash|zsh|fish`
+- Documentación de instalación por shell
+
+**M21 — E2E interactivos con TTY real · pendiente**
+
+- Integrar node-pty para tests E2E con TTY real
+- Test de navegación por TUI con teclas reales
+- Test de selección y reproducción desde TUI
+
+**M22 — Mejorar cobertura de pruebas · pendiente**
+
+- Tests para launcher.ts, watcher.ts, watch.ts, service.ts
+- Cobertura global ≥ 85%
 
 ## Reglas para el agente
 
