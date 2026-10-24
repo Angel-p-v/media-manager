@@ -197,10 +197,10 @@ jobs:
             }
 
             # Extraer
-            [System.IO.ZipFile]::ExtractToDirectory((Join-Path $tempDir $artifact), $tempDir)
+            [System.IO.Compression.ZipFile]::ExtractToDirectory((Join-Path $tempDir $artifact), $tempDir)
 
             # Leer install.json para plataforma
-            $entries = [System.IO.ZipFile]::OpenRead((Join-Path $tempDir $artifact)).Entries
+            $entries = [System.IO.Compression.ZipFile]::OpenRead((Join-Path $tempDir $artifact)).Entries
             $root = ($entries.FullName | Select-Object -First 1).Split('/')[0]
             $zipEntry = $entries | Where-Object { $_.FullName -eq "$root/install.json" }
             $reader = New-Object System.IO.StreamReader($zipEntry.Open())
