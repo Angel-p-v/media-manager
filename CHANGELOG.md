@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.0.5](https://github.com/Angel-p-v/media-manager/compare/v3.0.4...v3.0.5) (2026-10-24)
+
+
+### Bug Fixes
+
+* **ci:** compara checksum en minúsculas en install-test Windows ([#94](https://github.com/Angel-p-v/media-manager/issues/94)) ([1783979](https://github.com/Angel-p-v/media-manager/commit/178397945b9fedea8d33f71ca53e9925e3c99104))
+
 ## [3.0.4](https://github.com/Angel-p-v/media-manager/compare/v3.0.3...v3.0.4) (2026-10-24)
 
 
