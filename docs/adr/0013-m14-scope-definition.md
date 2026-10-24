@@ -30,12 +30,12 @@ Razones:
 
 **Priorización para v2.1 (scope mínimo viable):**
 
-| Prioridad | Tarea                                     | Justificación                                                               |
-| --------- | ----------------------------------------- | --------------------------------------------------------------------------- |
-| **P0**    | Asset macOS arm64/x64                     | Deuda de M12/M13; desbloquea usuarios macOS sin build local                 |
-| **P1**    | Windows (instalador + .zip + named pipes) | Nueva plataforma; paridad con Linux/macOS                                   |
-| **P2**    | Auto-actualización del binario            | Mejora DX crítica; evita reinstalación manual                               |
-| **P3**    | Etiquetas/colecciones                     | Extensión natural de favoritos; caso de uso real (ej. "por ver", "dropped") |
+| Prioridad          | Tarea                                         | Justificación                                                                                                                                                                                             |
+| ------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **P0**             | **Windows (instalador + .zip + named pipes)** | Nueva plataforma; paridad con Linux; autor tiene acceso a Windows                                                                                                                                         |
+| **P1**             | **Auto-actualización del binario**            | Mejora DX crítica; evita reinstalación manual; multiplataforma                                                                                                                                            |
+| **P2**             | **Etiquetas/colecciones**                     | Extensión natural de favoritos; caso de uso real (ej. "por ver", "dropped")                                                                                                                               |
+| **P3 (won't fix)** | Asset macOS arm64/x64                         | **Sin acceso a hardware macOS**; runners GH Actions limitados (exit 127). Usuarios macOS compilan local (`npm run standalone`) o usan binario Linux vía Rosetta 2/Docker. Documentado en README/releases. |
 
 **Fuera de v2.1 (dejan para v2.2 o v3.0):**
 
@@ -47,12 +47,13 @@ Razones:
 
 ### Positivas
 
-- v2.1 entrega valor incremental claro: macOS + Windows + auto-update = cobertura multiplataforma completa.
+- v2.1 entrega valor incremental claro: **Windows + auto-update + etiquetas** = cobertura multiplataforma útil (Linux + Windows).
 - Etiquetas/colecciones extienden el modelo de datos de forma aditiva (nueva tabla, sin migración breaking).
 - Auto-update usa el mismo canal GitHub Releases ya establecido (ADR 0009).
 
 ### Negativas / Riesgos
 
+- **macOS: no habrá assets oficiales en v2.1**. El autor no tiene acceso a hardware macOS y los runners de GitHub Actions tienen capacidad limitada (exit code 127). Los usuarios de macOS deberán compilar localmente (`npm run standalone`) o usar el binario Linux vía Rosetta 2 / Docker. Esto se documenta explícitamente en README y release notes.
 - Windows requiere named pipes para IPC (mpv no usa Unix sockets) → código plataforma-específico en `MpvTracker`.
 - Auto-update implica descargar y reemplazar binario en runtime: manejar permisos, atomicidad, rollback.
 - Etiquetas/colecciones añade complejidad a `LibraryService` y TUI (nueva vista, filtros combinados).
@@ -66,10 +67,11 @@ Razones:
 
 ## Plan de ejecución sugerido (v2.1)
 
-1. **M14a** — Asset macOS (build local + subir a release v2.0.1 existente o v2.1.0)
-2. **M14b** — Windows (instalador + release assets + named pipes IPC)
-3. **M14c** — Auto-update (`mm self-update` + integración en launcher)
-4. **M14d** — Etiquetas/colecciones (migración v4 + CLI + TUI)
+1. **M14b** — Windows (instalador + release assets + named pipes IPC)
+2. **M14c** — Auto-update (`mm self-update` + integración en launcher)
+3. **M14d** — Etiquetas/colecciones (migración v4 + CLI + TUI)
+
+> **Nota:** M14a (macOS assets) se elimina del plan: **no habrá assets macOS oficiales en v2.1** por falta de hardware. Ver sección "Negativas / Riesgos".
 
 Cada sub-hito con su PR, CI verde, merge squash, y actualización de `PLAN.md`/`AGENTS.md`/`README.md`.
 
