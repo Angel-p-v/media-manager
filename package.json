@@ -1,6 +1,6 @@
 {
   "name": "media-manager-cli",
-  "version": "3.0.4",
+  "version": "3.0.5",
   "description": "Gestor de contenido multimedia 100% terminal: índice SQLite local y reproducción con mpv/vlc",
   "repository": {
     "type": "git",
