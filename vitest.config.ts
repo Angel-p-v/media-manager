@@ -52,6 +52,7 @@ export default defineConfig({
         'src/commands/mark.ts',
         'src/commands/self-update.ts',
         'src/commands/tag.ts',
+        'src/core/db/repositories/tagRepo.ts',
         'src/core/playback/**',
       ],
       thresholds: {
