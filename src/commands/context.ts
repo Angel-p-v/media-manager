@@ -51,7 +51,7 @@ export async function withCommandContext<T>(
     player: config.player.default,
   });
 
-  const opened = openLibrary(config.database.path);
+  const opened = openLibrary(config.database.path, config, logger);
   logger.debug('db.opened', { path: config.database.path });
 
   try {
