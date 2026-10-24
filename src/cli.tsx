@@ -23,6 +23,7 @@ import { runPlayCommand } from './commands/play.js';
 import { runSearchCommand } from './commands/search.js';
 import { runSelfUpdateCommand } from './commands/self-update.js';
 import { runShowCommand } from './commands/show.js';
+import { runTagCommand } from './commands/tag.js';
 import { runWatchCommand } from './commands/watch.js';
 import { loadConfig } from './core/config/loader.js';
 import { getVersion } from './shared/version.js';
@@ -74,6 +75,12 @@ program
   .option('--sort <orden>', 'ordena por title, added o recent', parseSortOrder)
   .option('--limit <n>', 'número máximo de resultados', parsePositiveInteger)
   .option('--offset <n>', 'resultados a saltar', parseNonNegativeInteger)
+  .option(
+    '--tag <id>',
+    'filtra por id de etiqueta (puede repetirse)',
+    (val: string, prev: number[] = []) => [...prev, Number(val)],
+    [],
+  )
   .option('--json', 'salida en formato JSON')
   .action(runListCommand);
 
@@ -143,6 +150,16 @@ program
   .option('--off', 'desmarca el favorito')
   .option('--json', 'salida en formato JSON')
   .action(runFavoriteCommand);
+
+program
+  .command('tag')
+  .description('gestiona etiquetas y su asignación a títulos')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('-a, --action <add|remove|list>', 'acción: add, remove o list')
+  .option('-m, --media <id>', 'id del título (requerido para add/remove)')
+  .option('-t, --tag <nombre>', 'nombre de la etiqueta (requerido para add/remove)')
+  .option('--json', 'salida en formato JSON')
+  .action(runTagCommand);
 
 program
   .command('doctor')

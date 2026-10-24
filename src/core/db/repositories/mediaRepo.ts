@@ -26,6 +26,8 @@ export type ListMediaOptions = {
   unwatched?: boolean;
   /** Filtrar títulos completados. */
   watched?: boolean;
+  /** Filtrar títulos que tengan al menos uno de los tags indicados (IDs). */
+  tags?: number[];
 };
 
 export type SearchMediaOptions = {
@@ -57,11 +59,15 @@ export type MediaRepositoryDeps = {
     listRecent(limit?: number): { media: { id: number }; state: { completedAt: string | null } }[];
     count(): number;
   };
+  /** Repositorio de etiquetas (para filtro por tag). */
+  tagRepo?: {
+    listMediaByTag(tagId: number): number[];
+  };
 };
 
 /** Crea el repositorio de títulos sobre una conexión SQLite dada. */
 export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): MediaRepository {
-  const { preferenceRepo, playbackRepo } = deps;
+  const { preferenceRepo, playbackRepo, tagRepo } = deps;
   const upsertStatement = db.prepare(`
     INSERT INTO media (type, title, sort_title, year, folder_path)
     VALUES (@type, @title, @sort_title, @year, @folder_path)
@@ -162,10 +168,10 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
      * de 10000 entradas y aprovechar los índices de la BD.
      */
     list(options: ListMediaOptions = {}): MediaRow[] {
-      const { favorites, inProgress, unwatched, watched, ...baseOptions } = options;
+      const { favorites, inProgress, unwatched, watched, tags, ...baseOptions } = options;
 
       // Si no hay filtros especiales, usar la consulta simple
-      if (!favorites && !inProgress && !unwatched && !watched) {
+      if (!favorites && !inProgress && !unwatched && !watched && (!tags || tags.length === 0)) {
         const statement = listStatements[baseOptions.orderBy ?? 'title'];
         const rows = statement.all({
           type: baseOptions.type ?? null,
@@ -242,6 +248,27 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
         const favIds = new Set(preferenceRepo.listFavorites().map((p) => p.mediaId));
         if (favIds.size === 0) return [];
         addInClause('id', favIds);
+      }
+
+      // Etiquetas: join con media_tags (AND si varios tags)
+      if (tags && tags.length > 0) {
+        if (!tagRepo) return [];
+        const tagRepoRef = tagRepo;
+        // Para cada tag, obtener los media_ids y hacer intersección (AND)
+        const tagMediaSets: Set<number>[] = tags.map((tagId) => {
+          const ids: number[] = tagRepoRef.listMediaByTag(tagId);
+          return new Set(ids);
+        });
+        // Intersección de todos los sets (AND entre tags)
+        const commonIds = tagMediaSets.reduce<Set<number>>((acc, set) => {
+          const result = new Set<number>();
+          for (const id of set) {
+            if (acc.has(id)) result.add(id);
+          }
+          return result;
+        }, new Set(tagMediaSets[0]));
+        if (commonIds.size === 0) return [];
+        addInClause('id', commonIds);
       }
 
       // En curso: join con playback_state (no completados, posición > 0)

@@ -11,6 +11,7 @@ import type {
 } from '../../../src/core/db/repositories/mediaRepo.js';
 import type { PlaybackRepository } from '../../../src/core/db/repositories/playbackRepo.js';
 import type { PreferenceRepository } from '../../../src/core/db/repositories/preferencesRepo.js';
+import type { TagRepository } from '../../../src/core/db/repositories/tagRepo.js';
 import type { IndexRunRow, MediaFileRow, MediaRow } from '../../../src/core/db/types.js';
 
 const dark: MediaRow = {
@@ -127,6 +128,23 @@ function fakePreferenceRepository(): PreferenceRepository {
   };
 }
 
+function fakeTagRepository(): TagRepository {
+  return {
+    create: () => ({ id: 1, name: 'test', color: null, createdAt: '' }),
+    get: () => undefined,
+    getByName: () => undefined,
+    list: () => [],
+    update: () => false,
+    remove: () => false,
+    assign: () => undefined,
+    unassign: () => undefined,
+    unassignAll: () => undefined,
+    listByMedia: () => [],
+    listMediaByTag: () => [],
+    countByTag: () => 0,
+  };
+}
+
 function service(
   overrides: Partial<MediaRepository> = {},
   files: Partial<Record<number, MediaFileRow[]>> = {},
@@ -137,6 +155,7 @@ function service(
     indexRunRepo: fakeIndexRunRepository(undefined),
     playbackRepo: fakePlaybackRepository(),
     preferenceRepo: fakePreferenceRepository(),
+    tagRepo: fakeTagRepository(),
   });
 }
 
@@ -247,6 +266,7 @@ describe('createLibraryService', () => {
         indexRunRepo: fakeIndexRunRepository(lastRun),
         playbackRepo: fakePlaybackRepository(),
         preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
       });
 
       expect(library.stats()).toEqual({

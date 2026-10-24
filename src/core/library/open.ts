@@ -12,11 +12,13 @@ import {
   createPreferenceRepository,
   type PreferenceRepository,
 } from '../db/repositories/preferencesRepo.js';
+import { createTagRepository, type TagRepository } from '../db/repositories/tagRepo.js';
 
-/** Repositorios extendidos que incluyen reproducción y preferencias. */
+/** Repositorios extendidos que incluyen reproducción, preferencias y etiquetas. */
 export type ExtendedLibraryRepositories = LibraryRepositories & {
   playbackRepo: PlaybackRepository;
   preferenceRepo: PreferenceRepository;
+  tagRepo: TagRepository;
 };
 
 /** Biblioteca abierta y lista para consultar, con su ciclo de vida. */
@@ -26,6 +28,7 @@ export type OpenedLibrary = {
   maintenance: DatabaseMaintenance;
   playbackRepo: PlaybackRepository;
   preferenceRepo: PreferenceRepository;
+  tagRepo: TagRepository;
   close: () => void;
 };
 
@@ -41,7 +44,12 @@ export function openLibrary(databasePath: string): OpenedLibrary {
   const indexRunRepo = createIndexRunRepository(db);
   const playbackRepo = createPlaybackRepository(db);
   const preferenceRepo = createPreferenceRepository(db);
-  const mediaRepo = createMediaRepository(db, { preferenceRepo, playbackRepo });
+  const tagRepo = createTagRepository(db);
+  const mediaRepo = createMediaRepository(db, {
+    preferenceRepo,
+    playbackRepo,
+    tagRepo,
+  });
 
   const repositories: ExtendedLibraryRepositories = {
     mediaRepo,
@@ -49,6 +57,7 @@ export function openLibrary(databasePath: string): OpenedLibrary {
     indexRunRepo,
     playbackRepo,
     preferenceRepo,
+    tagRepo,
   };
 
   return {
@@ -57,6 +66,7 @@ export function openLibrary(databasePath: string): OpenedLibrary {
     maintenance: createDatabaseMaintenance(db),
     playbackRepo,
     preferenceRepo,
+    tagRepo,
     close: () => closeDatabase(db),
   };
 }
