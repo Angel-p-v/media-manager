@@ -114,14 +114,16 @@ function sha256_of($file) {
 
 function assert_checksum_name($checksumFile, $expectedName, $tmpDir) {
     $content = Get-Content $checksumFile -TotalCount 1
-    $listed = ($content -replace '^\*','').Split(' ')[-1].Trim()
-    if (-not $listed) { die 1 "el archivo de checksum está vacío o mal formado" }
-    if ($listed -ne $expectedName) {
-        die 1 "el checksum corresponde a '$listed' y no a '$expectedName'"
+    $parts = ($content -replace '^\*','').Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
+    $listedHash = $parts[0].Trim()
+    $listedName = $parts[-1].Trim()
+    if (-not $listedName) { die 1 "el archivo de checksum está vacío o mal formado" }
+    if ($listedName -ne $expectedName) {
+        die 1 "el checksum corresponde a '$listedName' y no a '$expectedName'"
     }
     $fullPath = Join-Path $tmpDir $expectedName
     $actual = sha256_of $fullPath
-    if ($actual.ToLower() -ne $listed.ToLower()) { die 1 "el checksum SHA-256 no coincide" }
+    if ($actual.ToLower() -ne $listedHash.ToLower()) { die 1 "el checksum SHA-256 no coincide" }
 }
 
 function is_our_wrapper($path) {
