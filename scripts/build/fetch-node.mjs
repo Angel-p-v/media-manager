@@ -63,7 +63,8 @@ export async function fetchNodeRuntime(options) {
   const root = `node-v${version}-${platform}`;
   const cacheRoot = options.cacheRoot ?? path.join(process.cwd(), 'build', 'cache', 'node');
   const cacheDirectory = path.join(cacheRoot, root);
-  const binaryPath = path.join(cacheDirectory, 'node');
+  const binaryName = process.platform === 'win32' ? 'node.exe' : 'node';
+  const binaryPath = path.join(cacheDirectory, binaryName);
   const licensePath = path.join(cacheDirectory, 'LICENSE');
 
   try {
@@ -96,7 +97,11 @@ export async function fetchNodeRuntime(options) {
     await extract(archivePath, extractionDirectory, [`${root}/bin/node`, `${root}/LICENSE`]);
 
     await mkdir(cacheDirectory, { recursive: true });
-    await copyFile(path.join(extractionDirectory, 'bin', 'node'), binaryPath);
+    const binarySource =
+      process.platform === 'win32'
+        ? path.join(extractionDirectory, 'node.exe')
+        : path.join(extractionDirectory, 'bin', 'node');
+    await copyFile(binarySource, binaryPath);
     await chmod(binaryPath, 0o755);
     await copyFile(path.join(extractionDirectory, 'LICENSE'), licensePath);
   } finally {

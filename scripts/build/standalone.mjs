@@ -240,7 +240,8 @@ Opciones:
 }
 
 async function prepareRuntime(options, bundleDirectory) {
-  const destination = path.join(bundleDirectory, 'node');
+  const binaryName = process.platform === 'win32' ? 'node.exe' : 'node';
+  const destination = path.join(bundleDirectory, binaryName);
 
   if (options.nodeSource === 'official') {
     const version = options.nodeVersion ?? (await readFile(NODE_VERSION_FILE, 'utf8')).trim();
