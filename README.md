@@ -99,7 +99,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ```bash
 # 1. Descarga el instalador y revísalo
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/install.sh -o /tmp/mm-install.sh
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
 less /tmp/mm-install.sh
 
 # 2. Ejecútalo (sin sudo, instala en ~/.local)
@@ -113,7 +113,7 @@ mm --version
 
 ```powershell
 # 1. Descarga el instalador y revísalo
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/install.ps1 -o /tmp/mm-install.ps1
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/windows/install.ps1 -o /tmp/mm-install.ps1
 
 # 2. Ejecútalo
 .\install.ps1
@@ -124,7 +124,7 @@ mm --version
 
 #### macOS (x64, arm64)
 
-> **Nota:** No hay assets oficiales de macOS en v2.1. Puedes compilar localmente con `npm run standalone` o usar el binario Linux vía Rosetta 2 / Docker.
+> **Nota:** No hay assets oficiales de macOS en v2.1. Consulta [`installers/macos/README.md`](./installers/macos/README.md) para más información.
 
 Para compilar en macOS:
 
@@ -141,7 +141,7 @@ npm run standalone -- --node-source official
 > sh /tmp/mm-install.sh --verify-attestation # verifica atestación de procedencia (requiere gh)
 > ```
 
-> ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: quita cuarentena automáticamente**
+> ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: sin assets oficiales (compila localmente)**
 
 > **Plataformas con assets oficiales:** Linux (x64, arm64) · Windows (x64)  
 > **macOS:** sin assets oficiales en v2.1 (compila localmente)
@@ -160,7 +160,7 @@ certutil -hashfile media-manager-cli-<version>-windows-x64.zip SHA256
 ### 🗑️ Desinstalar
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/uninstall.sh -o /tmp/mm-uninstall.sh
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/uninstall.sh -o /tmp/mm-uninstall.sh
 sh /tmp/mm-uninstall.sh            # conserva configuración y base de datos
 sh /tmp/mm-uninstall.sh --purge    # las elimina también
 ```

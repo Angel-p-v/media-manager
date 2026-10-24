@@ -114,8 +114,8 @@ jobs:
           set -eu
           docker run --rm \
             -e TAG="$TAG" \
-            -v "$PWD/install.sh:/install.sh:ro" \
-            -v "$PWD/uninstall.sh:/uninstall.sh:ro" \
+            -v "$PWD/installers/linux/install.sh:/install.sh:ro" \
+            -v "$PWD/installers/linux/uninstall.sh:/uninstall.sh:ro" \
             ubuntu:24.04 bash -eu -c '
               export DEBIAN_FRONTEND=noninteractive
               apt-get update -qq

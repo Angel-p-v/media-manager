@@ -60,12 +60,12 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Comprobar sintaxis POSIX
         run: |
-          sh -n install.sh
-          sh -n uninstall.sh
-          dash -n install.sh
-          dash -n uninstall.sh
+          sh -n installers/linux/install.sh
+          sh -n installers/linux/uninstall.sh
+          dash -n installers/linux/install.sh
+          dash -n installers/linux/uninstall.sh
       - name: ShellCheck
-        run: shellcheck --shell=sh --severity=warning install.sh uninstall.sh
+        run: shellcheck --shell=sh --severity=warning installers/linux/install.sh installers/linux/uninstall.sh
 
   smoke:
     name: smoke (tarball)
