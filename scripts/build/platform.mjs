@@ -1,7 +1,7 @@
 import process from 'node:process';
 
 const OS_NAMES = { darwin: 'macos', linux: 'linux', win32: 'windows' };
-const NODE_OS_NAMES = { darwin: 'darwin', linux: 'linux', win32: 'win32' };
+const NODE_OS_NAMES = { darwin: 'darwin', linux: 'linux', win32: 'win' };
 const ARCH_NAMES = { arm64: 'arm64', x64: 'x64' };
 
 /**
