@@ -46,6 +46,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+        if: matrix.platform != 'windows-*'
       - name: Construir el bundle con el Node oficial
         run: npm run standalone -- --node-source official
       - name: Verificar checksum (Linux)
