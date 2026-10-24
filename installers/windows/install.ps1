@@ -365,7 +365,7 @@ try {
         exit 0
     }
 
-    if (Test-Path $PREFIX -and -not (Test-Path $PREFIX -Container)) { die 1 "$PREFIX existe y no es un directorio" }
+    if (Test-Path $PREFIX -and -not ((Get-Item $PREFIX).PSIsContainer)) { die 1 "$PREFIX existe y no es un directorio" }
     New-Item -ItemType Directory -Path $APP_DIR -Force | Out-Null
     New-Item -ItemType Directory -Path $BINDIR -Force | Out-Null
 
