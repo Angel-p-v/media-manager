@@ -240,8 +240,7 @@ try {
         assert_checksum_name $CHECKSUM $ARTIFACT $script:TMP_DIR
 
         step "inspeccionando el archivo"
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $zip = [System.IO.ZipFile]::OpenRead($ARCHIVE)
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($ARCHIVE)
         try {
             $entries = $zip.Entries | Select-Object -ExpandProperty FullName
             if ($entries.Count -eq 0) { die 1 "el archivo está vacío" }
@@ -301,8 +300,7 @@ try {
         assert_checksum_name $CHECKSUM $ARTIFACT $script:TMP_DIR
 
         step "inspeccionando el archivo"
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        $zip = [System.IO.ZipFile]::OpenRead($ARCHIVE)
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($ARCHIVE)
         try {
             $entries = $zip.Entries | Select-Object -ExpandProperty FullName
             $root = $null
@@ -380,7 +378,7 @@ try {
     New-Item -ItemType Directory -Path $STAGE_DIR -Force | Out-Null
 
     step "extrayendo el artefacto"
-    [System.IO.ZipFile]::ExtractToDirectory($ARCHIVE, $STAGE_DIR)
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($ARCHIVE, $STAGE_DIR)
 
     # Windows: desbloquear archivos (quitar Mark-of-the-Web)
     Get-ChildItem $STAGE_DIR -Recurse -File | Where-Object {
