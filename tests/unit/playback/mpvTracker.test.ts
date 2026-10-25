@@ -284,4 +284,20 @@ describe('MpvTracker', () => {
 
     expect(mockRepo.save).not.toHaveBeenCalled();
   });
+
+  it('lanza error al iniciar tracker ya destruido', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    await tracker.stop();
+
+    // destroyed = true después de stop()
+    await expect(tracker.start()).rejects.toThrow('Tracker ya destruido');
+  });
 });

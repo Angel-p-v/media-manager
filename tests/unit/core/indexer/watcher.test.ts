@@ -252,4 +252,48 @@ describe('watchLibrary', () => {
 
     closeWatcher = watcher.close;
   });
+
+  it('no programa indexación cuando el watcher está cerrado', async () => {
+    const watcher = watchLibrary({
+      repositories: mockRepositories,
+      library: mockLibrary,
+      logger: mockLogger,
+      onIndexed: mockOnIndexed,
+      onError: mockOnError,
+      debounceMs: 10,
+    });
+
+    await watcher.ready;
+    await watcher.close();
+
+    const allHandler = mockWatcher.allHandler as (event: string, path: string) => void;
+    allHandler('add', '/media/series/video.mkv');
+
+    // closed=true -> onEvent retorna temprano, no programa nada
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockIndexLibrary).not.toHaveBeenCalled();
+  });
+
+  it('propaga error de indexLibrary a onError', async () => {
+    mockIndexLibrary.mockRejectedValueOnce(new Error('index failed'));
+
+    const watcher = watchLibrary({
+      repositories: mockRepositories,
+      library: mockLibrary,
+      logger: mockLogger,
+      onIndexed: mockOnIndexed,
+      onError: mockOnError,
+      debounceMs: 10,
+    });
+
+    await watcher.ready;
+    const allHandler = mockWatcher.allHandler as (event: string, path: string) => void;
+    allHandler('add', '/media/series/video.mkv');
+
+    await vi.waitFor(() => {
+      expect(mockOnError).toHaveBeenCalled();
+    });
+
+    closeWatcher = watcher.close;
+  });
 });
