@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createLaunchPlan } from '../../../src/core/player/launcher.js';
+import { createLaunchPlan, isExecutable } from '../../../src/core/player/launcher.js';
 import { selectMediaFile } from '../../../src/core/player/selection.js';
 import { PlayerError } from '../../../src/shared/errors.js';
 
@@ -95,6 +95,56 @@ describe('createLaunchPlan', () => {
     expect(() => createLaunchPlan({ playerConfig, filePath: '   ' })).toThrow(
       'No hay ningún fichero que reproducir',
     );
+  });
+
+  it('sustituye {start} con startSeconds y filtra argumentos vacíos', () => {
+    const withStart: PlayerConfig = {
+      ...playerConfig,
+      players: {
+        ...playerConfig.players,
+        startplayer: {
+          command: 'start-player',
+          args: ['--start={start}', '{file}'],
+        },
+      },
+      default: 'startplayer',
+    };
+
+    const plan = createLaunchPlan({
+      playerConfig: withStart,
+      filePath: '/media/video.mkv',
+      startSeconds: 90.7,
+    });
+
+    expect(plan.args).toEqual(['--start=90', '/media/video.mkv']);
+  });
+
+  it('sustituye {start} con string vacío cuando startSeconds es null', () => {
+    const withStart: PlayerConfig = {
+      ...playerConfig,
+      players: {
+        ...playerConfig.players,
+        startplayer: {
+          command: 'start-player',
+          args: ['--start={start}', '{file}'],
+        },
+      },
+      default: 'startplayer',
+    };
+
+    const plan = createLaunchPlan({
+      playerConfig: withStart,
+      filePath: '/media/video.mkv',
+    });
+
+    expect(plan.args).toEqual(['--start=', '/media/video.mkv']);
+  });
+});
+
+describe('isExecutable', () => {
+  it('devuelve false para comando vacío', async () => {
+    const result = await isExecutable('');
+    expect(result).toBe(false);
   });
 });
 
