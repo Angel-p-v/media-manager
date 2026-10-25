@@ -64,6 +64,7 @@ function fakeMediaRepository(overrides: Partial<MediaRepository> = {}): MediaRep
     removeEmpty: () => 0,
     count: () => 0,
     listFolders: () => [],
+    updateFolderPath: notImplemented,
     ...overrides,
   };
 }
@@ -81,6 +82,7 @@ function fakeFileRepository(files: Partial<Record<number, MediaFileRow[]>> = {})
     removeByMedia: () => 0,
     removeMissing: () => 0,
     count: () => Object.values(files).reduce((total, list) => total + (list?.length ?? 0), 0),
+    updateFilePath: notImplemented,
   };
 }
 
