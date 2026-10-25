@@ -21,7 +21,10 @@ describe('mm (e2e, binario compilado)', () => {
   let configPath: string;
 
   beforeAll(async () => {
-    execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe' });
+    const build = execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe' });
+    if (build.status !== 0) {
+      throw new Error(`Build falló en beforeAll: ${build.stderr}`);
+    }
 
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-e2e-'));
     configPath = path.join(workDir, 'config.yaml');
