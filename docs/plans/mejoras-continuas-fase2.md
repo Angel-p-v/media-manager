@@ -26,8 +26,8 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 | #   | Área      | Descripción                                                                                           | Prioridad | Esfuerzo   | Rama sugerida                |
 | --- | --------- | ----------------------------------------------------------------------------------------------------- | --------- | ---------- | ---------------------------- |
 | B1  | Indexador | `mm index --folder`: limitar `scanLibrary` al subdirectorio pedido en lugar de recorrer toda la raíz. | Media     | Medio      | `feat/indexer-carpeta-real`  | ✅  |
-| B2  | Watcher   | Detectar eventos `rename`/`move` de chokidar y actualizar `file_path` en lugar de borrar+insertar.    | Media     | Medio-Alto | `feat/watcher-renombrados`   |     |
-| B3  | Config    | Permitir recargar `library.exclude` sin reiniciar `mm` (watch de config).                             | Baja      | Bajo       | `feat/config-exclude-reload` |     |
+| B2  | Watcher   | Detectar eventos `rename`/`move` de chokidar y actualizar `file_path` en lugar de borrar+insertar.    | Media     | Medio-Alto | `feat/watcher-renombrados`   | ✅  |
+| B3  | Config    | Permitir recargar `library.exclude` sin reiniciar `mm` (watch de config).                             | Baja      | Bajo       | `feat/config-exclude-reload` | ✅  |
 
 ### Fase C — Metadatos y caché
 
@@ -39,12 +39,12 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 ### Fase D — TUI
 
-| #   | Área | Descripción                                                                                         | Prioridad | Esfuerzo | Rama sugerida                 |
-| --- | ---- | --------------------------------------------------------------------------------------------------- | --------- | -------- | ----------------------------- |
-| D1  | TUI  | Filtros rápidos con teclas: letras para filtrar por tipo (serie/anime/película) sin entrar en menú. | Baja      | Bajo     | `feat/tui-filtros-teclas`     |
-| D2  | TUI  | Vista compacta/densa alternativa a la vista con portada para bibliotecas grandes.                   | Baja      | Medio    | `feat/tui-vista-compacta`     |
-| D3  | TUI  | Selección múltiple y acciones en lote (marcar varios como visto/favorito/eliminar).                 | Media     | Medio    | `feat/tui-seleccion-multiple` |
-| D4  | TUI  | Soporte de ratón: clic en filas y botones de la TUI.                                                | Baja      | Bajo     | `feat/tui-raton`              |
+| #   | Área | Descripción                                                                                         | Prioridad | Esfuerzo | Rama sugerida                 | Estado |
+| --- | ---- | --------------------------------------------------------------------------------------------------- | --------- | -------- | ----------------------------- | ------ |
+| D1  | TUI  | Filtros rápidos con teclas: letras para filtrar por tipo (serie/anime/película) sin entrar en menú. | Baja      | Bajo     | `feat/tui-filtros-teclas`     | ✅     |
+| D2  | TUI  | Vista compacta/densa alternativa a la vista con portada para bibliotecas grandes.                   | Baja      | Medio    | `feat/tui-vista-compacta`     | ✅     |
+| D3  | TUI  | Selección múltiple y acciones en lote (marcar varios como visto/favorito/eliminar).                 | Media     | Medio    | `feat/tui-seleccion-multiple` | ✅     |
+| D4  | TUI  | Soporte de ratón: clic en filas y botones de la TUI.                                                | Baja      | Bajo     | `feat/tui-raton`              | ✅     |
 
 ### Fase E — CLI y comandos
 
@@ -72,9 +72,9 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 ### Fase H — Internacionalización (i18n)
 
-| #   | Área | Descripción                                                                           | Prioridad | Esfuerzo | Rama sugerida  |
-| --- | ---- | ------------------------------------------------------------------------------------- | --------- | -------- | -------------- |
-| H1  | i18n | Añadir soporte de idiomas (`en` y `es`) en la TUI; código en inglés, UI configurable. | Baja      | Medio    | `feat/i18n-ui` |
+| #   | Área | Descripción                                                                           | Prioridad | Esfuerzo | Rama sugerida  | Estado |
+| --- | ---- | ------------------------------------------------------------------------------------- | --------- | -------- | -------------- | ------ |
+| H1  | i18n | Añadir soporte de idiomas (`en` y `es`) en la TUI; código en inglés, UI configurable. | Baja      | Medio    | `feat/i18n-ui` | ✅     |
 
 ### Fase I — Seguridad
 
@@ -86,17 +86,17 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 ## Orden recomendado de implementación
 
-Se sugiere ejecutar los ítems en este orden para mantener el proyecto estable y aprovechar sinergias:
+Todos los ítems del plan están completados:
 
 1. **A1–A4** — Testing (doctor, cobertura, export/folder, resiliencia) ✅ completados
 2. **E1, E2, E3** — CLI (db backup/restore, config check, dry-run) ✅ completados
 3. **F1, F2, F3** — Observabilidad (doctor --full, --log-file, métricas) ✅ completados
 4. **B1** — `mm index --folder` real ✅ completado
 5. **G1, G2, G3** — Distribución (Docker, Homebrew/winget, SBOM) ✅ completados
-6. **B2** — Watcher rename/move (medio-alto esfuerzo, pendiente)
-7. **B3** — Config exclude reload (pendiente)
-8. **D1–D4** — TUI mejoras (pendientes)
-9. **H1** — i18n (pendiente)
+6. **B2** — Watcher rename/move ✅ completado (PR #161)
+7. **B3** — Config exclude reload ✅ completado (PR #163)
+8. **D1–D4** — TUI mejoras (filtros, compacto, selección múltiple, ratón) ✅ completado (PR #165)
+9. **H1** — i18n (infraestructura de traducciones) ✅ completado (PR #167)
 
 No es necesario implementar todos los ítems. Cada uno es independiente y se puede aceptar o rechazar individualmente.
 
