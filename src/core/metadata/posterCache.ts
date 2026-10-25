@@ -113,7 +113,10 @@ export async function clearPosterCache(
       const localPath = join(cacheDir, entry);
       try {
         const fileStat = await stat(localPath);
-        if (fileStat.mtimeMs < cutoff) {
+        // Con maxAgeDays = 0 (cutoff = ahora) usamos <= para que los archivos
+        // creados en el mismo milisegundo también se borren, evitando fallos
+        // por diferencias de reloj entre el sistema de archivos y el sistema.
+        if (fileStat.mtimeMs <= cutoff) {
           await rm(localPath);
           deleted++;
         }
