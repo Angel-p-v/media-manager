@@ -86,6 +86,26 @@ function formatBytesImpl(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${unit}`;
 }
 
+/** Proyecta un título a una fila CSV. */
+export function toMediaCsv(media: MediaRow): string {
+  const escapeCsv = (value: string): string => {
+    if (/[",\n\r]/.test(value)) {
+      return `"${value.replace(/"/g, '""')}"`;
+    }
+    return value;
+  };
+  return [
+    media.id,
+    escapeCsv(media.type),
+    escapeCsv(media.title),
+    media.year ?? '',
+    escapeCsv(media.folderPath),
+  ].join(',');
+}
+
+/** Cabecera del CSV de títulos. */
+export const mediaCsvHeader = 'id,type,title,year,folderPath';
+
 /** Exportaciones nombradas para compatibilidad con ESM y verbatimModuleSyntax. */
 export {
   mediaTypeLabelImpl as mediaTypeLabel,

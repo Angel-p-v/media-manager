@@ -165,6 +165,7 @@ function fakeMetadataRepository(): MetadataRepository {
       originalLanguage: null,
       fetchedAt: '',
       updatedAt: '',
+      localPosterPath: null,
     }),
     remove: () => false,
     listExpired: () => [],

@@ -177,6 +177,7 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       posterPath: null,
       backdropPath: null,
       voteAverage: null,
+      localPosterPath: null,
       firstAirDate: null,
       releaseDate: null,
       originalLanguage: null,

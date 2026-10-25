@@ -2,7 +2,7 @@ import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
 import { parseMediaType, parseSortOrder } from './options.js';
-import { printMediaList, toMediaJson } from './output.js';
+import { mediaCsvHeader, printMediaList, toMediaCsv, toMediaJson } from './output.js';
 
 import type { MediaType } from '../core/config/schema.js';
 import type { ListMediaOptions } from '../core/db/repositories/mediaRepo.js';
@@ -13,6 +13,7 @@ export type ListCommandOptions = CommandOptions & {
   offset?: number;
   sort?: NonNullable<ListMediaOptions['orderBy']>;
   json?: boolean;
+  export?: 'json' | 'csv';
   favorites?: boolean;
   inProgress?: boolean;
   unwatched?: boolean;
@@ -42,7 +43,7 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
     });
     const total = library.count(options.type);
 
-    if (options.json) {
+    if (options.json || options.export === 'json') {
       console.log(
         JSON.stringify(
           {
@@ -57,6 +58,12 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
           2,
         ),
       );
+      return;
+    }
+
+    if (options.export === 'csv') {
+      const lines = [mediaCsvHeader, ...items.map(toMediaCsv)];
+      console.log(lines.join('\n'));
       return;
     }
 
@@ -104,6 +111,7 @@ export function parseListOptions(raw: {
   unwatched?: boolean;
   watched?: boolean;
   tags?: string[];
+  export?: string;
 }): Pick<
   ListCommandOptions,
   | 'type'
@@ -115,6 +123,7 @@ export function parseListOptions(raw: {
   | 'unwatched'
   | 'watched'
   | 'tags'
+  | 'export'
 > {
   return {
     ...(raw.type === undefined ? {} : { type: parseMediaType(raw.type) }),
@@ -126,5 +135,6 @@ export function parseListOptions(raw: {
     ...(raw.unwatched === undefined ? {} : { unwatched: raw.unwatched }),
     ...(raw.watched === undefined ? {} : { watched: raw.watched }),
     ...(raw.tags === undefined ? {} : { tags: raw.tags.map(Number).filter((n) => !isNaN(n)) }),
+    ...(raw.export === undefined ? {} : { export: raw.export as 'json' | 'csv' }),
   };
 }
