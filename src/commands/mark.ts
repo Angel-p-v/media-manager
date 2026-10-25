@@ -6,12 +6,15 @@ import { calculatePlayback, nowIso } from '../core/playback/index.js';
 import { selectMediaFile } from '../core/player/selection.js';
 import { ValidationError } from '../shared/errors.js';
 
+import type { PlaybackStateRow } from '../core/db/types.js';
+
 export type MarkCommandOptions = CommandOptions & {
   watched?: boolean;
   unwatched?: boolean;
   file?: number;
   position?: number;
   json?: boolean;
+  dryRun?: boolean;
 };
 
 /** Implementa `mm mark`: marca estado manualmente. */
@@ -36,31 +39,55 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
     const file = selectMediaFile(files, options.file);
 
     const state = playbackRepo.get(file.id);
-    let updatedState: ReturnType<typeof playbackRepo.save> | null = null;
+    const dryRun = options.dryRun === true;
+    const now = nowIso();
+
+    const buildState = (overrides: Partial<PlaybackStateRow>): PlaybackStateRow => ({
+      mediaFileId: file.id,
+      positionSeconds: 0,
+      durationSeconds: state?.durationSeconds ?? null,
+      completedAt: null,
+      lastPlayedAt: now,
+      playCount: state?.playCount ?? 0,
+      updatedAt: now,
+      ...overrides,
+    });
+
+    let updatedState: PlaybackStateRow | null = null;
 
     if (options.watched) {
       // Marcar como visto: posición = duración (o 0 si no se conoce), completedAt = now
       const duration = state?.durationSeconds ?? 0;
-      updatedState = playbackRepo.save({
+      const input = {
         mediaFileId: file.id,
         positionSeconds: duration,
         durationSeconds: state?.durationSeconds ?? null,
-        completedAt: nowIso(),
-        lastPlayedAt: nowIso(),
+        completedAt: now,
+        lastPlayedAt: now,
         playCount: (state?.playCount ?? 0) + 1,
-        updatedAt: nowIso(),
-      });
+        updatedAt: now,
+      };
+      if (dryRun) {
+        updatedState = buildState(input);
+      } else {
+        updatedState = playbackRepo.save(input);
+      }
     } else if (options.unwatched) {
       // Marcar como no visto: posición = 0, limpiar completedAt
-      updatedState = playbackRepo.save({
+      const input = {
         mediaFileId: file.id,
         positionSeconds: 0,
         durationSeconds: state?.durationSeconds ?? null,
         completedAt: null,
-        lastPlayedAt: nowIso(),
+        lastPlayedAt: now,
         playCount: state?.playCount ?? 0,
-        updatedAt: nowIso(),
-      });
+        updatedAt: now,
+      };
+      if (dryRun) {
+        updatedState = buildState(input);
+      } else {
+        updatedState = playbackRepo.save(input);
+      }
     } else if (options.position !== undefined) {
       // Posición manual
       const positionValue = options.position;
@@ -69,26 +96,34 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       }
       const duration = state?.durationSeconds ?? null;
       const position = duration === null ? positionValue : Math.min(positionValue, duration);
-      updatedState = playbackRepo.save({
+      const input = {
         mediaFileId: file.id,
         positionSeconds: position,
         durationSeconds: state?.durationSeconds ?? null,
         completedAt: null, // posición manual no completa
-        lastPlayedAt: nowIso(),
+        lastPlayedAt: now,
         playCount: state?.playCount ?? 0,
-        updatedAt: nowIso(),
-      });
+        updatedAt: now,
+      };
+      if (dryRun) {
+        updatedState = buildState(input);
+      } else {
+        updatedState = playbackRepo.save(input);
+      }
     }
 
     if (!updatedState) {
       throw new ValidationError('No se pudo determinar el estado de reproducción');
     }
 
+    const dryRunLabel = dryRun ? ' [dry-run]' : '';
+
     if (options.json === true) {
       const calc = calculatePlayback(updatedState, playbackConfig, new Date().toISOString());
       console.log(
         JSON.stringify(
           {
+            dryRun,
             media: toMediaJson(media),
             file: toMediaFileJson(file),
             position: calc.positionSeconds,
@@ -109,7 +144,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
     const status = calc.isCompleted ? '✓ visto' : '● en curso';
     const progress = calc.progressPercent !== null ? ` [${calc.progressPercent.toFixed(0)}%]` : '';
     console.log(
-      `${pc.green(status)} #${media.id} ${media.title}${year} · ${file.filePath}${progress}`,
+      `${pc.green(status)} #${media.id} ${media.title}${year} · ${file.filePath}${progress}${dryRunLabel}`,
     );
   });
 }
