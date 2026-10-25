@@ -184,6 +184,62 @@ describe('mm (e2e, binario compilado)', () => {
     });
   });
 
+  it('exporta a JSON con list --export json', () => {
+    const result = run(['list', '--export', 'json']);
+
+    expect(result.status).toBe(0);
+    const data = JSON.parse(result.stdout);
+    expect(data).toHaveProperty('items');
+    expect(Array.isArray(data.items)).toBe(true);
+    expect(data.items.length).toBeGreaterThan(0);
+    expect(data.items[0]).toMatchObject({
+      id: expect.any(Number),
+      title: expect.any(String),
+      type: expect.any(String),
+    });
+  });
+
+  it('exporta a CSV con list --export csv', () => {
+    const result = run(['list', '--export', 'csv']);
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('id,type,title,year,folderPath');
+    expect(result.stdout).toContain('Severance');
+    const lines = result.stdout.trim().split('\n');
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines[0]).toBe('id,type,title,year,folderPath');
+  });
+
+  it('indexa solo una subcarpeta con index --folder', async () => {
+    const folderConfigPath = path.join(workDir, 'folder-config.yaml');
+    const quote = (value: string): string => `'${value.replaceAll("'", "''")}'`;
+
+    await writeFile(
+      folderConfigPath,
+      [
+        'library:',
+        '  roots:',
+        `    - path: ${quote(path.join(FIXTURES, 'series'))}`,
+        '      type: series',
+        '',
+        'database:',
+        `  path: ${quote(path.join(workDir, 'library.db'))}`,
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const folderPath = path.join(FIXTURES, 'series', 'Dark', 'Season 2');
+    const result = run(['index', '--json', '--config', folderConfigPath, '--folder', folderPath]);
+
+    expect(result.status, result.stderr).toBe(0);
+    const stats = JSON.parse(result.stdout);
+    expect(stats.filesSeen).toBeGreaterThan(0);
+    // Los archivos ya están indexados (beforeAll indexó toda la biblioteca),
+    // así que aparecen como unchanged, no added.
+    expect(stats.filesUnchanged).toBeGreaterThan(0);
+  });
+
   it('mm play --dry-run produce el comando sin lanzar el reproductor', () => {
     const result = run(['play', 'severance', '--dry-run', '--json']);
 
