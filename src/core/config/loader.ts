@@ -1,4 +1,4 @@
-import { existsSync, watch } from 'node:fs';
+import { existsSync, type FSWatcher, watch } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -166,19 +166,26 @@ export function watchConfigFile(
   // Cargar inmediatamente para establecer el valor inicial
   void reload();
 
-  const watcher = watch(resolvedPath, { persistent: true });
-
-  watcher.on('change', () => {
-    if (timer !== undefined) clearTimeout(timer);
-    timer = setTimeout(() => {
-      reload();
-    }, 200);
-  });
+  let watcher: FSWatcher | undefined;
+  try {
+    watcher = watch(resolvedPath, { persistent: true });
+    watcher.on('change', () => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(() => {
+        reload();
+      }, 200);
+    });
+  } catch {
+    // El archivo de configuración aún no existe (p. ej. primera ejecución sin
+    // MM_CONFIG). No es fatal: seguimos sin watcher; si el archivo aparece
+    // después, el siguiente arranque lo recargará al crear un nuevo watcher.
+    watcher = undefined;
+  }
 
   return {
     close: () => {
       if (timer !== undefined) clearTimeout(timer);
-      watcher.close();
+      watcher?.close();
     },
   };
 }

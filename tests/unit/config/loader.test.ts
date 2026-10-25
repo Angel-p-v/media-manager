@@ -222,4 +222,12 @@ describe('watchConfigFile', () => {
     expect(calls.length).toBeGreaterThanOrEqual(1);
     expect(calls[0]).toEqual(['**/valido/**']);
   });
+
+  it('no crashea si el archivo de configuración no existe', () => {
+    // Primera ejecución sin config previa (p. ej. contenedor sin MM_CONFIG):
+    // no debe lanzar ENOENT al intentar vigilar el archivo.
+    const { close } = watchConfigFile('/tmp/no-existe-esta-cosa.yaml', () => undefined);
+    expect(typeof close).toBe('function');
+    close();
+  });
 });
