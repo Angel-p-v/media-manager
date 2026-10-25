@@ -67,6 +67,7 @@ describe('watchLibrary', () => {
         removeEmpty: vi.fn(),
         count: vi.fn(),
         listFolders: vi.fn(),
+        updateFolderPath: vi.fn(),
       },
       fileRepo: {
         upsertMany: vi.fn(),
@@ -76,6 +77,7 @@ describe('watchLibrary', () => {
         removeByMedia: vi.fn(),
         removeMissing: vi.fn(),
         count: vi.fn(),
+        updateFilePath: vi.fn(),
       },
       indexRunRepo: {
         start: vi.fn(),

@@ -47,6 +47,8 @@ export type MediaRepository = {
   removeEmpty(): number;
   count(type?: MediaType): number;
   listFolders(): string[];
+  /** Actualiza la ruta de una carpeta (rename/move). Devuelve true si se actualizó. */
+  updateFolderPath(oldPath: string, newPath: string): boolean;
 };
 
 export type MediaRepositoryDeps = {
@@ -94,6 +96,9 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
   );
   const countAllStatement = db.prepare<[], { total: number }>(
     'SELECT COUNT(*) AS total FROM media',
+  );
+  const updateFolderPathStatement = db.prepare(
+    "UPDATE media SET folder_path = @newPath, updated_at = datetime('now') WHERE folder_path = @oldPath",
   );
   const foldersStatement = db.prepare<[], { folder_path: string }>(
     'SELECT folder_path FROM media ORDER BY sort_title',
@@ -342,6 +347,11 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
 
     listFolders(): string[] {
       return foldersStatement.all().map((row) => row.folder_path);
+    },
+
+    /** Actualiza la ruta de una carpeta (rename/move). Devuelve true si se actualizó. */
+    updateFolderPath(oldPath: string, newPath: string): boolean {
+      return updateFolderPathStatement.run({ oldPath, newPath }).changes > 0;
     },
   };
 }

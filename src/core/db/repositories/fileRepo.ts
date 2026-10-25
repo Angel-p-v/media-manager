@@ -20,6 +20,8 @@ export type FileRepository = {
   listAllPaths(): string[];
   removeByMedia(mediaId: number): number;
   removeMissing(knownPaths: ReadonlySet<string>): number;
+  /** Actualiza la ruta de un fichero (rename/move). */
+  updateFilePath(oldPath: string, newPath: string): boolean;
   count(mediaId?: number): number;
 };
 
@@ -51,6 +53,10 @@ export function createFileRepository(db: Db): FileRepository {
   );
   const countByMediaStatement = db.prepare<[number], { total: number }>(
     'SELECT COUNT(*) AS total FROM media_files WHERE media_id = ?',
+  );
+
+  const updateFilePathStatement = db.prepare(
+    "UPDATE media_files SET file_path = @newPath, indexed_at = datetime('now') WHERE file_path = @oldPath",
   );
 
   const upsertManyTx = db.transaction((files: MediaFileInput[]): number => {
@@ -105,6 +111,11 @@ export function createFileRepository(db: Db): FileRepository {
         return paths.length;
       });
       return removeTx(orphans.map((row) => row.file_path));
+    },
+
+    /** Actualiza la ruta de un fichero (rename/move). Devuelve true si se actualizó. */
+    updateFilePath(oldPath: string, newPath: string): boolean {
+      return updateFilePathStatement.run({ oldPath, newPath }).changes > 0;
     },
 
     count(mediaId?: number): number {
