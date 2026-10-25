@@ -12,8 +12,12 @@ export type IndexCommandOptions = CommandOptions & {
 
 /** Implementa `mm index`: indexa la biblioteca configurada. */
 export async function runIndexCommand(options: IndexCommandOptions): Promise<void> {
-  await withCommandContext(options, async ({ config, repositories, logger }) => {
-    const stats = await indexLibrary(repositories, config.library, {
+  await withCommandContext(options, async ({ config, excludeRef, repositories, logger }) => {
+    const library = {
+      ...config.library,
+      exclude: () => excludeRef.exclude,
+    };
+    const stats = await indexLibrary(repositories, library, {
       ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
       ...(options.root === undefined ? {} : { rootPath: options.root }),
       ...(options.folder === undefined ? {} : { folderPath: options.folder }),

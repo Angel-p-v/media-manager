@@ -1,6 +1,6 @@
 import { statSync } from 'node:fs';
 
-import { loadConfig } from '../core/config/loader.js';
+import { loadConfig, resolveConfigPath, watchConfigFile } from '../core/config/loader.js';
 import { openLibrary } from '../core/library/open.js';
 import { createLogger, type Logger } from '../shared/logger.js';
 
@@ -19,9 +19,15 @@ export type CommandOptions = {
   logFile?: string;
 };
 
+/** Referencia mutable para recargar `library.exclude` sin reiniciar (B3). */
+export type ExcludeRef = {
+  exclude: string[];
+};
+
 /** Dependencias que recibe un subcomando ya conectado a la biblioteca. */
 export type CommandContext = {
   config: AppConfig;
+  excludeRef: ExcludeRef;
   repositories: LibraryRepositories;
   library: LibraryService;
   maintenance: DatabaseMaintenance;
@@ -37,14 +43,18 @@ export type CommandContext = {
  * Centralizar este ciclo evita que cada subcomando repita la misma secuencia y que
  * alguno se olvide de cerrar la conexión si una consulta falla. El logger se crea
  * aquí para que todos los subcomandos compartan nivel y formato.
+ *
+ * Además configura un watcher del archivo de configuración para recargar
+ * `library.exclude` sin reiniciar (B3).
  */
 export async function withCommandContext<T>(
   options: CommandOptions,
   run: (context: CommandContext) => T | Promise<T>,
 ): Promise<T> {
-  const config = await loadConfig(
+  const configPath = resolveConfigPath(
     options.config === undefined ? {} : { configPath: options.config },
   );
+  const config = await loadConfig({ configPath });
   const logger = createLogger({
     level: options.verbose === true ? 'debug' : config.logging.level,
     format: config.logging.format,
@@ -54,6 +64,17 @@ export async function withCommandContext<T>(
     database: config.database.path,
     roots: config.library.roots.length,
     player: config.player.default,
+  });
+
+  // Ref mutable para recargar exclude sin reiniciar (B3)
+  const excludeRef: ExcludeRef = { exclude: [...config.library.exclude] };
+
+  // Vigilar cambios en el archivo de config para recargar exclude
+  const configWatcher = watchConfigFile(configPath, (newConfig) => {
+    excludeRef.exclude = [...newConfig.library.exclude];
+    logger.debug('config.exclude.reloaded', {
+      exclude: excludeRef.exclude,
+    });
   });
 
   // Validar que las raíces de biblioteca existen; advertir si alguna falta
@@ -82,6 +103,7 @@ export async function withCommandContext<T>(
   try {
     return await run({
       config,
+      excludeRef,
       repositories: opened.repositories,
       library: opened.library,
       maintenance: opened.maintenance,
@@ -91,6 +113,7 @@ export async function withCommandContext<T>(
       logger,
     });
   } finally {
+    configWatcher.close();
     opened.close();
     logger.debug('db.closed');
   }

@@ -15,7 +15,8 @@ import type { MediaFileInput } from '../db/types.js';
 /** Configuración de biblioteca que consume el indexador. */
 export type IndexLibraryConfig = {
   roots: readonly LibraryRoot[];
-  exclude: readonly string[];
+  /** Puede ser un valor estático o un getter para recargar sin reiniciar (B3). */
+  exclude: readonly string[] | (() => readonly string[]);
   scan: ScanOptions;
 };
 
@@ -197,7 +198,7 @@ async function scanAndClassify(
       maxDepth: library.scan.maxDepth,
       followSymlinks: library.scan.followSymlinks,
       minSizeBytes: library.scan.minSizeBytes,
-      exclude: library.exclude,
+      exclude: typeof library.exclude === 'function' ? library.exclude() : library.exclude,
     };
     if (rootSubfolder !== undefined) {
       scanOptions.subfolder = rootSubfolder;

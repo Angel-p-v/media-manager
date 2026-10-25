@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, watch } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -136,4 +136,49 @@ export function formatIssues(error: z.ZodError): string {
   return error.issues
     .map((issue) => `  · ${issue.path.join('.') || '(raíz)'}: ${issue.message}`)
     .join('\n');
+}
+
+/**
+ * Vigila el archivo de configuración y llama a `onChange` con la nueva
+ * configuración cada vez que el archivo cambie.
+ *
+ * Esto permite recargar `library.exclude` (y el resto de la config) sin
+ * reiniciar `mm`.
+ *
+ * Devuelve una función `close` para detener el watcher.
+ */
+export function watchConfigFile(
+  configPath: string,
+  onChange: (config: AppConfig) => void,
+): { close: () => void } {
+  let timer: NodeJS.Timeout | undefined;
+  const resolvedPath = path.resolve(configPath);
+
+  const reload = (): void => {
+    void loadConfig({ configPath: resolvedPath })
+      .then((config) => onChange(config))
+      .catch(() => {
+        // Si la recarga falla (YAML inválido, etc.), ignorar y seguir con la
+        // config anterior para no romper la ejecución en curso.
+      });
+  };
+
+  // Cargar inmediatamente para establecer el valor inicial
+  void reload();
+
+  const watcher = watch(resolvedPath, { persistent: true });
+
+  watcher.on('change', () => {
+    if (timer !== undefined) clearTimeout(timer);
+    timer = setTimeout(() => {
+      reload();
+    }, 200);
+  });
+
+  return {
+    close: () => {
+      if (timer !== undefined) clearTimeout(timer);
+      watcher.close();
+    },
+  };
 }

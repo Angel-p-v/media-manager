@@ -11,6 +11,7 @@ import {
   readConfigFile,
   resolveConfigPath,
   validateConfig,
+  watchConfigFile,
 } from '../../../src/core/config/loader.js';
 import { ConfigError } from '../../../src/shared/errors.js';
 
@@ -171,5 +172,54 @@ describe('loadConfig', () => {
 
     expect(config.player.default).toBe('vlc');
     expect(config.database.path).toBe('/tmp/env.db');
+  });
+});
+
+describe('watchConfigFile', () => {
+  it('llama al callback con la config recargada cuando el archivo cambia', async () => {
+    const file = await tempConfig('library:\n  exclude:\n    - "**/prueba/**"\n');
+
+    const calls: string[][] = [];
+    const { close } = watchConfigFile(file, (config) => {
+      calls.push([...config.library.exclude]);
+    });
+
+    // Esperar a que el watcher se active y cargue el valor inicial
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Modificar el archivo
+    await writeFile(file, 'library:\n  exclude:\n    - "**/nuevo/**"\n', 'utf8');
+
+    // Esperar a que se procese el cambio (debounce de 200ms)
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    close();
+
+    // Primera llamada: valor inicial, segunda: valor tras el cambio
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toEqual(['**/prueba/**']);
+    expect(calls[1]).toEqual(['**/nuevo/**']);
+  });
+
+  it('no falla si el archivo se vuelve inválido durante la recarga', async () => {
+    const file = await tempConfig('library:\n  exclude:\n    - "**/valido/**"\n');
+
+    const calls: string[][] = [];
+    const { close } = watchConfigFile(file, (config) => {
+      calls.push([...config.library.exclude]);
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    // Escribir YAML inválido (sintaxis rota)
+    await writeFile(file, 'library:\n  exclude: [no cerrado\n', 'utf8');
+
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    close();
+
+    // Debe haber llamado al menos una vez con el valor válido inicial
+    expect(calls.length).toBeGreaterThanOrEqual(1);
+    expect(calls[0]).toEqual(['**/valido/**']);
   });
 });
