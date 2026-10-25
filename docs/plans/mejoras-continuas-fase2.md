@@ -78,10 +78,9 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 ### Fase I — Seguridad
 
-| #   | Área      | Descripción                                                        | Prioridad | Esfuerzo | Rama sugerida             |
-| --- | --------- | ------------------------------------------------------------------ | --------- | -------- | ------------------------- |
-| I1  | Seguridad | Firmado GPG de commits (`commit.signingKey`) y verificación en CI. | Media     | Bajo     | `ci/commits-gpg`          |
-| I2  | Seguridad | Añadir `npm audit` y `dependabot` como paso bloqueante en CI.      | Media     | Bajo     | `ci/auditoria-bloqueante` |
+| #   | Área      | Descripción                                                   | Prioridad | Esfuerzo | Rama sugerida             |
+| --- | --------- | ------------------------------------------------------------- | --------- | -------- | ------------------------- |
+| I2  | Seguridad | Añadir `npm audit` y `dependabot` como paso bloqueante en CI. | Media     | Bajo     | `ci/auditoria-bloqueante` |
 
 ---
 
@@ -98,9 +97,10 @@ Se sugiere ejecutar los ítems en este orden para mantener el proyecto estable y
 7. **B3** — Config exclude reload (pendiente)
 8. **D1–D4** — TUI mejoras (pendientes)
 9. **H1** — i18n (pendiente)
-10. **I1** — GPG signing (pendiente, requiere claves GPG)
 
 No es necesario implementar todos los ítems. Cada uno es independiente y se puede aceptar o rechazar individualmente.
+
+> **Nota:** El ítem **I1 (firmado GPG de commits)** se ha pospuesto indefinidamente, ya que requiere claves GPG privadas del mantenedor (infraestructura, no código). Si en el futuro se dispone de esas claves, se puede reabrir como un ítem nuevo.
 
 ---
 
