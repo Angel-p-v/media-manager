@@ -296,3 +296,38 @@ Todos los hitos M0–M17 están completados.
     `### Bug Fixes`, `### Documentation`). Evitar notas genéricas como "v2.0.0" sin
     contenido; release-please genera el CHANGELOG pero el agente debe revisar y
     completar las notas de la GitHub Release antes de publicarla.
+
+## Reglas de tipado estricto y modelado de dominio
+
+Estas reglas se aplican en **cada línea de código, refactorización o componente** que se escriba en el proyecto.
+
+### 1. Tipado estricto y absoluto
+
+- Todo debe estar tipado de forma explícita: argumentos de funciones, valores de retorno, variables, constantes y estructuras de datos.
+- Queda **totalmente PROHIBIDO** el uso de `any`. Si un tipo es desconocido en tiempo de compilación, utiliza `unknown` y aplica Type Guards o aserciones de control (narrowing) antes de operar con él.
+- Para datos dinámicos o respuestas de APIs externas, utiliza esquemas de validación en tiempo de ejecución (como Zod, Valibot o TypeBox) para garantizar la integridad de las entradas.
+- Deshabilita cualquier asunción implícita (actúa como si `noImplicitAny`, `strictNullChecks` y `strict` estuvieran siempre activados en `tsconfig`).
+
+### 2. Manejo de nulos y valores opcionales
+
+- Trata de forma explícita los posibles valores `null` o `undefined`. No uses aserciones de no-nulo (`!`) a menos que exista una justificación matemática/lógica indiscutible en el contexto.
+- Utiliza encadenamiento opcional (`?.`) y el operador de fusión nula (`??`) cuando corresponda.
+
+### 3. Modelado de datos y dominio
+
+- Prioriza el uso de `interface` para definir contratos de objetos/entidades expansibles y `type` para uniones, intersecciones, tuplas y tipos utilitarios.
+- Define Union Types discriminadas (Discriminated Unions) para gestionar estados complejos o respuestas que puedan ser de éxito o error.
+- Emplea `readonly` e inmutabilidad por defecto para prevenir mutaciones no deseadas en arreglos u objetos.
+
+### 4. Control de errores
+
+- No lances excepciones genéricas (`throw new Error(...)`). Crea clases de error personalizadas tipadas o utiliza tipos de resultado explícitos como `Result<T, E>`.
+- En bloques `catch`, tipa el parámetro de error como `unknown` y valida su estructura antes de procesarlo.
+
+### 5. Arquitectura y estilo de código
+
+- Diseña funciones puras de responsabilidad única. Evita efectos secundarios no tipados.
+- Utiliza nombres claros y descriptivos para interfaces, tipos y genéricos (`TData`, `TError` en lugar de una sola letra si hay contexto ambiguo).
+- Exporta todos los tipos compartidos para que puedan ser reutilizados de forma consistente.
+
+Si identificas código no tipado o ambiguo, corrígelo e infórmalo al usuario.
