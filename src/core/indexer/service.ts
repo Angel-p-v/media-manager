@@ -120,7 +120,9 @@ export async function indexLibrary(
         rootsToScan = [containingRoot];
         subfolder = options.folderPath;
       } else {
-        rootsToScan = [];
+        throw new IndexError(
+          `La carpeta "${options.folderPath}" no está dentro de ninguna raíz de biblioteca configurada.`,
+        );
       }
     }
 

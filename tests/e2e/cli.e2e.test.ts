@@ -292,6 +292,63 @@ describe('mm (e2e, binario compilado)', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('NotFoundError');
   });
+
+  it('mm list --export json devuelve JSON válido con todos los títulos', () => {
+    const result = run(['list', '--export', 'json']);
+
+    expect(result.status).toBe(0);
+    const payload = JSON.parse(result.stdout) as {
+      total: number;
+      count: number;
+      items: { id: number; type: string; title: string; year: number | null }[];
+    };
+    expect(payload.total).toBe(5);
+    expect(payload.count).toBe(5);
+    expect(payload.items.length).toBe(5);
+    expect(payload.items[0]).toHaveProperty('id');
+    expect(payload.items[0]).toHaveProperty('type');
+    expect(payload.items[0]).toHaveProperty('title');
+  });
+
+  it('mm list --export csv devuelve cabecera y filas CSV', () => {
+    const result = run(['list', '--export', 'csv']);
+
+    expect(result.status).toBe(0);
+    const lines = result.stdout.trim().split('\n');
+    expect(lines[0]).toBe('id,type,title,year,folderPath');
+    expect(lines.length).toBeGreaterThan(1);
+    // Cada línea de datos debe tener 5 campos separados por comas
+    for (const line of lines.slice(1)) {
+      expect(line.split(',').length).toBe(5);
+    }
+  });
+
+  it('mm list --export con formato inválido falla', () => {
+    const result = run(['list', '--export', 'xml']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('Formato de exportación no válido');
+  });
+
+  it('mm index --folder indexa solo la carpeta indicada', () => {
+    const folderPath = path.join(FIXTURES, 'series', 'Dark');
+    const result = run(['index', '--folder', folderPath, '--json']);
+
+    expect(result.status).toBe(0);
+    const stats = JSON.parse(result.stdout) as {
+      filesSeen: number;
+      filesAdded: number;
+    };
+    expect(stats.filesSeen).toBeGreaterThan(0);
+    expect(stats.filesAdded).toBeGreaterThanOrEqual(0);
+  });
+
+  it('mm index --folder con carpeta fuera de las raíces falla con código 1', () => {
+    const result = run(['index', '--folder', '/ruta/inexistente/no-existe']);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('no está dentro de ninguna raíz');
+  });
 });
 
 /** Espera a que exista un fichero y devuelve su contenido. */
