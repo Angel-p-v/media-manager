@@ -1,19 +1,24 @@
+import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, statSync, accessSync, constants } from 'node:fs';
+import { existsSync, readdirSync, statSync, accessSync, constants } from 'node:fs';
 import { open } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
+import { formatBytes } from './output.js';
 import { closeDatabase, openDatabase } from '../core/db/connection.js';
 import { migrations } from '../core/db/migrations/index.js';
+import { databaseSizeBytes } from '../core/db/size.js';
 
 import type { Db } from '../core/db/connection.js';
 import type { FileRepository } from '../core/db/repositories/fileRepo.js';
 
 export type DoctorCommandOptions = CommandOptions & {
   json?: boolean;
+  full?: boolean;
   fullHash?: boolean;
   pruneMissing?: boolean;
   yes?: boolean;
@@ -216,6 +221,20 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
               ...(i.groups !== undefined && { groups: i.groups }),
               detail: i.detail,
             })),
+            ...(options.full === true && {
+              extended: {
+                databaseSizeBytes: databaseSizeBytes(config.database.path),
+                posterCacheSizeBytes: posterCacheSizeBytes(),
+                players: {
+                  mpv: playerVersion('mpv'),
+                  vlc: playerVersion('vlc'),
+                },
+                connectivity: {
+                  tmdb: await checkConnectivity('https://api.themoviedb.org/3/configuration'),
+                  tvdb: await checkConnectivity('https://api4.thetvdb.com/v4'),
+                },
+              },
+            }),
           },
           null,
           2,
@@ -246,6 +265,21 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
       if (issue.groups && issue.groups.length <= 5) {
         for (const g of issue.groups) console.log(`    ${g.size} bytes: ${g.paths.join(', ')}`);
       }
+    }
+
+    if (options.full === true) {
+      console.log('');
+      console.log(pc.bold('Información extendida:'));
+      console.log(`  Tamaño BD: ${pc.dim(formatBytes(databaseSizeBytes(config.database.path)))}`);
+      console.log(`  Caché de pósteres: ${pc.dim(formatBytes(posterCacheSizeBytes()))}`);
+      console.log(`  Reproductores:`);
+      console.log(`    mpv: ${pc.dim(playerVersion('mpv') ?? 'no encontrado')}`);
+      console.log(`    vlc: ${pc.dim(playerVersion('vlc') ?? 'no encontrado')}`);
+      console.log(`  Conectividad:`);
+      const tmdb = await checkConnectivity('https://api.themoviedb.org/3/configuration');
+      const tvdb = await checkConnectivity('https://api4.thetvdb.com/v4');
+      console.log(`    TMDB: ${pc.dim(tmdb ? 'ok' : 'sin respuesta')}`);
+      console.log(`    TVDB: ${pc.dim(tvdb ? 'ok' : 'sin respuesta')}`);
     }
 
     // --prune-missing
@@ -417,5 +451,58 @@ async function fullFileHash(filePath: string): Promise<string> {
     return hash.digest('hex');
   } finally {
     await handle.close();
+  }
+}
+
+/**
+ * Suma el tamaño de todos los ficheros dentro de un directorio (no recursivo en
+ * subdirectorios profundos, suficiente para la caché plana de pósteres).
+ */
+function posterCacheSizeBytes(): number {
+  const cacheDir = path.join(homedir(), '.cache', 'media-manager', 'posters');
+  try {
+    const entries = statSync(cacheDir);
+    if (!entries.isDirectory()) return 0;
+  } catch {
+    return 0;
+  }
+  let total = 0;
+  for (const entry of readdirSync(cacheDir)) {
+    try {
+      total += statSync(path.join(cacheDir, entry)).size;
+    } catch {
+      // Ignorado: fichero que desapareció entre el listado y el stat
+    }
+  }
+  return total;
+}
+
+/**
+ * Ejecuta `<name> --version` y devuelve la primera línea de salida, o null si no
+ * está instalado o falla.
+ */
+function playerVersion(name: string): string | null {
+  try {
+    const output = execFileSync(name, ['--version'], { encoding: 'utf8', timeout: 3000 });
+    return output.split('\n')[0]?.trim() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Comprueba si un endpoint responde (cualquier status HTTP indica conectividad).
+ * Timeout de 5 segundos para no bloquear el doctor.
+ */
+async function checkConnectivity(url: string): Promise<boolean> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(url, { signal: controller.signal, method: 'HEAD' });
+    return response.ok || response.status >= 400; // Cualquier respuesta = conectividad
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
