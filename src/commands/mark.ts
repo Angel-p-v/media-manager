@@ -2,6 +2,7 @@ import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
 import { toMediaFileJson, toMediaJson } from './output.js';
+import { ValidationError } from '../shared/errors.js';
 import { calculatePlayback, nowIso } from '../core/playback/index.js';
 import { selectMediaFile } from '../core/player/selection.js';
 
@@ -23,10 +24,10 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       Boolean,
     ).length;
     if (actions === 0) {
-      throw new Error('Debe indicar una acción: --watched, --unwatched o --position.');
+      throw new ValidationError('Debe indicar una acción: --watched, --unwatched o --position.');
     }
     if (actions > 1) {
-      throw new Error(
+      throw new ValidationError(
         'Las opciones --watched, --unwatched y --position son mutuamente excluyentes.',
       );
     }
@@ -64,7 +65,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       // Posición manual
       const positionValue = options.position;
       if (positionValue < 0) {
-        throw new Error('La posición no puede ser negativa.');
+        throw new ValidationError('La posición no puede ser negativa.');
       }
       const duration = state?.durationSeconds ?? null;
       const position = duration === null ? positionValue : Math.min(positionValue, duration);

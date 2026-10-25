@@ -1,5 +1,7 @@
 /** Genera scripts de autocompletado de shell para mm. */
 
+import { ValidationError } from '../shared/errors.js';
+
 export type CompletionShell = 'bash' | 'zsh' | 'fish';
 
 /** Genera el script de autocompletado para Bash. */
@@ -143,7 +145,7 @@ export function generateCompletion(shell: string): string {
     case 'fish':
       return generateFishCompletion();
     default:
-      throw new Error('Shell no soportada: ' + String(shell) + '. Usa "bash", "zsh" o "fish".');
+      throw new ValidationError('Shell no soportada: ' + String(shell) + '. Usa "bash", "zsh" o "fish".');
   }
 }
 

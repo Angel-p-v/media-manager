@@ -1,6 +1,7 @@
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
+import { ValidationError } from '../shared/errors.js';
 import { formatEpisode, toMediaFileJson, toMediaJson } from './output.js';
 import {
   calculatePlayback,
@@ -60,12 +61,12 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
 
     if (options.next) {
       if (!isEpisodic(media.type)) {
-        throw new Error('La opción --next solo está disponible para series y anime.');
+        throw new ValidationError('La opción --next solo está disponible para series y anime.');
       }
       const current = selectMediaFile(files, options.file);
       const next = findNextEpisode(current, files, playbackRepo, playbackConfig);
       if (!next) {
-        throw new Error('No hay siguiente episodio no completado.');
+        throw new ValidationError('No hay siguiente episodio no completado.');
       }
       media = next.media;
       file = next.file;
