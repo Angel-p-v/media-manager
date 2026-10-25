@@ -7,6 +7,33 @@ import type {
 } from '../../../../src/core/indexer/service.js';
 import type { Logger } from '../../../../src/shared/logger.js';
 
+const mockWatchEvents: { event: string; path: string }[] = [];
+type MockWatcher = {
+  on: ReturnType<typeof vi.fn>;
+  once: ReturnType<typeof vi.fn>;
+  off: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+  emit: ReturnType<typeof vi.fn>;
+  allHandler?: (event: string, path: string) => void;
+  errorHandler?: (error: Error) => void;
+  readyHandler?: () => void;
+  readyErrorHandler?: (error: Error) => void;
+};
+
+const mockWatcher: MockWatcher = {
+  on: vi.fn(),
+  once: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+    if (event === 'ready') handler();
+  }),
+  off: vi.fn(),
+  close: vi.fn().mockResolvedValue(undefined),
+  emit: vi.fn(),
+};
+
+vi.mock('chokidar', () => ({
+  watch: vi.fn(() => mockWatcher),
+}));
+
 // Mock indexLibrary at top level
 const mockIndexLibrary = vi.fn();
 
@@ -26,6 +53,9 @@ describe('watchLibrary', () => {
   let closeWatcher: () => Promise<void>;
 
   beforeEach(() => {
+    mockWatchEvents.length = 0;
+    vi.clearAllMocks();
+
     mockRepositories = {
       mediaRepo: {
         upsert: vi.fn(),
@@ -87,6 +117,25 @@ describe('watchLibrary', () => {
       foldersRemoved: 0,
       durationMs: 100,
     });
+
+    // Configurar mockWatcher.on para capturar los manejadores de evento
+    mockWatcher.on.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
+      if (event === 'all') {
+        mockWatcher.allHandler = handler;
+      }
+      if (event === 'error') {
+        mockWatcher.errorHandler = handler;
+      }
+    });
+    mockWatcher.once.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
+      if (event === 'ready') {
+        mockWatcher.readyHandler = handler;
+        handler();
+      }
+      if (event === 'error') {
+        mockWatcher.readyErrorHandler = handler;
+      }
+    });
   });
 
   afterEach(async () => {
@@ -122,9 +171,7 @@ describe('watchLibrary', () => {
     await expect(watcher.close()).resolves.toBeUndefined();
   });
 
-  it('maneja errores en la indexación cuando se dispara un evento', async () => {
-    // Este test es difícil de hacer sin acceso al watcher interno
-    // Verificamos que la función no falle al crearse
+  it('maneja evento unlinkDir programando y retornando', async () => {
     const watcher = watchLibrary({
       repositories: mockRepositories,
       library: mockLibrary,
@@ -135,6 +182,74 @@ describe('watchLibrary', () => {
     });
 
     await watcher.ready;
-    await expect(watcher.close()).resolves.toBeUndefined();
+    const allHandler = mockWatcher.allHandler as (event: string, path: string) => void;
+    allHandler('unlinkDir', '/media/series/old');
+
+    // unlinkDir debe programar sin indexar
+    expect(mockIndexLibrary).not.toHaveBeenCalled();
+
+    await vi.waitFor(() => {
+      expect(mockIndexLibrary).toHaveBeenCalledTimes(1);
+    });
+
+    closeWatcher = watcher.close;
+  });
+
+  it('ignora eventos que no son de vídeo', async () => {
+    const watcher = watchLibrary({
+      repositories: mockRepositories,
+      library: mockLibrary,
+      logger: mockLogger,
+      onIndexed: mockOnIndexed,
+      onError: mockOnError,
+      debounceMs: 10,
+    });
+
+    await watcher.ready;
+    const allHandler = mockWatcher.allHandler as (event: string, path: string) => void;
+    allHandler('add', '/media/series/readme.txt');
+
+    // No es un fichero de vídeo, no debe indexar
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockIndexLibrary).not.toHaveBeenCalled();
+
+    closeWatcher = watcher.close;
+  });
+
+  it('cierra el watcher con timer pendiente (líneas 118-119)', async () => {
+    const watcher = watchLibrary({
+      repositories: mockRepositories,
+      library: mockLibrary,
+      logger: mockLogger,
+      onIndexed: mockOnIndexed,
+      onError: mockOnError,
+      debounceMs: 1000, // Timer largo para que esté pendiente al cerrar
+    });
+
+    await watcher.ready;
+    const allHandler = mockWatcher.allHandler as (event: string, path: string) => void;
+    allHandler('add', '/media/series/video.mkv');
+
+    // Cerrar antes de que el timer de debounce se ejecute
+    await watcher.close();
+  });
+
+  it('propaga errores del watcher a onError', async () => {
+    const watcher = watchLibrary({
+      repositories: mockRepositories,
+      library: mockLibrary,
+      logger: mockLogger,
+      onIndexed: mockOnIndexed,
+      onError: mockOnError,
+    });
+
+    await watcher.ready;
+    const errorHandler = mockWatcher.errorHandler as (error: Error) => void;
+    const testError = new Error('watcher error');
+    errorHandler(testError);
+
+    expect(mockOnError).toHaveBeenCalledWith(testError);
+
+    closeWatcher = watcher.close;
   });
 });
