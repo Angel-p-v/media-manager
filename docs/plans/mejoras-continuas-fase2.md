@@ -16,18 +16,18 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 | #   | Área  | Descripción                                                                                                                                                  | Prioridad | Esfuerzo | Rama sugerida               |
 | --- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- | -------- | --------------------------- |
-| A1  | Tests | Tests de contrato para `mm doctor --json`: `migrated: false` (BD sin migrar) y salida `text` (no JSON).                                                      | Alta      | Bajo     | `test/doctor-contrato`      |
-| A2  | Tests | Añadir tests para ramas no cubiertas en `watcher.ts`, `mpvTracker.ts`, `size.ts`, `open.ts` para subir cobertura de branches por encima del 85 % con margen. | Media     | Bajo     | `test/coverage-branches`    |
-| A3  | Tests | Tests E2E con TTY real para `mm list --export json\|csv` y `mm index --folder`.                                                                              | Media     | Medio    | `test/e2e-export-folder`    |
-| A4  | Tests | Tests de resiliencia de red en `MetadataService`: forzar 429, timeout y errores de red; verificar que la TUI no se bloquea.                                  | Media     | Medio    | `test/metadata-resiliencia` |
+| A1  | Tests | Tests de contrato para `mm doctor --json`: `migrated: false` (BD sin migrar) y salida `text` (no JSON).                                                      | Alta      | Bajo     | `test/doctor-contrato`      | ✅  |
+| A2  | Tests | Añadir tests para ramas no cubiertas en `watcher.ts`, `mpvTracker.ts`, `size.ts`, `open.ts` para subir cobertura de branches por encima del 85 % con margen. | Media     | Bajo     | `test/coverage-branches`    | ✅  |
+| A3  | Tests | Tests E2E con TTY real para `mm list --export json\|csv` y `mm index --folder`.                                                                              | Media     | Medio    | `test/e2e-export-folder`    | ✅  |
+| A4  | Tests | Tests de resiliencia de red en `MetadataService`: forzar 429, timeout y errores de red; verificar que la TUI no se bloquea.                                  | Media     | Medio    | `test/metadata-resiliencia` | ✅  |
 
 ### Fase B — Indexador y watcher
 
 | #   | Área      | Descripción                                                                                           | Prioridad | Esfuerzo   | Rama sugerida                |
 | --- | --------- | ----------------------------------------------------------------------------------------------------- | --------- | ---------- | ---------------------------- |
-| B1  | Indexador | `mm index --folder`: limitar `scanLibrary` al subdirectorio pedido en lugar de recorrer toda la raíz. | Media     | Medio      | `feat/indexer-carpeta-real`  |
-| B2  | Watcher   | Detectar eventos `rename`/`move` de chokidar y actualizar `file_path` en lugar de borrar+insertar.    | Media     | Medio-Alto | `feat/watcher-renombrados`   |
-| B3  | Config    | Permitir recargar `library.exclude` sin reiniciar `mm` (watch de config).                             | Baja      | Bajo       | `feat/config-exclude-reload` |
+| B1  | Indexador | `mm index --folder`: limitar `scanLibrary` al subdirectorio pedido en lugar de recorrer toda la raíz. | Media     | Medio      | `feat/indexer-carpeta-real`  | ✅  |
+| B2  | Watcher   | Detectar eventos `rename`/`move` de chokidar y actualizar `file_path` en lugar de borrar+insertar.    | Media     | Medio-Alto | `feat/watcher-renombrados`   |     |
+| B3  | Config    | Permitir recargar `library.exclude` sin reiniciar `mm` (watch de config).                             | Baja      | Bajo       | `feat/config-exclude-reload` |     |
 
 ### Fase C — Metadatos y caché
 
@@ -50,25 +50,25 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 | #   | Área | Descripción                                                                         | Prioridad | Esfuerzo | Rama sugerida                  | Estado |
 | --- | ---- | ----------------------------------------------------------------------------------- | --------- | -------- | ------------------------------ | ------ |
-| E1  | CLI  | Comandos `mm db backup` y `mm db restore` para backup/restauración de la BD SQLite. | Media     | Medio    | `feat/cli-db-backup-restore`   |        |
-| E2  | CLI  | `mm config check`: validar el YAML de configuración sin ejecutar subcomandos.       | Baja      | Bajo     | `feat/cli-config-check`        |        |
+| E1  | CLI  | Comandos `mm db backup` y `mm db restore` para backup/restauración de la BD SQLite. | Media     | Medio    | `feat/cli-db-backup-restore`   | ✅     |
+| E2  | CLI  | `mm config check`: validar el YAML de configuración sin ejecutar subcomandos.       | Baja      | Bajo     | `feat/cli-config-check`        | ✅     |
 | E3  | CLI  | `--dry-run` en operaciones destructivas (`prune`, `delete`, `mark`).                | Media     | Bajo     | `feat/cli-dry-run-destructivo` | ✅     |
 
 ### Fase F — Observabilidad y doctor
 
 | #   | Área     | Descripción                                                                                                | Prioridad | Esfuerzo | Rama sugerida           |
 | --- | -------- | ---------------------------------------------------------------------------------------------------------- | --------- | -------- | ----------------------- |
-| F1  | Doctor   | `mm doctor --full`: uso de disco, versión de mpv/vlc, conectividad TMDB/TVDB, tamaño de caché de pósteres. | Media     | Bajo     | `feat/doctor-full`      |
-| F2  | Logs     | Opción `--log-file` con rotación de logs (actualmente solo stderr).                                        | Baja      | Medio    | `feat/logs-archivo`     |
-| F3  | Métricas | Contadores simples: indexaciones, errores de metadatos, tiempo medio de consulta.                          | Baja      | Medio    | `feat/metricas-basicas` |
+| F1  | Doctor   | `mm doctor --full`: uso de disco, versión de mpv/vlc, conectividad TMDB/TVDB, tamaño de caché de pósteres. | Media     | Bajo     | `feat/doctor-full`      | ✅  |
+| F2  | Logs     | Opción `--log-file` con rotación de logs (actualmente solo stderr).                                        | Baja      | Medio    | `feat/logs-archivo`     | ✅  |
+| F3  | Métricas | Contadores simples: indexaciones, errores de metadatos, tiempo medio de consulta.                          | Baja      | Medio    | `feat/metricas-basicas` | ✅  |
 
 ### Fase G — Empaquetado y distribución
 
 | #   | Área         | Descripción                                                                   | Prioridad | Esfuerzo | Rama sugerida               |
 | --- | ------------ | ----------------------------------------------------------------------------- | --------- | -------- | --------------------------- |
-| G1  | Distribución | `Dockerfile` multi-stage con Node oficial y `mm` instalado.                   | Media     | Medio    | `feat/docker-image`         |
-| G2  | Distribución | Fórmulas Homebrew (macOS) y winget (Windows).                                 | Baja      | Medio    | `feat/instaladores-native`  |
-| G3  | Releases     | Verificar que el SBOM CycloneDX se adjunta a cada release en GitHub Releases. | Media     | Bajo     | `ci/release-sbom-verificar` |
+| G1  | Distribución | `Dockerfile` multi-stage con Node oficial y `mm` instalado.                   | Media     | Medio    | `feat/docker-image`         | ✅  |
+| G2  | Distribución | Fórmulas Homebrew (macOS) y winget (Windows).                                 | Baja      | Medio    | `feat/instaladores-native`  | ✅  |
+| G3  | Releases     | Verificar que el SBOM CycloneDX se adjunta a cada release en GitHub Releases. | Media     | Bajo     | `ci/release-sbom-verificar` | ✅  |
 
 ### Fase H — Internacionalización (i18n)
 
@@ -89,13 +89,16 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 Se sugiere ejecutar los ítems en este orden para mantener el proyecto estable y aprovechar sinergias:
 
-1. **A1** — Tests de contrato para `doctor` (cierra el TODO recién resuelto, bajo riesgo).
-2. **A2** — Cobertura de branches (mantiene el margen sobre el umbral 80 %).
-3. **E1** — `mm db backup` / `restore` (valor real para usuarios, bajo riesgo).
-4. **F1** — `mm doctor --full` (completa el diagnóstico ya existente).
-5. **B1** — `mm index --folder` real (mejora de rendimiento visible).
-6. **G1** — Docker image (abre el proyecto a más plataformas).
-7. El resto según prioridad y capacidad.
+1. **A1–A4** — Testing (doctor, cobertura, export/folder, resiliencia) ✅ completados
+2. **E1, E2, E3** — CLI (db backup/restore, config check, dry-run) ✅ completados
+3. **F1, F2, F3** — Observabilidad (doctor --full, --log-file, métricas) ✅ completados
+4. **B1** — `mm index --folder` real ✅ completado
+5. **G1, G2, G3** — Distribución (Docker, Homebrew/winget, SBOM) ✅ completados
+6. **B2** — Watcher rename/move (medio-alto esfuerzo, pendiente)
+7. **B3** — Config exclude reload (pendiente)
+8. **D1–D4** — TUI mejoras (pendientes)
+9. **H1** — i18n (pendiente)
+10. **I1** — GPG signing (pendiente, requiere claves GPG)
 
 No es necesario implementar todos los ítems. Cada uno es independiente y se puede aceptar o rechazar individualmente.
 
