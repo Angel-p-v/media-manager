@@ -67,6 +67,7 @@ function AppImpl({
   const [helpVisible, setHelpVisible] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [refreshingMetadata, setRefreshingMetadata] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(config.ui.showDetails);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -237,6 +238,14 @@ function AppImpl({
       });
   };
 
+  const handleGoToDetails = (): void => {
+    if (view !== 'library') return;
+    setDetailsVisible((visible) => !visible);
+    if (!detailsVisible && selectedMedia === undefined) {
+      setStatus('Selecciona un título para ver sus detalles.');
+    }
+  };
+
   const handleEscape = (): void => {
     if (view !== 'library') {
       setView('library');
@@ -258,6 +267,7 @@ function AppImpl({
       nextSection: handleNextSection,
       refreshMetadata: handleRefreshMetadata,
       refreshAll: handleRefreshAllMetadata,
+      goToDetails: handleGoToDetails,
       gotoTaggedMedia: handleGotoTaggedMedia,
       up: () => {
         if (view !== 'settings') setSelected((index) => Math.max(0, index - 1));
@@ -305,7 +315,7 @@ function AppImpl({
             section={section}
             counts={counts}
             details={details}
-            showDetails={config.ui.showDetails}
+            showDetails={detailsVisible}
             library={library}
           />
         ) : null}
