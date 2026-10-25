@@ -17,6 +17,12 @@ export type LibraryViewProps = {
   details: Details | null;
   showDetails: boolean;
   library: LibraryService;
+  /** Modo compacto: más filas por pantalla. */
+  compact?: boolean;
+  /** IDs de títulos seleccionados (selección múltiple). */
+  selectedIds?: ReadonlySet<number>;
+  /** Callback al alternar selección de un título. */
+  _onToggleSelection?: (mediaId: number) => void;
 };
 
 /** Vista principal: navegación por secciones, listado y panel de detalle. */
@@ -28,6 +34,9 @@ export function LibraryView({
   details,
   showDetails,
   library,
+  compact = false,
+  selectedIds,
+  _onToggleSelection,
 }: LibraryViewProps): React.JSX.Element {
   return (
     <Box flexGrow={1} flexDirection="row">
@@ -37,6 +46,9 @@ export function LibraryView({
           items={items}
           selected={selected}
           emptyMessage="No hay títulos en esta sección. Ejecuta «mm index» para escanear tus carpetas."
+          compact={compact}
+          selectedIds={selectedIds}
+          _onToggleSelection={_onToggleSelection}
         />
         {showDetails ? <MediaDetails details={details} library={library} /> : null}
       </Box>

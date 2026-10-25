@@ -59,6 +59,8 @@ export const uiConfigSchema = z.object({
   layout: z.enum(['split', 'list']).default('split'),
   sort: z.enum(['title', 'recent', 'added']).default('title'),
   showDetails: z.boolean().default(true),
+  /** Vista compacta: más títulos por pantalla, menos detalle por fila. */
+  compact: z.boolean().default(false),
 });
 
 export type UiConfig = z.infer<typeof uiConfigSchema>;

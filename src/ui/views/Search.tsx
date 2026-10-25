@@ -48,6 +48,9 @@ export function SearchView({
             ? 'Escribe para buscar en la biblioteca.'
             : `Sin resultados para «${query.trim()}».`
         }
+        compact={undefined}
+        selectedIds={undefined}
+        _onToggleSelection={undefined}
       />
       {showDetails ? <MediaDetails details={details} library={library} /> : null}
     </Box>

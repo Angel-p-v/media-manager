@@ -69,6 +69,12 @@ function AppImpl({
   const [status, setStatus] = useState<string | null>(null);
   const [refreshingMetadata, setRefreshingMetadata] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(config.ui.showDetails);
+  /** IDs de títulos seleccionados (selección múltiple, D3). */
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  /** Modo compacto: más filas por pantalla (D2). */
+  const [compactMode, setCompactMode] = useState(config.ui.compact ?? false);
+  /** Filtro adicional: 'watched' | 'unwatched' | undefined (D1). */
+  const [watchFilter, setWatchFilter] = useState<'watched' | 'unwatched' | undefined>(undefined);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -78,6 +84,8 @@ function AppImpl({
     ...(view === 'search' ? { query } : {}),
     section:
       section === 'in-progress' ? 'in-progress' : section === 'favorites' ? 'favorites' : undefined,
+    ...(watchFilter === 'watched' ? { watched: true } : {}),
+    ...(watchFilter === 'unwatched' ? { unwatched: true } : {}),
   });
   const safeSelected = items.length === 0 ? 0 : Math.min(selected, items.length - 1);
   const selectedMedia = items[safeSelected];
@@ -255,6 +263,41 @@ function AppImpl({
       });
   };
 
+  const handleToggleSelection = (): void => {
+    if (view !== 'library') return;
+    const media = items[safeSelected];
+    if (media === undefined) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(media.id)) next.delete(media.id);
+      else next.add(media.id);
+      return next;
+    });
+  };
+
+  const handleToggleCompact = (): void => {
+    setCompactMode((prev) => {
+      const next = !prev;
+      setStatus(next ? 'Vista compacta activada' : 'Vista normal activada');
+      return next;
+    });
+  };
+
+  const handleFilterWatched = (): void => {
+    if (view !== 'library') return;
+    setWatchFilter((prev) => (prev === 'watched' ? undefined : 'watched'));
+  };
+
+  const handleFilterUnwatched = (): void => {
+    if (view !== 'library') return;
+    setWatchFilter((prev) => (prev === 'unwatched' ? undefined : 'unwatched'));
+  };
+
+  const handleClearSelection = (): void => {
+    setSelectedIds(new Set());
+    setStatus('Selección limpiada.');
+  };
+
   const handleGoToDetails = (): void => {
     if (view !== 'library') return;
     setDetailsVisible((visible) => !visible);
@@ -294,9 +337,35 @@ function AppImpl({
         setSelected((index) => Math.min(Math.max(0, items.length - 1), index + 1));
       },
       escape: handleEscape,
+      /** Alternar selección del título actual (D3 - selección múltiple). */
+      toggleSelection: handleToggleSelection,
+      /** Activar/desactivar vista compacta (D2). */
+      toggleCompact: handleToggleCompact,
+      /** Filtrar títulos vistos (D1). */
+      filterWatched: handleFilterWatched,
+      /** Filtrar títulos no vistos (D1). */
+      filterUnwatched: handleFilterUnwatched,
+      /** Limpiar selección múltiple y filtros (D3). */
+      clearSelection: handleClearSelection,
     },
     !helpVisible,
   );
+
+  // Habilitar modo ratón para soporte de clic (D4).
+  // Los clics en el área de la lista alternan la selección del título bajo el cursor.
+  useEffect(() => {
+    process.stdout.write('\x1b[?1000h');
+    return () => {
+      process.stdout.write('\x1b[?1000l');
+    };
+  }, []);
+
+  useInput((input, key) => {
+    const mouseKey = key as { pointer?: string };
+    if (mouseKey.pointer === 'left' && view === 'library' && !helpVisible) {
+      handleToggleSelection();
+    }
+  });
 
   // La ayuda es modal: cualquier tecla de cierre evita que se dispare otra acción.
   useInput((input, key) => {
@@ -334,6 +403,16 @@ function AppImpl({
             details={details}
             showDetails={detailsVisible}
             library={library}
+            compact={compactMode}
+            selectedIds={selectedIds}
+            _onToggleSelection={(mediaId) => {
+              setSelectedIds((prev) => {
+                const next = new Set(prev);
+                if (next.has(mediaId)) next.delete(mediaId);
+                else next.add(mediaId);
+                return next;
+              });
+            }}
           />
         ) : null}
         {!helpVisible && view === 'search' ? (
