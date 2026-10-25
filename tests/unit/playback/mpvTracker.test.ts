@@ -27,6 +27,15 @@ vi.mock('node:fs/promises', () => ({
 
 vi.mock('node:os', () => ({
   tmpdir: vi.fn().mockReturnValue('/tmp'),
+  platform: vi.fn().mockReturnValue('linux'),
+}));
+
+vi.mock('node:child_process', () => ({
+  spawn: vi.fn(() => ({
+    kill: vi.fn(),
+    killed: false,
+    unref: vi.fn(),
+  })),
 }));
 
 vi.mock('node:path', async (importOriginal) => {
@@ -37,7 +46,8 @@ vi.mock('node:path', async (importOriginal) => {
   };
 });
 
-const { MpvTracker } = await import('../../../src/core/playback/mpvTracker.js');
+const { MpvTracker, createSocketPath, launchWithTracker } =
+  await import('../../../src/core/playback/mpvTracker.js');
 
 describe('MpvTracker', () => {
   let mockRepo: PlaybackRepository & { save: ReturnType<typeof vi.fn> };
