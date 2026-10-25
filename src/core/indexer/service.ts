@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import { classifyFile, type ClassifiedFile } from './classifier.js';
-import { scanLibrary } from './scanner.js';
+import { scanLibrary, type ScanLibraryOptions } from './scanner.js';
 import { IndexError } from '../../shared/errors.js';
 import { resolvePath } from '../../shared/paths.js';
 
@@ -108,22 +108,29 @@ export async function indexLibrary(
   }
 
   try {
-    let classified = await scanAndClassify(roots, library, stats, options.logger);
-
-    // Si se pide una carpeta concreta, solo indexar ficheros dentro de ella
+    let rootsToScan = roots;
+    let subfolder: string | undefined;
     if (options.folderPath !== undefined) {
-      const folderPrefix = options.folderPath.endsWith(path.sep)
-        ? options.folderPath
-        : options.folderPath + path.sep;
-      const filtered = new Map<string, ClassifiedFile>();
-      for (const [filePath, entry] of classified) {
-        if (filePath === options.folderPath || filePath.startsWith(folderPrefix)) {
-          filtered.set(filePath, entry);
-        }
+      const target = path.resolve(options.folderPath);
+      const containingRoot = roots.find((r) => {
+        const resolved = path.resolve(r.path);
+        return target === resolved || target.startsWith(resolved + path.sep);
+      });
+      if (containingRoot) {
+        rootsToScan = [containingRoot];
+        subfolder = options.folderPath;
+      } else {
+        rootsToScan = [];
       }
-      classified = filtered;
-      stats.filesSeen = classified.size;
     }
+
+    const classified = await scanAndClassify(
+      rootsToScan,
+      library,
+      stats,
+      options.logger,
+      subfolder,
+    );
 
     const knownPaths = new Set(classified.keys());
     const folders = groupByFolder(repositories, classified, stats);
@@ -132,12 +139,12 @@ export async function indexLibrary(
       stats.mediaAdded = [...folders.keys()].filter(
         (folderPath) => repositories.mediaRepo.findByFolderPath(folderPath) === undefined,
       ).length;
-      if (options.rootPath === undefined) {
+      if (options.rootPath === undefined && subfolder === undefined) {
         countWouldBeRemoved(repositories, folders, knownPaths, stats);
       }
     } else {
       writeGroups(repositories, folders, stats);
-      if (options.rootPath === undefined) {
+      if (options.rootPath === undefined && subfolder === undefined) {
         prune(repositories, knownPaths, stats);
       }
     }
@@ -178,16 +185,22 @@ async function scanAndClassify(
   library: IndexLibraryConfig,
   stats: IndexStats,
   logger: Logger | undefined,
+  subfolder?: string,
 ): Promise<Map<string, ClassifiedFile>> {
   const classified = new Map<string, ClassifiedFile>();
 
   for (const root of roots) {
-    const files = await scanLibrary(root.path, {
+    const rootSubfolder = subfolder !== undefined ? path.relative(root.path, subfolder) : undefined;
+    const scanOptions: ScanLibraryOptions = {
       maxDepth: library.scan.maxDepth,
       followSymlinks: library.scan.followSymlinks,
       minSizeBytes: library.scan.minSizeBytes,
       exclude: library.exclude,
-    });
+    };
+    if (rootSubfolder !== undefined) {
+      scanOptions.subfolder = rootSubfolder;
+    }
+    const files = await scanLibrary(root.path, scanOptions);
 
     stats.rootsScanned += 1;
     stats.filesSeen += files.length;
