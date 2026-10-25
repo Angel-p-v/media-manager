@@ -35,7 +35,7 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 | --- | --------- | -------------------------------------------------------------------------------------------- | --------- | -------- | ------------------------------------- | ------ |
 | C1  | Metadatos | Fallback de póster local: si falla la red, usar el último póster cacheado o uno por defecto. | Media     | Bajo     | `feat/metadatos-poster-fallback`      | ✅     |
 | C2  | Metadatos | Añadir proveedor secundario (OMDB, AniList o fanart.tv) como fallback de TMDB/TVDB.          | Baja      | Medio    | `feat/metadatos-proveedor-secundario` | ✅     |
-| C3  | Metadatos | Comando `mm metadata cache --clear` y TTL para imágenes no usadas en 30 días.                | Baja      | Bajo     | `feat/metadatos-cache-limpiar`        |        |
+| C3  | Metadatos | Comando `mm metadata cache --clear` y TTL para imágenes no usadas en 30 días.                | Baja      | Bajo     | `feat/metadatos-cache-limpiar`        | ✅     |
 
 ### Fase D — TUI
 
