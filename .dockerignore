@@ -11,4 +11,3 @@ Dockerfile
 installers
 scripts
 vitest.config.ts
-tsconfig*.json
