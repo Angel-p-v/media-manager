@@ -44,9 +44,11 @@ export class RateLimiter {
 }
 
 /** Límites de tasa por proveedor (peticiones por ventana de tiempo). */
-export const rateLimiters: Record<'tmdb' | 'tvdb', RateLimiter> = {
+export const rateLimiters: Record<'tmdb' | 'tvdb' | 'omdb', RateLimiter> = {
   // TMDB: 40 peticiones por 10 segundos (límite estándar de la API gratuita)
   tmdb: new RateLimiter(40, 10_000),
   // TVDB: límite más conservador, 10 peticiones por 10 segundos
   tvdb: new RateLimiter(10, 10_000),
+  // OMDB: 1 petición por segundo (límite de la API gratuita)
+  omdb: new RateLimiter(1, 1_000),
 };

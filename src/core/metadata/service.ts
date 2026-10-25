@@ -76,10 +76,42 @@ type TvdbDetails = {
   artwork: TvdbArtwork | null;
 };
 
+/** Respuesta de búsqueda de OMDB. */
+type OmdbSearchResponse = {
+  Search?: OmdbSearchResult[];
+  totalResults: string;
+  Response: string;
+  Error?: string;
+};
+
+/** Resultado de búsqueda de OMDB. */
+type OmdbSearchResult = {
+  Title: string;
+  Year: string | null;
+  imdbID: string;
+  Type: string;
+  Poster: string;
+};
+
+/** Detalles de OMDB para un título por IMDb ID. */
+type OmdbDetails = {
+  Title: string;
+  Year: string | null;
+  imdbID: string;
+  Type: string;
+  Plot: string | null;
+  Poster: string;
+  imdbRating: string | null;
+  Released: string | null;
+  Language: string | null;
+  Response: string;
+};
+
 /** Configuración del servicio de metadatos. */
 export type MetadataServiceConfig = {
   tmdbApiKey?: string;
   tvdbApiKey?: string;
+  omdbApiKey?: string;
   logger: {
     debug(msg: string, bindings?: Record<string, unknown>): void;
     warn(msg: string, bindings?: Record<string, unknown>): void;
@@ -89,7 +121,7 @@ export type MetadataServiceConfig = {
 
 /** Resultado de búsqueda de metadatos. */
 export type MetadataSearchResult = {
-  provider: 'tmdb' | 'tvdb';
+  provider: 'tmdb' | 'tvdb' | 'omdb';
   externalId: number;
   title: string;
   overview: string | null;
@@ -326,7 +358,128 @@ export class MetadataService {
   }
 
   /**
-   * Busca en todos los proveedores configurados (TMDB primero, luego TVDB).
+   * Convierte un IMDb ID de OMDB (p. ej. "tt1375666") a un número para usar como
+   * externalId. OMDB identifica los títulos con imdbID alfanumérico; se extraen
+   * los dígitos para encajar en el tipo `externalId: number`. Los IDs con ceros
+   * iniciales (p. ej. "tt0123456") pierden esos ceros al reconstruirse, lo que
+   * puede impedir encontrar el título en `getOmdbDetails`.
+   */
+  /**
+   * Convierte un IMDb ID de OMDB (p. ej. "tt1375666") a un número para usar como
+   * externalId. OMDB identifica los títulos con imdbID alfanumérico; se extraen
+   * los dígitos para encajar en el tipo `externalId: number`. Los IDs con ceros
+   * iniciales (p. ej. "tt0123456") pierden esos ceros al reconstruirse, lo que
+   * puede impedir encontrar el título en `getOmdbDetails`.
+   */
+  private imdbIdToNumber(imdbId: string): number {
+    return Number(imdbId.replace(/^tt/, ''));
+  }
+
+  /**
+   * Reconstruye un IMDb ID a partir de un externalId numérico (p. ej. 1375666 → "tt1375666").
+   */
+  private numberToImdbId(externalId: number): string {
+    return `tt${externalId}`;
+  }
+
+  /**
+   * Busca títulos en OMDB por consulta de texto.
+   * Devuelve resultados mapeados a un formato común.
+   */
+  async searchOmdb(query: string): Promise<MetadataSearchResult[]> {
+    if (!this.config.omdbApiKey) {
+      throw new Error('OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.');
+    }
+
+    await rateLimiters.omdb.waitForSlot();
+
+    const url = new URL('http://www.omdbapi.com/');
+    url.searchParams.set('apikey', this.config.omdbApiKey);
+    url.searchParams.set('s', query);
+    url.searchParams.set('type', 'movie');
+
+    const response = await fetch(url.toString(), {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`OMDB API respondió ${response.status}`);
+    }
+
+    const data = (await response.json()) as OmdbSearchResponse;
+
+    if (data.Response !== 'True' || !data.Search) {
+      return [];
+    }
+
+    return data.Search.map((r) => ({
+      provider: 'omdb' as const,
+      externalId: this.imdbIdToNumber(r.imdbID),
+      title: r.Title,
+      overview: null, // OMDB no proporciona sinopsis en búsqueda
+      posterPath: r.Poster === 'N/A' ? null : r.Poster,
+      backdropPath: null, // OMDB no proporciona backdrop en búsqueda
+      voteAverage: null,
+      releaseDate: r.Year ?? null,
+      originalLanguage: null, // OMDB no proporciona idioma en búsqueda
+      localPosterPath: null,
+    }));
+  }
+
+  /**
+   * Obtiene detalles de un título de OMDB por IMDb ID (externalId).
+   */
+  async getOmdbDetails(
+    externalId: number,
+    _mediaType: 'movie' | 'tv' = 'movie',
+  ): Promise<MetadataSearchResult> {
+    if (!this.config.omdbApiKey) {
+      throw new Error('OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.');
+    }
+
+    await rateLimiters.omdb.waitForSlot();
+
+    const url = new URL('http://www.omdbapi.com/');
+    url.searchParams.set('apikey', this.config.omdbApiKey);
+    url.searchParams.set('i', this.numberToImdbId(externalId));
+    url.searchParams.set('plot', 'short');
+
+    const response = await fetch(url.toString(), {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`OMDB API respondió ${response.status}`);
+    }
+
+    const data = (await response.json()) as OmdbDetails;
+
+    if (data.Response !== 'True') {
+      throw new Error(`OMDB no encontró el título ${externalId}`);
+    }
+
+    const localPosterPath = await cachePoster(
+      data.Poster === 'N/A' ? null : data.Poster,
+      externalId,
+      adaptLogger(this.config.logger),
+    );
+
+    return {
+      provider: 'omdb',
+      externalId,
+      title: data.Title,
+      overview: data.Plot,
+      posterPath: data.Poster === 'N/A' ? null : data.Poster,
+      backdropPath: null,
+      voteAverage: data.imdbRating ? Number(data.imdbRating) : null,
+      releaseDate: data.Released,
+      originalLanguage: data.Language,
+      localPosterPath,
+    };
+  }
+
+  /**
+   * Busca en todos los proveedores configurados (TMDB primero, luego TVDB y OMDB como fallback).
    */
   async search(query: string): Promise<MetadataSearchResult[]> {
     const results: MetadataSearchResult[] = [];
@@ -353,6 +506,17 @@ export class MetadataService {
       }
     }
 
+    if (this.config.omdbApiKey) {
+      try {
+        const omdbResults = await this.searchOmdb(query);
+        results.push(...omdbResults);
+      } catch (error) {
+        this.config.logger.warn('OMDB búsqueda falló', {
+          error: (error as Error).message,
+        });
+      }
+    }
+
     return results;
   }
 
@@ -362,26 +526,31 @@ export class MetadataService {
    */
   async getDetails(
     externalId: number,
-    provider: 'tmdb' | 'tvdb',
+    provider: 'tmdb' | 'tvdb' | 'omdb',
     mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
     if (provider === 'tmdb') {
       return this.getTmdbDetails(externalId, mediaType);
     }
-    return this.getTvdbDetails(externalId, mediaType === 'tv' ? 'tv' : 'movie');
+    if (provider === 'tvdb') {
+      return this.getTvdbDetails(externalId, mediaType === 'tv' ? 'tv' : 'movie');
+    }
+    return this.getOmdbDetails(externalId, mediaType);
   }
 
   /**
    * Verifica si hay al menos un proveedor configurado.
    */
   hasProviderConfigured(): boolean {
-    return !!this.config.tmdbApiKey || !!this.config.tvdbApiKey;
+    return !!this.config.tmdbApiKey || !!this.config.tvdbApiKey || !!this.config.omdbApiKey;
   }
 
   /**
    * Verifica si un proveedor específico está configurado.
    */
-  isProviderConfigured(provider: 'tmdb' | 'tvdb'): boolean {
-    return provider === 'tmdb' ? !!this.config.tmdbApiKey : !!this.config.tvdbApiKey;
+  isProviderConfigured(provider: 'tmdb' | 'tvdb' | 'omdb'): boolean {
+    if (provider === 'tmdb') return !!this.config.tmdbApiKey;
+    if (provider === 'tvdb') return !!this.config.tvdbApiKey;
+    return !!this.config.omdbApiKey;
   }
 }

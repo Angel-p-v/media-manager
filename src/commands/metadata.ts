@@ -9,7 +9,7 @@ export type MetadataCommandOptions = CommandOptions & {
   action?: 'fetch' | 'search' | 'clear';
   mediaId?: number;
   query?: string;
-  provider?: 'tmdb' | 'tvdb';
+  provider?: 'tmdb' | 'tvdb' | 'omdb';
   externalId?: number;
   json?: boolean;
 };
@@ -21,6 +21,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
       logger,
       ...(config.metadata?.tmdbApiKey ? { tmdbApiKey: config.metadata.tmdbApiKey } : {}),
       ...(config.metadata?.tvdbApiKey ? { tvdbApiKey: config.metadata.tvdbApiKey } : {}),
+      ...(config.metadata?.omdbApiKey ? { omdbApiKey: config.metadata.omdbApiKey } : {}),
     };
     const service = new MetadataService(configValues);
 
@@ -28,7 +29,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
       case 'search': {
         if (!options.query) {
           console.error(
-            pc.red('Uso: mm metadata search <consulta> [--provider tmdb|tvdb] [--json]'),
+            pc.red('Uso: mm metadata search <consulta> [--provider tmdb|tvdb|omdb] [--json]'),
           );
           process.exitCode = 2;
           return;
@@ -69,7 +70,9 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
       case 'fetch': {
         if (!options.mediaId || !options.provider || !options.externalId) {
           console.error(
-            pc.red('Uso: mm metadata fetch <id> --provider tmdb|tvdb --external-id <id> [--json]'),
+            pc.red(
+              'Uso: mm metadata fetch <id> --provider tmdb|tvdb|omdb --external-id <id> [--json]',
+            ),
           );
           process.exitCode = 2;
           return;

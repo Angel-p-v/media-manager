@@ -73,7 +73,7 @@ export type LibraryService = {
   /** Establece o actualiza metadatos externos de un título. */
   setMetadata(input: {
     mediaId: number;
-    provider: 'tmdb' | 'tvdb';
+    provider: 'tmdb' | 'tvdb' | 'omdb';
     externalId: number;
     title?: string | null;
     overview?: string | null;
