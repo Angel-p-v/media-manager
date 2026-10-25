@@ -41,6 +41,7 @@ const program = new Command()
   .description('Media Manager — gestor de contenido multimedia para terminal')
   .version(getVersion(), '-V, --version', 'muestra la versión')
   .option('-v, --verbose', 'activa logs de depuración y pilas de error')
+  .option('--log-file <ruta>', 'escribe los logs en un archivo con rotación automática (10 MB)')
   .showHelpAfterError()
   .addHelpText(
     'after',
@@ -49,10 +50,14 @@ const program = new Command()
   .exitOverride();
 
 // Commander conserva las opciones globales en el programa; se copian al subcomando
-// para que todos los `run*Command(options)` reciban el mismo `verbose`.
+// para que todos los `run*Command(options)` reciban el mismo `verbose` y `logFile`.
 program.hook('preAction', (thisCommand, actionCommand) => {
-  if (thisCommand.opts().verbose === true) {
+  const opts = thisCommand.opts();
+  if (opts.verbose === true) {
     actionCommand.setOptionValue('verbose', true);
+  }
+  if (opts.logFile !== undefined) {
+    actionCommand.setOptionValue('logFile', opts.logFile);
   }
 });
 

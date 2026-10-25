@@ -15,6 +15,8 @@ export type CommandOptions = {
   config?: string;
   /** Fuerza `logging.level=debug`; lo inyecta el flag global `--verbose`. */
   verbose?: boolean;
+  /** Ruta de archivo para escribir los logs (con rotación automática). */
+  logFile?: string;
 };
 
 /** Dependencias que recibe un subcomando ya conectado a la biblioteca. */
@@ -46,6 +48,7 @@ export async function withCommandContext<T>(
   const logger = createLogger({
     level: options.verbose === true ? 'debug' : config.logging.level,
     format: config.logging.format,
+    ...(options.logFile !== undefined ? { logFile: options.logFile } : {}),
   });
   logger.debug('config.loaded', {
     database: config.database.path,
