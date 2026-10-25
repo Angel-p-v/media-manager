@@ -296,4 +296,46 @@ describe('watchLibrary', () => {
 
     closeWatcher = watcher.close;
   });
+
+  it('programa una segunda indexación cuando llega un evento durante la primera (líneas 72-73)', async () => {
+    const resolvers: (() => void)[] = [];
+    mockIndexLibrary.mockImplementation(() => {
+      return new Promise<void>((resolve) => {
+        resolvers.push(resolve);
+      });
+    });
+
+    const watcher = watchLibrary({
+      repositories: mockRepositories,
+      library: mockLibrary,
+      logger: mockLogger,
+      onIndexed: mockOnIndexed,
+      onError: mockOnError,
+      debounceMs: 10,
+    });
+
+    await watcher.ready;
+    const allHandler = mockWatcher.allHandler as (event: string, path: string) => void;
+
+    // Primer evento: se programa indexación tras el debounce
+    allHandler('add', '/media/series/video1.mkv');
+    await vi.waitFor(() => {
+      expect(mockIndexLibrary).toHaveBeenCalledTimes(1);
+    });
+
+    // Segundo evento mientras la primera está en curso: running !== null, pending = true
+    allHandler('add', '/media/series/video2.mkv');
+    expect(mockIndexLibrary).toHaveBeenCalledTimes(1); // aún no se ejecutó la segunda
+
+    // Resolver la primera: en finally, pending=true → schedule() → run() → segunda indexación
+    resolvers[0]?.();
+    await vi.waitFor(() => {
+      expect(mockIndexLibrary).toHaveBeenCalledTimes(2);
+    });
+
+    // Resolver la segunda para que close() no se quede colgado esperando running
+    resolvers[1]?.();
+
+    closeWatcher = watcher.close;
+  });
 });

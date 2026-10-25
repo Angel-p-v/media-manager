@@ -32,4 +32,18 @@ describe('databaseSizeBytes', () => {
     const size = databaseSizeBytes(dbPath);
     expect(size).toBeGreaterThan(0);
   });
+
+  it('suma el tamaño de archivos auxiliares -wal y -shm si existen', async () => {
+    await writeFile(dbPath, 'contenido de prueba');
+    await writeFile(`${dbPath}-wal`, 'wal');
+    await writeFile(`${dbPath}-shm`, 'shm');
+    const size = databaseSizeBytes(dbPath);
+    expect(size).toBeGreaterThan(0);
+    // El tamaño debe incluir al menos los 3 archivos
+    expect(size).toBeGreaterThanOrEqual(
+      Buffer.byteLength('contenido de prueba') +
+        Buffer.byteLength('wal') +
+        Buffer.byteLength('shm'),
+    );
+  });
 });
