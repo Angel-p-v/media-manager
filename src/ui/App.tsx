@@ -8,7 +8,7 @@ import { useConfig } from './hooks/useConfig.js';
 import { matchesKey, useKeymap } from './hooks/useKeymap.js';
 import { useLibrary } from './hooks/useLibrary.js';
 import { useMediaDetails } from './hooks/useMediaDetails.js';
-import { theme } from './theme.js';
+import { theme, setTheme } from './theme.js';
 import { LibraryView } from './views/Library.js';
 import { SearchView } from './views/Search.js';
 import { SettingsView } from './views/Settings.js';
@@ -59,6 +59,7 @@ function AppImpl({
   launchPlayer = spawnPlayer,
 }: AppProps): React.JSX.Element {
   const { keybindings } = useConfig(config);
+  setTheme(config.ui.theme);
   const { exit } = useApp();
   const [view, setView] = useState<ViewName>('library');
   const [section, setSection] = useState<Section>('all');
