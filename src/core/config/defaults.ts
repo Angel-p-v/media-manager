@@ -30,6 +30,7 @@ export const defaultConfig: AppConfig = {
     layout: 'split',
     sort: 'title',
     showDetails: true,
+    compact: false,
   },
   playback: playbackConfigSchema.parse({}),
   metadata: metadataConfigSchema.parse({}),

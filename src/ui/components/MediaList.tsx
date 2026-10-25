@@ -10,9 +10,15 @@ export type MediaListProps = {
   selected: number;
   emptyMessage: string;
   title?: string;
+  /** Modo compacto: más filas por pantalla, menos detalle. */
+  compact: boolean | undefined;
+  /** IDs de los títulos seleccionados (selección múltiple). */
+  selectedIds: ReadonlySet<number> | undefined;
+  /** Callback al alternar la selección de un título. */
+  _onToggleSelection: ((mediaId: number) => void) | undefined;
 };
-
 const WINDOW_SIZE = 12;
+const COMPACT_WINDOW_SIZE = 24;
 
 /** Lista de títulos con una ventana alrededor de la selección. */
 export function MediaList({
@@ -20,12 +26,16 @@ export function MediaList({
   selected,
   emptyMessage,
   title = 'Títulos',
+  compact = false,
+  selectedIds,
+  _onToggleSelection,
 }: MediaListProps): React.JSX.Element {
+  const windowSize: number = compact ? COMPACT_WINDOW_SIZE : WINDOW_SIZE;
   const start = Math.max(
     0,
-    Math.min(selected - Math.floor(WINDOW_SIZE / 2), items.length - WINDOW_SIZE),
+    Math.min(selected - Math.floor(windowSize / 2), Math.max(0, items.length - windowSize)),
   );
-  const visible = items.slice(start, start + WINDOW_SIZE);
+  const visible = items.slice(start, start + windowSize);
 
   return (
     <Box flexDirection="column" flexGrow={1} paddingX={1}>
@@ -38,10 +48,16 @@ export function MediaList({
         visible.map((media, index) => {
           const position = start + index;
           const active = position === selected;
+          const isSelected = selectedIds?.has(media.id) ?? false;
           const year = media.year === null ? '' : ` (${media.year})`;
+          const marker = isSelected ? '✓' : active ? '▸' : ' ';
           return (
-            <Text key={media.id} {...(active ? { color: 'cyan' as const } : {})} bold={active}>
-              {active ? '▸ ' : '  '}
+            <Text
+              key={media.id}
+              {...(active ? { color: 'cyan' as const } : {})}
+              bold={active || isSelected}
+            >
+              {`${marker} `}
               {media.title}
               {year} {theme.muted(`[${media.type}]`)}
             </Text>
