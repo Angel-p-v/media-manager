@@ -28,20 +28,25 @@ export async function runWatchCommand(
   options: WatchCommandOptions,
   dependencies: WatchCommandDependencies = defaultDependencies,
 ): Promise<void> {
-  await withCommandContext(options, async ({ config, repositories, logger }) => {
+  await withCommandContext(options, async ({ config, excludeRef, repositories, logger }) => {
     if (config.library.roots.length === 0) {
       throw new IndexError(
         'No hay ninguna raíz configurada. Añade al menos una entrada en library.roots.',
       );
     }
 
-    const initial = await indexLibrary(repositories, config.library);
+    const library = {
+      ...config.library,
+      exclude: () => excludeRef.exclude,
+    };
+
+    const initial = await indexLibrary(repositories, library);
     console.log(pc.green('✔') + ' Índice inicial actualizado.');
     printStats(initial);
 
     const watcher = dependencies.watchLibrary({
       repositories,
-      library: config.library,
+      library,
       logger,
       onIndexed: (stats) => {
         console.log(pc.green('✔') + ' Cambios detectados; índice actualizado.');
