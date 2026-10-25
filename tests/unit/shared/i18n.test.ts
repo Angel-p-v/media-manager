@@ -1,7 +1,12 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 
-import { loadTranslations, getLocale, t, AVAILABLE_LOCALES } from '../../../src/shared/i18n.js';
-import type { Locale } from '../../../src/shared/i18n.types.js';
+import {
+  AVAILABLE_LOCALES,
+  getLocale,
+  loadTranslations,
+  t,
+  type Locale,
+} from '../../../src/shared/i18n.js';
 
 beforeEach(() => {
   void loadTranslations('en');

@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
-import type { Locale } from './i18n.types.js';
+/** Idiomas soportados por la aplicación. */
+export type Locale = 'en' | 'es';
 
 /** Diccionario de traducciones cargado en memoria. */
 let translations: Record<string, string> = {};
@@ -9,6 +11,9 @@ let currentLocale: Locale = 'en';
 /** Idiomas disponibles. */
 export const AVAILABLE_LOCALES: readonly Locale[] = ['en', 'es'];
 
+/** Directorio donde residen los archivos de locale. */
+const LOCALES_DIR = path.resolve(process.cwd(), 'src', 'shared', 'locales');
+
 /**
  * Carga las traducciones para un idioma desde un archivo JSON.
  * Si el archivo no existe o es inválido, se mantiene el diccionario vacío
@@ -16,8 +21,9 @@ export const AVAILABLE_LOCALES: readonly Locale[] = ['en', 'es'];
  */
 export async function loadTranslations(locale: Locale): Promise<void> {
   try {
-    const content = await readFile(`locales/${locale}.json`, 'utf8');
-    translations = JSON.parse(content);
+    const content = await readFile(path.join(LOCALES_DIR, `${locale}.json`), 'utf8');
+    const parsed = JSON.parse(content) as Record<string, string>;
+    translations = parsed;
     currentLocale = locale;
   } catch {
     translations = {};
