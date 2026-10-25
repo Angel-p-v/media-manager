@@ -1,17 +1,13 @@
-# Plan: Hitos futuros, mejoras y cobertura (M18–M22 y más allá)
+# Plan: Hitos futuros, mejoras y cobertura (M18–M22 y más allá) — ✅ COMPLETADO
+
+> **Estado:** todos los hitos M18–M22 completados y mergeados en `main`.
+> **Índice de planes:** [`docs/plans/README.md`](./README.md)
 
 **Objetivo:** Continuar el roadmap del proyecto, completar los hitos pendientes (M18–M22), cubrir nuevas funcionalidades y mejorar las existentes, manteniendo `main` desplegable y `npm run verify` verde.
 
 ## Contexto
 
-Según `PLAN.md` §7 y el estado actual, los hitos M0–M17 están completados. Pendientes:
-
-- **M18** — TUI con metadatos visuales (póster, sinopsis, calificación, año, proveedor)
-- **M19** — Sincronización en segundo plano de metadatos (watch, TTL, rate-limiting)
-- **M20** — Auto-completado de shell (bash, zsh, fish)
-- **M21** — E2E interactivos con TTY real (node-pty)
-- **M22** — Mejorar cobertura de pruebas (watch, play, watcher)
-- Assets macOS oficiales (pendiente por limitación de runners de GitHub Actions)
+Según `PLAN.md` §7 y el estado actual, todos los hitos M0–M22 están completados.
 
 ---
 
@@ -96,7 +92,7 @@ Cada hito M18–M22 se considera completo cuando:
 
 1. No se pasa al siguiente hito hasta que la PR del actual esté mergeada y en `main`.
 2. Cada hito se ejecuta en su propia rama (`feat/m18-tui-metadata`, etc.).
-3. Antes de empezar un hito nuevo, revisar que el plan de fixes (`fixes-seguridad.md`) no tenga ítems críticos pendientes.
+3. Antes de empezar un hito nuevo, revisar que el plan de fixes (`fixes-seguridad-COMPLETADO.md`) no tenga ítems críticos pendientes.
 4. Los cambios masivos (formato, movimientos, dependencias) van en commits separados.
 5. Al finalizar cada hito: actualizar tabla de estado en `PLAN.md` y `README.md`.
 

@@ -1,6 +1,9 @@
-# Plan: distribución sin npm mediante instaladores
+# Plan: distribución sin npm mediante instaladores — 🔄 SUSTITUIDO
 
-- **Estado:** sustituido por [`instaladores-y-seguridad.md`](./instaladores-y-seguridad.md)
+> **Estado:** sustituido por [`instaladores-y-seguridad-COMPLETADO.md`](./instaladores-y-seguridad-COMPLETADO.md).
+> **Índice de planes:** [`docs/plans/README.md`](./README.md)
+
+- **Estado:** sustituido por [`instaladores-y-seguridad-COMPLETADO.md`](./instaladores-y-seguridad-COMPLETADO.md)
 - **Fecha:** 2026-10-22
 - **Sustituye:** la publicación en npm descrita en el
   [ADR 0008](../adr/0008-publicacion-y-distribucion.md)

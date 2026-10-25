@@ -1,9 +1,12 @@
-# Plan: media-manager v2.0 — una biblioteca con memoria
+# Plan: media-manager v2.0 — una biblioteca con memoria — ✅ COMPLETADO
 
-- **Estado:** en ejecución — M9 (contratos, datos y migración v3)
+> **Estado:** todos los hitos M9–M13 completados, release v2.0.0 publicada y verificada.
+> **Índice de planes:** [`docs/plans/README.md`](./README.md)
+
+- **Estado:** completado — M9 (contratos, datos y migración v3), M10–M13 implementados.
 - **Fecha:** 2026-10-22
 - **Inicio de ejecución:** 2026-10-23, tras cerrar `v1.0.0`/`v1.0.1`
-- **Depende de:** [`instaladores-y-seguridad.md`](./instaladores-y-seguridad.md)
+- **Depende de:** [`instaladores-y-seguridad-COMPLETADO.md`](./instaladores-y-seguridad-COMPLETADO.md)
 - **Base:** `1.x` publicada desde GitHub Releases
 - **Objetivo de versión:** `2.0.0`
 

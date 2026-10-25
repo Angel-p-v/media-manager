@@ -1,4 +1,7 @@
-# Plan: Corrección de errores y vulnerabilidades (fixes/security)
+# Plan: Corrección de errores y vulnerabilidades (fixes/security) — ✅ COMPLETADO
+
+> **Estado:** todos los ítems resueltos y mergeados en `main` (PR #142).
+> **Índice de planes:** [`docs/plans/README.md`](./README.md)
 
 **Objetivo:** Estabilizar la release v3.0.0, eliminar fallos intermitentes y cerrar vectores de vulnerabilidad antes de avanzar con nuevos hitos.
 

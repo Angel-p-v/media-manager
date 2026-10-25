@@ -1,8 +1,11 @@
-# Plan: instaladores, distribución y seguridad
+# Plan: instaladores, distribución y seguridad — ✅ COMPLETADO
+
+> **Estado:** `v1.0.0` y `v1.0.1` publicadas y verificadas (2026-10-23).
+> **Índice de planes:** [`docs/plans/README.md`](./README.md)
 
 - **Estado:** completado — `v1.0.0` y `v1.0.1` publicadas y verificadas (2026-10-23)
 - **Fecha:** 2026-10-22
-- **Sustituye y concreta:** [`distribucion-sin-npm.md`](./distribucion-sin-npm.md)
+- **Sustituye y concreta:** [`distribucion-sin-npm-SUSTITUIDO.md`](./distribucion-sin-npm-SUSTITUIDO.md)
 - **Decisión de fondo:** dejar de publicar en npm y distribuir artefactos portables desde
   GitHub Releases.
 
