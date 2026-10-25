@@ -1,4 +1,5 @@
 import { stat } from 'node:fs/promises';
+import path from 'node:path';
 
 import { glob } from 'tinyglobby';
 
@@ -19,12 +20,18 @@ export type ScanLibraryOptions = {
   followSymlinks: boolean;
   minSizeBytes: number;
   exclude: readonly string[];
+  /** Subcarpeta relativa dentro de rootPath para limitar el escaneo. */
+  subfolder?: string;
 };
 
 /**
- * Recorre una raíz de la biblioteca y devuelve sus ficheros de vídeo con tamaño
- * y fecha de modificación. Las rutas son absolutas y el resultado está ordenado,
- * de modo que dos ejecuciones producen siempre el mismo índice.
+ * Recorre una raíz de la biblioteca (o una subcarpeta de ella) y devuelve sus
+ * ficheros de vídeo con tamaño y fecha de modificación. Las rutas son absolutas
+ * y el resultado está ordenado, de modo que dos ejecuciones producen siempre el
+ * mismo índice.
+ *
+ * Cuando `subfolder` está definido, solo se escanea esa subcarpeta en lugar de
+ * toda la raíz, lo que evita recorrer directorios innecesarios.
  *
  * Las exclusiones se expresan con los patrones glob de `library.exclude`. Un fichero
  * que desaparece entre el listado y el `stat` (carrera con el usuario) se omite
@@ -34,12 +41,14 @@ export async function scanLibrary(
   rootPath: string,
   options: ScanLibraryOptions,
 ): Promise<ScannedFile[]> {
-  await assertDirectory(rootPath);
+  const scanRoot =
+    options.subfolder !== undefined ? path.join(rootPath, options.subfolder) : rootPath;
+  await assertDirectory(scanRoot);
 
   let matches: string[];
   try {
     matches = await glob(VIDEO_GLOB, {
-      cwd: rootPath,
+      cwd: scanRoot,
       absolute: true,
       ignore: [...options.exclude],
       deep: options.maxDepth,
@@ -48,7 +57,7 @@ export async function scanLibrary(
       caseSensitiveMatch: false,
     });
   } catch (error) {
-    throw new IndexError(`No se pudo recorrer ${rootPath}: ${(error as Error).message}`, {
+    throw new IndexError(`No se pudo recorrer ${scanRoot}: ${(error as Error).message}`, {
       cause: error,
     });
   }
