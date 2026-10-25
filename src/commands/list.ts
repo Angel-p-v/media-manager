@@ -29,6 +29,12 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
   const offset = options.offset ?? 0;
   const sort = options.sort ?? 'title';
 
+  if (options.export !== undefined && options.export !== 'json' && options.export !== 'csv') {
+    throw new Error(
+      `Formato de exportación no válido: ${String(options.export)}. Use 'json' o 'csv'.`,
+    );
+  }
+
   await withCommandContext(options, ({ library }) => {
     const items = library.list({
       ...(options.type === undefined ? {} : { type: options.type }),
