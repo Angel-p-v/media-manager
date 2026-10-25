@@ -4,7 +4,6 @@ import { loadTranslations, getLocale, t, AVAILABLE_LOCALES } from '../../../src/
 import type { Locale } from '../../../src/shared/i18n.types.js';
 
 beforeEach(() => {
-  // Resetear a inglés antes de cada test
   void loadTranslations('en');
 });
 
@@ -30,7 +29,6 @@ describe('i18n', () => {
   });
 
   it('cargar locale inválido no rompe', async () => {
-    // No lanzar aunque el archivo no exista
     await expect(loadTranslations('fr' as Locale)).resolves.toBeUndefined();
     expect(t('app.library')).toBe('app.library');
   });
