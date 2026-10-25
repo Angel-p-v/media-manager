@@ -1,8 +1,8 @@
 import { cachePoster, getCachedPoster } from './posterCache.js';
 import { rateLimiters } from './rateLimiter.js';
+import { MetadataError, formatError } from '../../shared/errors.js';
 
 import type { Logger } from '../../shared/logger.js';
-import { MetadataError, formatError } from '../../shared/errors.js';
 
 /** Respuesta de búsqueda de TMDB. */
 type TmdbSearchResponse = {
@@ -176,7 +176,9 @@ export class MetadataService {
    */
   async searchTmdb(query: string): Promise<MetadataSearchResult[]> {
     if (!this.config.tmdbApiKey) {
-      throw new MetadataError('TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tmdb.waitForSlot();
@@ -220,7 +222,9 @@ export class MetadataService {
     mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
     if (!this.config.tmdbApiKey) {
-      throw new MetadataError('TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tmdb.waitForSlot();
@@ -268,7 +272,9 @@ export class MetadataService {
    */
   async searchTvdb(query: string): Promise<MetadataSearchResult[]> {
     if (!this.config.tvdbApiKey) {
-      throw new MetadataError('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tvdb.waitForSlot();
@@ -317,7 +323,9 @@ export class MetadataService {
     mediaType: 'movie' | 'tv' = 'tv',
   ): Promise<MetadataSearchResult> {
     if (!this.config.tvdbApiKey) {
-      throw new MetadataError('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tvdb.waitForSlot();
@@ -389,7 +397,9 @@ export class MetadataService {
    */
   async searchOmdb(query: string): Promise<MetadataSearchResult[]> {
     if (!this.config.omdbApiKey) {
-      throw new MetadataError('OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.omdb.waitForSlot();
@@ -435,7 +445,9 @@ export class MetadataService {
     _mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
     if (!this.config.omdbApiKey) {
-      throw new MetadataError('OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.omdb.waitForSlot();

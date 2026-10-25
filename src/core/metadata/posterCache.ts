@@ -3,8 +3,9 @@ import { readdir, writeFile, access } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
-import type { Logger } from '../../shared/logger.js';
 import { formatError } from '../../shared/errors.js';
+
+import type { Logger } from '../../shared/logger.js';
 
 const DEFAULT_CACHE_DIR = join(homedir(), '.cache', 'media-manager', 'posters');
 

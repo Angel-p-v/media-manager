@@ -1,7 +1,8 @@
+import { DbError } from '../../../shared/errors.js';
+
 import type { MediaType } from '../../config/schema.js';
 import type { Db } from '../connection.js';
 import type { PlaybackEntryRow, PlaybackInput, PlaybackStateRow } from '../types.js';
-import { DbError } from '../../shared/errors.js';
 
 export type { PlaybackEntryRow, PlaybackStateRow, PlaybackInput } from '../types.js';
 export type { PlaybackConfig } from '../../config/schema.js';

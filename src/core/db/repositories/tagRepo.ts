@@ -1,5 +1,6 @@
+import { DbError } from '../../../shared/errors.js';
+
 import type { Db } from '../connection.js';
-import { DbError } from '../../shared/errors.js';
 
 export type TagRow = {
   id: number;

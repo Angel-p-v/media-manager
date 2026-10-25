@@ -6,9 +6,9 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { withCommandContext, type CommandOptions } from './context.js';
+import { SelfUpdateError, formatError } from '../shared/errors.js';
 
 import type { Logger } from '../shared/logger.js';
-import { SelfUpdateError, formatError } from '../shared/errors.js';
 
 /** Información de una release de GitHub. */
 type GitHubRelease = {
@@ -210,7 +210,9 @@ async function applyUpdate(checkResult: UpdateCheckResult, logger: Logger): Prom
     }
     const actualHash = await sha256File(archivePath);
     if (actualHash !== expectedHash) {
-      throw new SelfUpdateError(`Checksum no coincide: esperado ${expectedHash}, obtenido ${actualHash}`);
+      throw new SelfUpdateError(
+        `Checksum no coincide: esperado ${expectedHash}, obtenido ${actualHash}`,
+      );
     }
     logger.debug('self-update: checksum verificado');
 

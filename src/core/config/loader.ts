@@ -51,13 +51,9 @@ export async function readConfigFile(configPath: string): Promise<unknown> {
   try {
     content = await readFile(configPath, 'utf8');
   } catch (error) {
-    throw new ConfigError(
-      `No se pudo leer la configuración: ${formatError(error)}`,
-      configPath,
-      {
-        cause: error,
-      },
-    );
+    throw new ConfigError(`No se pudo leer la configuración: ${formatError(error)}`, configPath, {
+      cause: error,
+    });
   }
 
   try {
@@ -72,11 +68,9 @@ export async function readConfigFile(configPath: string): Promise<unknown> {
     return parsed;
   } catch (error) {
     if (error instanceof ConfigError) throw error;
-    throw new ConfigError(
-      `El archivo no contiene YAML válido: ${formatError(error)}`,
-      configPath,
-      { cause: error },
-    );
+    throw new ConfigError(`El archivo no contiene YAML válido: ${formatError(error)}`, configPath, {
+      cause: error,
+    });
   }
 }
 

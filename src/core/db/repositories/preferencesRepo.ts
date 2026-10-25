@@ -1,6 +1,7 @@
+import { DbError } from '../../../shared/errors.js';
+
 import type { Db } from '../connection.js';
 import type { MediaPreferenceRow } from '../types.js';
-import { DbError } from '../../shared/errors.js';
 
 type PreferenceDbRow = {
   media_id: number;

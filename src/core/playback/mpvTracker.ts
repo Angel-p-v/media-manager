@@ -4,10 +4,11 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
+import { PlayerError, formatError } from '../../shared/errors.js';
+
 import type { Logger } from '../../shared/logger.js';
 import type { PlaybackConfig } from '../config/schema.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
-import { PlayerError, formatError } from '../../shared/errors.js';
 
 /** Eventos que emite mpv a través del socket IPC. */
 type MpvEvent = {

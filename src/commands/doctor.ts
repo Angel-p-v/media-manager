@@ -90,9 +90,19 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
         // Check read permission
         accessSync(filePath, constants.R_OK);
       } catch (error) {
-        if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'EACCES') {
+        if (
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'EACCES'
+        ) {
           permissionErrors.push(filePath);
-        } else if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
+        } else if (
+          typeof error === 'object' &&
+          error !== null &&
+          'code' in error &&
+          error.code === 'ENOENT'
+        ) {
           missingFiles.push(filePath);
         }
       }

@@ -1,7 +1,6 @@
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
-import { ValidationError } from '../shared/errors.js';
 import { formatEpisode, toMediaFileJson, toMediaJson } from './output.js';
 import {
   calculatePlayback,
@@ -18,6 +17,7 @@ import {
   type TrackerDeps,
 } from '../core/player/launcher.js';
 import { selectMediaFile } from '../core/player/selection.js';
+import { ValidationError } from '../shared/errors.js';
 import { createLogger } from '../shared/logger.js';
 
 import type { MediaFileRow, MediaRow } from '../core/db/types.js';

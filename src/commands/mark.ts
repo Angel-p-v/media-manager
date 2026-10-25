@@ -2,9 +2,9 @@ import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
 import { toMediaFileJson, toMediaJson } from './output.js';
-import { ValidationError } from '../shared/errors.js';
 import { calculatePlayback, nowIso } from '../core/playback/index.js';
 import { selectMediaFile } from '../core/player/selection.js';
+import { ValidationError } from '../shared/errors.js';
 
 export type MarkCommandOptions = CommandOptions & {
   watched?: boolean;

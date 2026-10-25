@@ -21,12 +21,9 @@ export function openDatabase(dbPath: string, options: OpenDatabaseOptions = {}):
     try {
       mkdirSync(path.dirname(dbPath), { recursive: true });
     } catch (error) {
-      throw new DbError(
-        `No se pudo crear la carpeta de la base de datos: ${formatError(error)}`,
-        {
-          cause: error,
-        },
-      );
+      throw new DbError(`No se pudo crear la carpeta de la base de datos: ${formatError(error)}`, {
+        cause: error,
+      });
     }
   }
 

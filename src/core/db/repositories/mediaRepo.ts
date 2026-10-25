@@ -1,7 +1,8 @@
+import { DbError } from '../../../shared/errors.js';
+
 import type { MediaType } from '../../config/schema.js';
 import type { Db } from '../connection.js';
 import type { MediaInput, MediaRow } from '../types.js';
-import { DbError } from '../../shared/errors.js';
 
 type MediaDbRow = {
   id: number;

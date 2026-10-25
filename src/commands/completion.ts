@@ -145,7 +145,9 @@ export function generateCompletion(shell: string): string {
     case 'fish':
       return generateFishCompletion();
     default:
-      throw new ValidationError('Shell no soportada: ' + String(shell) + '. Usa "bash", "zsh" o "fish".');
+      throw new ValidationError(
+        'Shell no soportada: ' + String(shell) + '. Usa "bash", "zsh" o "fish".',
+      );
   }
 }
 

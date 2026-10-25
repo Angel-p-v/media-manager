@@ -1,6 +1,7 @@
+import { PlayerError } from '../../shared/errors.js';
+
 import type { MediaType } from '../config/schema.js';
 import type { MediaFileRow, MediaRow, PlaybackStateRow } from '../db/types.js';
-import { PlayerError } from '../../shared/errors.js';
 
 /**
  * Configuración de reproducción validada. Se inyecta desde el archivo YAML para
