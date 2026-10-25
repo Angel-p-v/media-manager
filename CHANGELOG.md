@@ -6,6 +6,40 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.1.0](https://github.com/Angel-p-v/media-manager/compare/v3.0.7...v3.1.0) (2026-10-25)
+
+
+### Features
+
+* **cli:** añade --dry-run en operaciones destructivas (mark, metadata clear) ([#147](https://github.com/Angel-p-v/media-manager/issues/147)) ([3f301e5](https://github.com/Angel-p-v/media-manager/commit/3f301e5d25091e957d1a59c3b41e6b290f60e2a8))
+* **cli:** añade comando mm metadata cache --clear para limpiar caché de pósters ([#144](https://github.com/Angel-p-v/media-manager/issues/144)) ([8b2b947](https://github.com/Angel-p-v/media-manager/commit/8b2b94754adb36c30c1ef2073158fc7212e7273c))
+* **cli:** añade fallback de póster local en metadatos ([#133](https://github.com/Angel-p-v/media-manager/issues/133)) ([09546b0](https://github.com/Angel-p-v/media-manager/commit/09546b0ec5eb153c7fd8e5d77722dc3025c96061))
+* **cli:** añade mm db backup y mm db restore ([#126](https://github.com/Angel-p-v/media-manager/issues/126)) ([a73bdd1](https://github.com/Angel-p-v/media-manager/commit/a73bdd17091d170deca65b04c53cd1f5b94943d0))
+* **cli:** añade mm doctor --full con información extendida ([#127](https://github.com/Angel-p-v/media-manager/issues/127)) ([0e3755d](https://github.com/Angel-p-v/media-manager/commit/0e3755d5992492dfdc39f725c6adc0622e8c1005))
+* **cli:** añade proveedor secundario OMDB para metadatos ([#135](https://github.com/Angel-p-v/media-manager/issues/135)) ([cb2465e](https://github.com/Angel-p-v/media-manager/commit/cb2465ee1d3cf1a4de54fd7feb39ede77fdef8c6))
+* **cli:** exportar biblioteca a JSON/CSV con --export ([#120](https://github.com/Angel-p-v/media-manager/issues/120)) ([7cdad65](https://github.com/Angel-p-v/media-manager/commit/7cdad6578deea8075e65834152c5bc7cf86a2b99))
+* **config:** validar raíces de biblioteca al arrancar ([#121](https://github.com/Angel-p-v/media-manager/issues/121)) ([a73b7d6](https://github.com/Angel-p-v/media-manager/commit/a73b7d639df7878388a719eb32244529367d8a6c))
+* **db:** caché local de imágenes/pósteres descargados ([#119](https://github.com/Angel-p-v/media-manager/issues/119)) ([776e967](https://github.com/Angel-p-v/media-manager/commit/776e967cb891bd411e7e4a50075e22b637da93c6))
+* **deps:** añade Dockerfile para imagen oficial ([#129](https://github.com/Angel-p-v/media-manager/issues/129)) ([18520e9](https://github.com/Angel-p-v/media-manager/commit/18520e91b0c4ff144d017862a9364a5415009436))
+* **distribution:** añade fórmulas Homebrew y manifiesto winget (G2)\n\n- media-manager-cli.rb: fórmula de Homebrew para macOS (pendiente de assets macOS)\n- media-manager-cli.yaml: manifiesto de winget para Windows (x64 y arm64)\n\n## Verificación\n- npm run verify: pasa (lint, format, typecheck, test)\n- 592 tests pasando\n\n## Orden recomendado\nA1-A4 ✅ → E1 ✅ → F1 ✅ → B1 ✅ → G1 ✅ → F3 ✅ → A3 ✅ → A4 ✅ → F2 ✅ → G2 ✅ (este PR)\nSiguiente: B2, B3, H1, I1, D1-D4 según prioridad ([#157](https://github.com/Angel-p-v/media-manager/issues/157)) ([9d8d26d](https://github.com/Angel-p-v/media-manager/commit/9d8d26d951f26f2823ef92c98d20a865aedea7b9))
+* **indexer:** índice incremental por carpeta con --folder ([#118](https://github.com/Angel-p-v/media-manager/issues/118)) ([48be7bb](https://github.com/Angel-p-v/media-manager/commit/48be7bb59059e081bb60a73629012b84c3dc6e5f))
+* **indexer:** índice incremental real por carpeta con --folder ([#128](https://github.com/Angel-p-v/media-manager/issues/128)) ([763b869](https://github.com/Angel-p-v/media-manager/commit/763b869320d2aea2507ce7ca5c65b20ce9e98fc8))
+* **logs:** añade --log-file con rotación de logs (F2) ([#156](https://github.com/Angel-p-v/media-manager/issues/156)) ([6c65639](https://github.com/Angel-p-v/media-manager/commit/6c656390441eb4ae5b199908f643c356a40a33c8))
+* **metrics:** añade módulo de métricas simples (F3)\n\n- src/core/metrics.ts: clase Metrics con contadores de indexaciones,\n  errores de metadatos y tiempo medio de consulta, más instancia\n  compartida para uso en CLI/TUI\n- tests/unit/core/metrics.test.ts: tests para todos los métodos\n  (recordIndexation, recordMetadataError, recordQueryTime, snapshot,\n  reset, tiempo negativo, promedio cero) ([#152](https://github.com/Angel-p-v/media-manager/issues/152)) ([a853f1d](https://github.com/Angel-p-v/media-manager/commit/a853f1ddfc1c4b588bca67b3ac40ef28cd944663))
+* **ui:** añade atajo m para navegar al panel de detalles (M18.5) ([#108](https://github.com/Angel-p-v/media-manager/issues/108)) ([6af1849](https://github.com/Angel-p-v/media-manager/commit/6af1849273375227344db2ce40af4ed6c1fddbd7))
+* **ui:** M19 - rate-limiting y auto-refresco de metadatos expirados ([#110](https://github.com/Angel-p-v/media-manager/issues/110)) ([cc937e0](https://github.com/Angel-p-v/media-manager/commit/cc937e0932781241452e0e88d0b7fee20caca30e))
+* **ui:** temas personalizables (claro/oscuro/por defecto) ([#117](https://github.com/Angel-p-v/media-manager/issues/117)) ([89a5d6a](https://github.com/Angel-p-v/media-manager/commit/89a5d6a8e1874f4d61033ff6b6d6584008cb7af4))
+
+
+### Bug Fixes
+
+* aplica plan fixes-seguridad (bugs B1-B4 y vulnerabilidades V1-V4) ([#142](https://github.com/Angel-p-v/media-manager/issues/142)) ([0208153](https://github.com/Angel-p-v/media-manager/commit/02081535d93afa3f1648639ae597a2f73b988fcc))
+* **ci:** ajusta presupuesto de seed de estrés para ARM64 ([#114](https://github.com/Angel-p-v/media-manager/issues/114)) ([97fdd5c](https://github.com/Angel-p-v/media-manager/commit/97fdd5ceccc07f0a29c08a603e453879e089a25f))
+* **ci:** añadir noEmitOnError a tsconfig.build.json ([#131](https://github.com/Angel-p-v/media-manager/issues/131)) ([1bbbd6c](https://github.com/Angel-p-v/media-manager/commit/1bbbd6cb7961c5ffafab7fe5669edffa17d68feb))
+* **cli:** resuelve TODO de doctor.ts: rastrear estado real de migración ([#115](https://github.com/Angel-p-v/media-manager/issues/115)) ([2d12f0a](https://github.com/Angel-p-v/media-manager/commit/2d12f0a5fd43e0da1f664f747777c5f023ac0da8))
+* **cli:** tipa catch como unknown en manejo de errores de caché de pósters ([#145](https://github.com/Angel-p-v/media-manager/issues/145)) ([c39fcc3](https://github.com/Angel-p-v/media-manager/commit/c39fcc3fcbc1132d27ab1719186aeb9663753c2f))
+* **test:** subir cobertura de branches por encima del 80% ([#130](https://github.com/Angel-p-v/media-manager/issues/130)) ([013bedf](https://github.com/Angel-p-v/media-manager/commit/013bedfcf0b98abaa3e7ea544c0ab5c257ad64b2))
+
 ## [3.0.7](https://github.com/Angel-p-v/media-manager/compare/v3.0.6...v3.0.7) (2026-10-24)
 
 
