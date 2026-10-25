@@ -1,4 +1,5 @@
 import type { Db } from '../connection.js';
+import { DbError } from '../../shared/errors.js';
 
 export type TagRow = {
   id: number;
@@ -110,7 +111,7 @@ export function createTagRepository(db: Db): TagRepository {
         color: input.color ?? null,
         created_at: createdAt,
       }) as TagDbRow | undefined;
-      if (!row) throw new Error('No se pudo crear el tag');
+      if (!row) throw new DbError('No se pudo crear el tag');
       return toTagRow(row);
     },
 

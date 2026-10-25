@@ -1,6 +1,7 @@
 import type { MediaType } from '../../config/schema.js';
 import type { Db } from '../connection.js';
 import type { MediaInput, MediaRow } from '../types.js';
+import { DbError } from '../../shared/errors.js';
 
 type MediaDbRow = {
   id: number;
@@ -141,9 +142,9 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
         folder_path: input.folderPath,
       }) as { id: number } | undefined;
 
-      if (!result) throw new Error('No se pudo guardar el título');
+      if (!result) throw new DbError('No se pudo guardar el título');
       const row = findByIdStatement.get(result.id) as MediaDbRow | undefined;
-      if (!row) throw new Error('No se pudo leer el título guardado');
+      if (!row) throw new DbError('No se pudo leer el título guardado');
       return toMediaRow(row);
     },
 

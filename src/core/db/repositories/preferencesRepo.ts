@@ -1,5 +1,6 @@
 import type { Db } from '../connection.js';
 import type { MediaPreferenceRow } from '../types.js';
+import { DbError } from '../../shared/errors.js';
 
 type PreferenceDbRow = {
   media_id: number;
@@ -66,7 +67,7 @@ export function createPreferenceRepository(db: Db): PreferenceRepository {
         updated_at: input.updatedAt,
       }) as PreferenceDbRow | undefined;
 
-      if (!row) throw new Error('No se pudo guardar la preferencia');
+      if (!row) throw new DbError('No se pudo guardar la preferencia');
       return toPreferenceRow(row);
     },
 
