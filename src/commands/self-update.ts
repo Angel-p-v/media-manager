@@ -8,6 +8,7 @@ import process from 'node:process';
 import { withCommandContext, type CommandOptions } from './context.js';
 
 import type { Logger } from '../shared/logger.js';
+import { SelfUpdateError, formatError } from '../shared/errors.js';
 
 /** Información de una release de GitHub. */
 type GitHubRelease = {
@@ -109,16 +110,17 @@ async function checkForUpdate(currentVersion: string, logger: Logger): Promise<U
       },
     );
     if (!response.ok) {
-      throw new Error(`GitHub API respondió ${response.status}`);
+      throw new SelfUpdateError(`GitHub API respondió ${response.status}`);
     }
     release = (await response.json()) as GitHubRelease;
   } catch (error) {
-    const err = error as Error;
     logger.warn('self-update: no se pudo consultar GitHub', {
-      error: err.message,
+      error: formatError(error),
     });
-    err.message = `No se pudo consultar la última release de GitHub: ${err.message}`;
-    throw err;
+    throw new SelfUpdateError(
+      `No se pudo consultar la última release de GitHub: ${formatError(error)}`,
+      { cause: error },
+    );
   }
 
   const latestTag = release.tag_name.replace(/^v/, '');
@@ -181,7 +183,7 @@ export function isVersionNewer(a: string, b: string): boolean {
 /** Descarga y aplica la actualización de forma atómica. */
 async function applyUpdate(checkResult: UpdateCheckResult, logger: Logger): Promise<void> {
   if (!checkResult.assetUrl || !checkResult.assetName) {
-    throw new Error('No hay asset de actualización disponible.');
+    throw new SelfUpdateError('No hay asset de actualización disponible.');
   }
 
   const tempDir = await mkdtemp(path.join(tmpdir(), 'mm-update-'));
@@ -199,16 +201,16 @@ async function applyUpdate(checkResult: UpdateCheckResult, logger: Logger): Prom
       signal: AbortSignal.timeout(10_000),
     });
     if (!checksumResponse.ok) {
-      throw new Error('No se pudo descargar el checksum SHA-256.');
+      throw new SelfUpdateError('No se pudo descargar el checksum SHA-256.');
     }
     const checksumText = await checksumResponse.text();
     const expectedHash = checksumText.split(' ')[0]?.trim();
     if (!expectedHash) {
-      throw new Error('Checksum SHA-256 no tiene formato válido.');
+      throw new SelfUpdateError('Checksum SHA-256 no tiene formato válido.');
     }
     const actualHash = await sha256File(archivePath);
     if (actualHash !== expectedHash) {
-      throw new Error(`Checksum no coincide: esperado ${expectedHash}, obtenido ${actualHash}`);
+      throw new SelfUpdateError(`Checksum no coincide: esperado ${expectedHash}, obtenido ${actualHash}`);
     }
     logger.debug('self-update: checksum verificado');
 
@@ -270,7 +272,7 @@ async function applyUpdate(checkResult: UpdateCheckResult, logger: Logger): Prom
       cwd: path.dirname(binPath),
     });
     if (versionCheck.status !== 0) {
-      throw new Error(
+      throw new SelfUpdateError(
         `El nuevo binario falló al ejecutar --version (código ${versionCheck.status})`,
       );
     }
@@ -283,7 +285,6 @@ async function applyUpdate(checkResult: UpdateCheckResult, logger: Logger): Prom
       backupDir = null;
     }
   } catch (error) {
-    const err = error as Error;
     // Rollback: restaurar backup
     if (backupDir && stagingDir === null) {
       try {
@@ -297,8 +298,9 @@ async function applyUpdate(checkResult: UpdateCheckResult, logger: Logger): Prom
         // Rollback best-effort
       }
     }
-    err.message = `Fallo al aplicar la actualización: ${err.message}`;
-    throw err;
+    throw new SelfUpdateError(`Fallo al aplicar la actualización: ${formatError(error)}`, {
+      cause: error,
+    });
   } finally {
     // Limpieza
     if (stagingDir) {
@@ -366,10 +368,10 @@ async function downloadFile(url: string, destination: string): Promise<void> {
     signal: AbortSignal.timeout(60_000),
   });
   if (!response.ok) {
-    throw new Error(`No se pudo descargar ${url} (HTTP ${response.status})`);
+    throw new SelfUpdateError(`No se pudo descargar ${url} (HTTP ${response.status})`);
   }
   if (response.body === null) {
-    throw new Error(`Respuesta vacía al descargar ${url}`);
+    throw new SelfUpdateError(`Respuesta vacía al descargar ${url}`);
   }
   const { createWriteStream } = await import('node:fs');
   const { pipeline } = await import('node:stream/promises');
@@ -402,7 +404,7 @@ async function extractBundle(
       { encoding: 'utf8' },
     );
     if (result.status !== 0) {
-      throw new Error(`No se pudo extraer ${archivePath}: ${result.stderr}`);
+      throw new SelfUpdateError(`No se pudo extraer ${archivePath}: ${result.stderr}`);
     }
     return;
   }
@@ -413,6 +415,6 @@ async function extractBundle(
     { encoding: 'utf8' },
   );
   if (result.status !== 0) {
-    throw new Error(`No se pudo extraer ${archivePath}: ${result.stderr}`);
+    throw new SelfUpdateError(`No se pudo extraer ${archivePath}: ${result.stderr}`);
   }
 }
