@@ -1,3 +1,5 @@
+import { statSync } from 'node:fs';
+
 import { loadConfig } from '../core/config/loader.js';
 import { openLibrary } from '../core/library/open.js';
 import { createLogger, type Logger } from '../shared/logger.js';
@@ -50,6 +52,26 @@ export async function withCommandContext<T>(
     roots: config.library.roots.length,
     player: config.player.default,
   });
+
+  // Validar que las raíces de biblioteca existen; advertir si alguna falta
+  for (const root of config.library.roots) {
+    try {
+      const stat = statSync(root.path);
+      if (!stat.isDirectory()) {
+        logger.warn('library.root.no-existe', {
+          root: root.path,
+          type: root.type,
+          motivo: 'no es un directorio',
+        });
+      }
+    } catch {
+      logger.warn('library.root.no-existe', {
+        root: root.path,
+        type: root.type,
+        motivo: 'no se pudo acceder',
+      });
+    }
+  }
 
   const opened = openLibrary(config.database.path, config, logger);
   logger.debug('db.opened', { path: config.database.path });
