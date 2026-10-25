@@ -1,11 +1,11 @@
 import { mkdirSync } from 'node:fs';
-import { readdir, writeFile, access } from 'node:fs/promises';
+import { readdir, writeFile, access, stat, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import type { Logger } from '../../shared/logger.js';
 
-const DEFAULT_CACHE_DIR = join(homedir(), '.cache', 'media-manager', 'posters');
+export const DEFAULT_CACHE_DIR = join(homedir(), '.cache', 'media-manager', 'posters');
 
 mkdirSync(DEFAULT_CACHE_DIR, { recursive: true });
 
@@ -85,4 +85,43 @@ export async function getCachedPoster(
     // El directorio de caché no existe aún; no hay nada que devolver
   }
   return null;
+}
+
+/**
+ * Elimina los pósters cacheados que no se han modificado en más de `maxAgeDays`.
+ *
+ * Se usa como mantenimiento del caché local: las imágenes que no se han
+ * descargado ni actualizado en el período dado se consideran "no usadas" y se
+ * borran para liberar espacio en disco.
+ *
+ * Devuelve la cantidad de archivos eliminados y los errores encontrados (si los
+ * hay). `cacheDir` permite inyectar un directorio alternativo (útil en tests).
+ */
+export async function clearPosterCache(
+  cacheDir: string = DEFAULT_CACHE_DIR,
+  maxAgeDays = 30,
+): Promise<{ deleted: number; errors: string[] }> {
+  let deleted = 0;
+  const errors: string[] = [];
+  const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+
+  try {
+    const entries = await readdir(cacheDir);
+    for (const entry of entries) {
+      const localPath = join(cacheDir, entry);
+      try {
+        const fileStat = await stat(localPath);
+        if (fileStat.mtimeMs < cutoff) {
+          await rm(localPath);
+          deleted++;
+        }
+      } catch (error) {
+        errors.push((error as Error).message);
+      }
+    }
+  } catch {
+    // El directorio de caché no existe aún; no hay nada que borrar
+  }
+
+  return { deleted, errors };
 }
