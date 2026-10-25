@@ -6,6 +6,7 @@ import { indexLibrary, type IndexStats } from '../core/indexer/service.js';
 export type IndexCommandOptions = CommandOptions & {
   dryRun?: boolean;
   root?: string;
+  folder?: string;
   json?: boolean;
 };
 
@@ -15,6 +16,7 @@ export async function runIndexCommand(options: IndexCommandOptions): Promise<voi
     const stats = await indexLibrary(repositories, config.library, {
       ...(options.dryRun === undefined ? {} : { dryRun: options.dryRun }),
       ...(options.root === undefined ? {} : { rootPath: options.root }),
+      ...(options.folder === undefined ? {} : { folderPath: options.folder }),
       logger,
     });
 

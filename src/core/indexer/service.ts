@@ -31,6 +31,8 @@ export type IndexLibraryOptions = {
   dryRun?: boolean;
   /** Limita la indexación a la raíz configurada con esta ruta. */
   rootPath?: string;
+  /** Limita la indexación a una subcarpeta concreta dentro de la(s) raíz(es). */
+  folderPath?: string;
   /** Logger inyectado; los eventos detallados se emiten a nivel debug. */
   logger?: Logger;
 };
@@ -106,7 +108,23 @@ export async function indexLibrary(
   }
 
   try {
-    const classified = await scanAndClassify(roots, library, stats, options.logger);
+    let classified = await scanAndClassify(roots, library, stats, options.logger);
+
+    // Si se pide una carpeta concreta, solo indexar ficheros dentro de ella
+    if (options.folderPath !== undefined) {
+      const folderPrefix = options.folderPath.endsWith(path.sep)
+        ? options.folderPath
+        : options.folderPath + path.sep;
+      const filtered = new Map<string, ClassifiedFile>();
+      for (const [filePath, entry] of classified) {
+        if (filePath === options.folderPath || filePath.startsWith(folderPrefix)) {
+          filtered.set(filePath, entry);
+        }
+      }
+      classified = filtered;
+      stats.filesSeen = classified.size;
+    }
+
     const knownPaths = new Set(classified.keys());
     const folders = groupByFolder(repositories, classified, stats);
 
