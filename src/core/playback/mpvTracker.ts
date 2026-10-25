@@ -7,6 +7,7 @@ import process from 'node:process';
 import type { Logger } from '../../shared/logger.js';
 import type { PlaybackConfig } from '../config/schema.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
+import { PlayerError } from '../../shared/errors.js';
 
 /** Eventos que emite mpv a través del socket IPC. */
 type MpvEvent = {
@@ -48,7 +49,7 @@ export class MpvTracker {
 
   /** Inicia el servidor de socket y espera la conexión de mpv. */
   async start(): Promise<void> {
-    if (this.destroyed) throw new Error('Tracker ya destruido');
+    if (this.destroyed) throw new PlayerError('Tracker ya destruido');
 
     this.server = createServer((socket) => this.handleConnection(socket));
 
