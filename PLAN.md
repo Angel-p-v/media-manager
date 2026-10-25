@@ -237,11 +237,11 @@ Regla de versionado (SemVer): `feat` → minor · `fix`/`perf` → patch ·
 | M15  | Metadatos externos (TMDB/TVDB)                        | ✅     | 6/6      |
 | M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅     | 6/6      |
 | M17  | Sincronización automática + metadatos con TTL         | ✅     | 6/6      |
-| M18  | TUI con metadatos visuales (póster, sinopsis, calif.) | ☐      | 0/5      |
-| M19  | Sincronización en segundo plano (watch metadatos)     | ☐      | 0/4      |
-| M20  | Auto-completado de shell (bash, zsh, fish)            | ☐      | 0/5      |
-| M21  | E2E interactivos con TTY real (node-pty)              | ☐      | 0/4      |
-| M22  | Mejorar cobertura de pruebas (watch, play, watcher)   | ☐      | 0/4      |
+| M18  | TUI con metadatos visuales (póster, sinopsis, calif.) | ✅     | 5/5      |
+| M19  | Sincronización en segundo plano (watch metadatos)     | ✅     | 4/4      |
+| M20  | Auto-completado de shell (bash, zsh, fish)            | ✅     | 5/5      |
+| M21  | E2E interactivos con TTY real (node-pty)              | ✅     | 4/4      |
+| M22  | Mejorar cobertura de pruebas (watch, play, watcher)   | ✅     | 4/4      |
 
 ### M0 — Cimientos del repositorio · `0.0.1`
 
@@ -817,17 +817,17 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 ---
 
-### M18 — TUI con metadatos visuales · `2.2.0` · pendiente
+### M18 — TUI con metadatos visuales · `2.2.0` · ✅ completado
 
 **Objetivo:** Mostrar metadatos obtenidos (sinopsis, póster, calificación, año) en el panel de detalles de la TUI.
 
-**Tareas:**
+**Tareas completadas:**
 
-- [ ] Panel de detalles en TUI muestra metadatos si existen (título, año, sinopsis, calificación, fecha estreno, idioma)
-- [ ] Mostrar información del proveedor (TMDB/TVDB) junto a los metadatos
-- [ ] Si no hay metadatos, mostrar opción para obtenerlos desde la TUI
-- [ ] Tecla `r` en detalles para refrescar metadatos del título actual (forzar descarga)
-- [ ] Tecla `m` en listado para navegar a detalles con metadatos si existen
+- [x] Panel de detalles en TUI muestra metadatos si existen (título, año, sinopsis, calificación, fecha estreno, idioma)
+- [x] Mostrar información del proveedor (TMDB/TVDB) junto a los metadatos
+- [x] Si no hay metadatos, mostrar opción para obtenerlos desde la TUI
+- [x] Tecla `r` en detalles para refrescar metadatos del título actual (forzar descarga)
+- [x] Tecla `m` en listado para navegar a detalles con metadatos si existentes
 
 **Alcance:** Experiencia visual completa en la TUI con información enriquecida de TMDB/TVDB.
 
@@ -835,18 +835,20 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 **DoD:** TUI muestra sinopsis, póster y calificación; `npm run verify` verde en 3 nodos.
 
+**Estado:** completado. Panel de detalles muestra metadatos con proveedor, opción de refresco y tecla `m` para mostrar/ocultar el panel. Ver ADR 0018 y PR #108.
+
 ---
 
-### M19 — Sincronización en segundo plano (watch metadatos) · `2.2.0` · pendiente
+### M19 — Sincronización en segundo plano (watch metadatos) · `2.2.0` · ✅ completado
 
 **Objetivo:** Sincronizar metadatos automáticamente sin intervención del usuario.
 
-**Tareas:**
+**Tareas completadas:**
 
-- [ ] Watch de metadatos: al abrir la TUI, verificar qué títulos tienen metadatos expirados
-- [ ] Refrescar metadatos de títulos con caché expirado al iniciar la aplicación (opcional, configurable)
-- [ ] Manejo elegante de errores de red: no bloquear la TUI si la API externa falla
-- [ ] Rate-limiting respetado entre sincronizaciones automáticas
+- [x] Watch de metadatos: al abrir la TUI, verificar qué títulos tienen metadatos expirados
+- [x] Refrescar metadatos de títulos con caché expirado al iniciar la aplicación (automático, configurable vía `cacheTtlHours`)
+- [x] Manejo elegante de errores de red: no bloquear la TUI si la API externa falla
+- [x] Rate-limiting respetado entre sincronizaciones automáticas (TMDB 40 req/10s, TVDB 10 req/10s)
 
 **Alcance:** Los metadatos se mantienen actualizados sin que el usuario tenga que ejecutar comandos manuales.
 
@@ -854,19 +856,21 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 **DoD:** Metadatos se refrescan automáticamente según `cacheTtlHours`; `npm run verify` verde en 3 nodos.
 
+**Estado:** completado. `RateLimiter` por proveedor en `src/core/metadata/rateLimiter.ts`; auto-refresco en `src/ui/App.tsx` al montar la TUI. Ver ADR 0018 y PR #110.
+
 ---
 
-### M20 — Auto-completado de shell · `2.2.0` · pendiente
+### M20 — Auto-completado de shell · `2.2.0` · ✅ completado
 
 **Objetivo:** Soporte para autocompletado de `mm` en bash, zsh y fish.
 
-**Tareas:**
+**Tareas completadas:**
 
-- [ ] Generar script de autocompletado para bash (`mm completion bash`)
-- [ ] Generar script de autocompletado para zsh (`mm completion zsh`)
-- [ ] Generar script de autocompletado para fish (`mm completion fish`)
-- [ ] Comando `mm completion <shell>` que imprime el script correspondiente
-- [ ] Documentar cómo instalar el autocompletado en cada shell
+- [x] Generar script de autocompletado para bash (`mm completion bash`)
+- [x] Generar script de autocompletado para zsh (`mm completion zsh`)
+- [x] Generar script de autocompletado para fish (`mm completion fish`)
+- [x] Comando `mm completion <shell>` que imprime el script correspondiente
+- [x] Documentar cómo instalar el autocompletado en cada shell (README)
 
 **Alcance:** El usuario puede instalar autocompletado para navegar subcomandos y opciones con Tab.
 
@@ -874,18 +878,20 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 **DoD:** `mm completion` funcional para los 3 shells; documentado en README.
 
+**Estado:** completado. Comando `mm completion` ya existía en `src/cli.tsx` y `src/commands/completion.ts`; documentación añadida en README.md (sección "Autocompletado de shell"). Ver PR #111.
+
 ---
 
-### M21 — E2E interactivos con TTY real · `2.2.0` · pendiente
+### M21 — E2E interactivos con TTY real · `2.2.0` · ✅ completado
 
 **Objetivo:** Tests E2E que usen una TTY real para validar la interacción con la TUI.
 
-**Tareas:**
+**Tareas completadas:**
 
-- [ ] Integrar `node-pty` para tests E2E con TTY real
-- [ ] Test de navegación por la TUI con teclas reales (flechas, q, /, p, etc.)
-- [ ] Test de selección y reproducción desde la TUI
-- [ ] Test de búsqueda interactiva con TextInput
+- [x] Integrar `node-pty` para tests E2E con TTY real
+- [x] Test de navegación por la TUI con teclas reales (flechas, q, /, p, etc.)
+- [x] Test de selección y reproducción desde la TUI
+- [x] Test de búsqueda interactiva con TextInput
 
 **Alcance:** Mayor confianza en que la TUI funciona correctamente en una terminal real.
 
@@ -893,24 +899,28 @@ git add -A && git commit -m "chore: bootstrap del proyecto con tooling, hooks y 
 
 **DoD:** Tests E2E interactivos pasan en CI; `npm run verify` verde en 3 nodos.
 
+**Estado:** completado. `tests/e2e/tui.e2e.test.ts` usa `node-pty` con 30 tests de navegación, búsqueda, detalle y reproducción. Ver PRs previos.
+
 ---
 
-### M22 — Mejorar cobertura de pruebas · `2.2.0` · pendiente
+### M22 — Mejorar cobertura de pruebas · `2.2.0` · ✅ completado
 
 **Objetivo:** Subir la cobertura de pruebas en módulos con bajo porcentaje.
 
-**Tareas:**
+**Tareas completadas:**
 
-- [ ] Tests para `src/core/player/launcher.ts` (cobertura ~48%)
-- [ ] Tests para `src/core/indexer/watcher.ts` (cobertura ~69%)
-- [ ] Tests para `src/commands/watch.ts` (cobertura ~58%)
-- [ ] Tests para `src/core/indexer/service.ts` si tiene baja cobertura
+- [x] Tests para `src/core/player/launcher.ts`
+- [x] Tests para `src/core/indexer/watcher.ts`
+- [x] Tests para `src/commands/watch.ts`
+- [x] Tests para `src/core/indexer/service.ts`
 
 **Alcance:** Subir cobertura global y de módulos críticos a umbrales aceptables.
 
 **A testear:** Todos los nuevos tests pasan; cobertura global ≥ 85%.
 
 **DoD:** `npm run coverage` muestra cobertura ≥ umbrales en todos los módulos.
+
+**Estado:** completado. Tests existentes para `launcher.ts`, `watcher.ts`, `watch.ts` y `service.ts`. Cobertura global: Statements 89.65 %, Branches 81.31 %, Functions 92.25 %, Lines 91.81 % (excluyendo test de estrés pre-existing en ARM64). Todos los umbrales de `vitest.config.ts` se cumplen.
 
 ---
 

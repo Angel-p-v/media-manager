@@ -240,6 +240,7 @@ mm metadata clear                  # limpia metadatos de un título
 | `p`            | Reproducir                                                        |
 | `w`            | Marcar visto / no visto                                           |
 | `f`            | ⭐ Favorito / quitar favorito                                     |
+| `m`            | 📋 Mostrar/ocultar panel de detalles                              |
 | `n`            | ▶️ Siguiente episodio                                             |
 | `g`            | 🔄 Ciclo filtros (todos / en curso / no vistos / favoritos)       |
 | `s`            | ⚙️ Configuración                                                  |

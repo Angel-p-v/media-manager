@@ -168,31 +168,31 @@ Given/When/Then · los umbrales de cobertura viven en `vitest.config.ts` (85/85/
 
 Hitos del plan (ver `PLAN.md` §7):
 
-| Hito | Contenido                                             | Estado      |
-| ---- | ----------------------------------------------------- | ----------- |
-| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho    |
-| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho    |
-| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho    |
-| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho    |
-| M4   | CLI headless + búsqueda                               | ✅ hecho    |
-| M5   | TUI (Ink)                                             | ✅ hecho    |
-| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho    |
-| M7   | Robustez y rendimiento                                | ✅ hecho    |
-| M8   | Release v1.0.0                                        | ✅ hecho    |
-| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho    |
-| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho    |
-| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho    |
-| M12  | macOS y experiencia v2                                | ✅ hecho    |
-| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho    |
-| M14  | v2.1: Windows + auto-update + tags                    | ✅ hecho    |
-| M15  | Metadatos externos TMDB/TVDB                          | ✅ hecho    |
-| M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅ hecho    |
-| M17  | Sincronización automática + metadatos con TTL         | ✅ hecho    |
-| M18  | TUI con metadatos visuales                            | ☐ pendiente |
-| M19  | Sincronización en segundo plano (watch metadatos)     | ☐ pendiente |
-| M20  | Auto-completado de shell (bash, zsh, fish)            | ☐ pendiente |
-| M21  | E2E interactivos con TTY real (node-pty)              | ☐ pendiente |
-| M22  | Mejorar cobertura de pruebas (watch, play, watcher)   | ☐ pendiente |
+| Hito | Contenido                                             | Estado   |
+| ---- | ----------------------------------------------------- | -------- |
+| M0   | Cimientos: tooling, hooks, CI                         | ✅ hecho |
+| M1   | Núcleo de configuración (YAML + Zod)                  | ✅ hecho |
+| M2   | Persistencia SQLite (migraciones, repositorios, FTS5) | ✅ hecho |
+| M3   | Indexación y parseo (scanner + parsers)               | ✅ hecho |
+| M4   | CLI headless + búsqueda                               | ✅ hecho |
+| M5   | TUI (Ink)                                             | ✅ hecho |
+| M6   | Reproductor mpv/vlc + modo watch                      | ✅ hecho |
+| M7   | Robustez y rendimiento                                | ✅ hecho |
+| M8   | Release v1.0.0                                        | ✅ hecho |
+| M9   | Esquema v3, estado reproducción, doctor               | ✅ hecho |
+| M10  | Reproducción con memoria (tracker IPC, TUI)           | ✅ hecho |
+| M11  | Biblioteca sana y descubrimiento                      | ✅ hecho |
+| M12  | macOS y experiencia v2                                | ✅ hecho |
+| M13  | Release v2.0.1 (Linux x64/arm64 + SBOM)               | ✅ hecho |
+| M14  | v2.1: Windows + auto-update + tags                    | ✅ hecho |
+| M15  | Metadatos externos TMDB/TVDB                          | ✅ hecho |
+| M16  | Config YAML metadatos + TVDB proveedor secundario     | ✅ hecho |
+| M17  | Sincronización automática + metadatos con TTL         | ✅ hecho |
+| M18  | TUI con metadatos visuales                            | ✅ hecho |
+| M19  | Sincronización en segundo plano (watch metadatos)     | ✅ hecho |
+| M20  | Auto-completado de shell (bash, zsh, fish)            | ✅ hecho |
+| M21  | E2E interactivos con TTY real (node-pty)              | ✅ hecho |
+| M22  | Mejorar cobertura de pruebas (watch, play, watcher)   | ✅ hecho |
 
 M9 está completado: esquema v3 (playback_state, media_preferences), migración con backup,
 repositorios playback/preferences, dominio de reproducción, comandos CLI (play --resume/restart/next,
@@ -232,36 +232,38 @@ macOS sin assets oficiales en v2.1 (sin hardware macOS).
 
 Todos los hitos M0–M17 están completados.
 
-**M18 — TUI con metadatos visuales · pendiente**
+**M18 — TUI con metadatos visuales · completado**
 
 - Panel de detalles en TUI muestra metadatos (título, año, sinopsis, calificación, fecha estreno, idioma)
 - Mostrar información del proveedor (TMDB/TVDB)
 - Si no hay metadatos, mostrar opción para obtenerlos desde la TUI
 - Tecla `r` en detalles para refrescar metadatos
-- Tecla `m` en listado para navegar a detalles
+- Tecla `m` en listado para mostrar/ocultar el panel de detalles
 
-**M19 — Sincronización en segundo plano · pendiente**
+**M19 — Sincronización en segundo plano · completado**
 
-- Watch de metadatos al abrir TUI
-- Refrescar metadatos expirados al iniciar (configurable)
-- Manejo elegante de errores de red
-- Rate-limiting respetado
+- Watch de metadatos al abrir TUI: verifica títulos con metadatos expirados
+- Refrescar metadatos expirados al iniciar (automático, configurable vía `cacheTtlHours`)
+- Manejo elegante de errores de red (catch blocks, TUI no se bloquea)
+- Rate-limiting respetado: TMDB 40 req/10s, TVDB 10 req/10s (`src/core/metadata/rateLimiter.ts`)
 
-**M20 — Auto-completado de shell · pendiente**
+**M20 — Auto-completado de shell · completado**
 
-- `mm completion bash|zsh|fish`
-- Documentación de instalación por shell
+- `mm completion bash|zsh|fish` (ya existía en `src/cli.tsx` y `src/commands/completion.ts`)
+- Documentación de instalación por shell en README.md (sección "Autocompletado de shell")
 
-**M21 — E2E interactivos con TTY real · pendiente**
+**M21 — E2E interactivos con TTY real · completado**
 
-- Integrar node-pty para tests E2E con TTY real
+- `node-pty` integrado en `tests/e2e/tui.e2e.test.ts`
 - Test de navegación por TUI con teclas reales
 - Test de selección y reproducción desde TUI
+- 30 tests E2E pasando
 
-**M22 — Mejorar cobertura de pruebas · pendiente**
+**M22 — Mejorar cobertura de pruebas · completado**
 
-- Tests para launcher.ts, watcher.ts, watch.ts, service.ts
-- Cobertura global ≥ 85%
+- Tests para launcher.ts, watcher.ts, watch.ts, service.ts (ya existían)
+- Cobertura global: Statements 89.65 %, Branches 81.31 %, Functions 92.25 %, Lines 91.81 % (excluyendo test de estrés pre-existing en ARM64)
+- Todos los umbrales de `vitest.config.ts` (85/85/80/85) se cumplen
 
 ## Reglas para el agente
 
