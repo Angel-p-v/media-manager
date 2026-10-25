@@ -44,6 +44,7 @@ export const defaultConfig: AppConfig = {
     play: 'p',
     refresh: 'r',
     refreshAll: 'R',
+    goToDetails: 'm',
     nextSection: 'tab',
     settings: 's',
     up: 'up',

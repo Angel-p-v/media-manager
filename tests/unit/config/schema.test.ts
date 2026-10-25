@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { defaultConfig } from '../../../src/core/config/defaults.js';
 import {
   configSchema,
   mediaTypeSchema,
@@ -61,6 +62,10 @@ describe('configSchema', () => {
     expect(result.data.player.default).toBe('mpv');
     expect(Object.keys(result.data.player.players)).toContain('mpv');
     expect(Object.keys(result.data.player.players)).toContain('vlc');
+  });
+
+  it('incluye el atajo goToDetails con la tecla m por defecto', () => {
+    expect(defaultConfig.keybindings.goToDetails).toBe('m');
   });
 
   it('informa del campo exacto que falla', () => {
