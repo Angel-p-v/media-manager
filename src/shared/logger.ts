@@ -1,3 +1,5 @@
+import { appendFileSync, existsSync, statSync, renameSync } from 'node:fs';
+
 import pc from 'picocolors';
 
 export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
@@ -24,6 +26,10 @@ export type LoggerOptions = {
   bindings?: LogFields;
   /** Inyectable para tests deterministas. */
   now?: () => Date;
+  /** Ruta de archivo para escribir los logs (además de stderr). */
+  logFile?: string;
+  /** Tamaño máximo del archivo de log antes de rotar (bytes). Por defecto 10 MB. */
+  maxLogSizeBytes?: number;
 };
 
 const LEVEL_WEIGHT: Record<LogLevel, number> = {
@@ -50,14 +56,45 @@ const STYLES: Record<ActiveLevel, { icon: string; color: (text: string) => strin
  * se escribe una línea con `time`, `level`, `event` y los campos. Los detalles
  * nunca se intercalan con `stdout`, de modo que `--json` sigue siendo parseable.
  */
+/**
+ * Rota el fichero de log si supera el tamaño máximo.
+ *
+ * Renombra `<logFile>` a `<logFile>.<timestamp>.old` para preservar el historial
+ * y permitir que se cree uno nuevo vacío. Si la rotación falla, se ignora
+ * deliberadamente (los logs seguirán escribiéndose en el fichero actual).
+ */
+function rotateLogFile(logFile: string, maxSizeBytes: number): void {
+  try {
+    if (!existsSync(logFile)) return;
+    const { size } = statSync(logFile);
+    if (size < maxSizeBytes) return;
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+/, '');
+    renameSync(logFile, `${logFile}.${timestamp}.old`);
+  } catch {
+    // Ignorado: la rotación es best-effort.
+  }
+}
+
 export function createLogger(options: LoggerOptions = {}): Logger {
   const level = options.level ?? 'info';
   const format = options.format ?? 'text';
-  const stream = options.stream ?? process.stderr;
   const now = options.now ?? ((): Date => new Date());
+
+  const outputStream = options.stream ?? process.stderr;
+  let logFilePath: string | undefined;
+  if (options.logFile !== undefined) {
+    const maxSize = options.maxLogSizeBytes ?? 10 * 1024 * 1024;
+    rotateLogFile(options.logFile, maxSize);
+    logFilePath = options.logFile;
+  }
 
   const make = (bindings: LogFields): Logger => {
     const threshold = LEVEL_WEIGHT[level];
+
+    const writeToFile = (text: string): void => {
+      if (logFilePath === undefined) return;
+      appendFileSync(logFilePath, text);
+    };
 
     const write = (entryLevel: ActiveLevel, event: string, fields: LogFields | undefined): void => {
       if (LEVEL_WEIGHT[entryLevel] > threshold) return;
@@ -70,15 +107,17 @@ export function createLogger(options: LoggerOptions = {}): Logger {
           level: entryLevel,
           event,
         };
-        stream.write(`${safeStringify(payload)}\n`);
+        const text = `${safeStringify(payload)}\n`;
+        writeToFile(text);
+        outputStream.write(text);
         return;
       }
 
       const style = STYLES[entryLevel];
       const details = formatFields(merged);
-      stream.write(
-        `${style.color(style.icon)} ${event}${details.length === 0 ? '' : ` ${details}`}\n`,
-      );
+      const text = `${style.color(style.icon)} ${event}${details.length === 0 ? '' : ` ${details}`}\n`;
+      writeToFile(text);
+      outputStream.write(text);
     };
 
     return {

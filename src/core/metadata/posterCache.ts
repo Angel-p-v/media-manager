@@ -105,7 +105,10 @@ export async function clearPosterCache(
 ): Promise<{ deleted: number; errors: string[] }> {
   let deleted = 0;
   const errors: string[] = [];
-  const cutoff = Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
+
+  // maxAgeDays <= 0 significa "borrar todo inmediatamente" (no verificar edad)
+  const deleteAll = maxAgeDays <= 0;
+  const cutoff = deleteAll ? 0 : Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
 
   try {
     const entries = await readdir(cacheDir);
@@ -113,10 +116,8 @@ export async function clearPosterCache(
       const localPath = join(cacheDir, entry);
       try {
         const fileStat = await stat(localPath);
-        // Con maxAgeDays = 0 (cutoff = ahora) usamos <= para que los archivos
-        // creados en el mismo milisegundo también se borren, evitando fallos
-        // por diferencias de reloj entre el sistema de archivos y el sistema.
-        if (fileStat.mtimeMs <= cutoff) {
+        // Borrar si deleteAll (maxAgeDays <= 0) o si el archivo es más viejo que el cutoff
+        if (deleteAll || fileStat.mtimeMs < cutoff) {
           await rm(localPath);
           deleted++;
         }
