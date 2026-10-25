@@ -56,15 +56,20 @@ describe('MpvTracker', () => {
   let tracker: InstanceType<typeof MpvTracker> | null = null;
 
   function createMockClient() {
+    const handlers: Record<string, ((...args: unknown[]) => void)[]> = {};
     return {
       writable: true,
-      on: vi.fn((event, handler) => {
-        if (event === 'data') mockClient.dataHandler = handler;
-        if (event === 'close') mockClient.closeHandler = handler;
+      on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        if (event === 'data') mockClient.dataHandler = handler as (data: string) => void;
+        if (event === 'close') mockClient.closeHandler = handler as () => void;
+        (handlers[event] ??= []).push(handler);
       }),
       write: vi.fn(),
       destroy: vi.fn(),
       off: vi.fn(),
+      emit: vi.fn((event: string, ...args: unknown[]) => {
+        for (const h of handlers[event] ?? []) h(...args);
+      }),
     };
   }
 
@@ -299,5 +304,231 @@ describe('MpvTracker', () => {
 
     // destroyed = true después de stop()
     await expect(tracker.start()).rejects.toThrow('Tracker ya destruido');
+  });
+
+  it('cierra conexión anterior cuando llega una duplicada', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+
+    const firstClient = createMockClient();
+    const secondClient = createMockClient();
+    connectionHandler(firstClient);
+
+    // Segunda conexión: se debe destruir la primera
+    connectionHandler(secondClient);
+
+    expect(firstClient.destroy).toHaveBeenCalled();
+  });
+
+  it('ignora líneas JSON inválidas en handleLine', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+    connectionHandler(mockClient);
+
+    const dataHandler = mockClient.dataHandler as ((data: string) => void) | undefined;
+    dataHandler?.('no es json válido\n');
+    dataHandler?.('{ tampoco }\n');
+
+    // No debe lanzar ni hacer save
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('actualiza isPaused cuando mpv envía pause', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+    connectionHandler(mockClient);
+
+    const dataHandler = mockClient.dataHandler as ((data: string) => void) | undefined;
+    dataHandler?.(JSON.stringify({ event: 'property-change', name: 'pause', data: true }) + '\n');
+
+    // Simular eof-reached para flush y verificar que se guarda
+    dataHandler?.(JSON.stringify({ event: 'property-change', name: 'time-pos', data: 100 }) + '\n');
+    dataHandler?.(
+      JSON.stringify({ event: 'property-change', name: 'eof-reached', data: true }) + '\n',
+    );
+
+    await vi.waitFor(() => {
+      expect(mockRepo.save).toHaveBeenCalled();
+    });
+  });
+
+  it('scheduleSave no crea timer si ya existe', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+    connectionHandler(mockClient);
+
+    const dataHandler = mockClient.dataHandler as ((data: string) => void) | undefined;
+    dataHandler?.(JSON.stringify({ event: 'property-change', name: 'time-pos', data: 50 }) + '\n');
+
+    // Enviar eof-reached para disparar flush inmediato (no esperar al timer de 5s)
+    dataHandler?.(
+      JSON.stringify({ event: 'property-change', name: 'eof-reached', data: true }) + '\n',
+    );
+
+    await vi.waitFor(() => {
+      expect(mockRepo.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('flushPosition no guarda si pendingPosition es null', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    // Llamar al método privado vía cualquier ruta que no tenga pendingPosition
+    // Crear tracker sin eventos previos, luego llamar stop directamente
+    await tracker.stop();
+    expect(mockRepo.save).not.toHaveBeenCalled();
+  });
+
+  it('flushPosition guarda cuando hay pendingPosition', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+    connectionHandler(mockClient);
+
+    const dataHandler = mockClient.dataHandler as ((data: string) => void) | undefined;
+    dataHandler?.(
+      JSON.stringify({ event: 'property-change', name: 'time-pos', data: 42.5 }) + '\n',
+    );
+    // eof-reached dispara flushPosition inmediatamente
+    dataHandler?.(
+      JSON.stringify({ event: 'property-change', name: 'eof-reached', data: true }) + '\n',
+    );
+
+    await vi.waitFor(() => {
+      expect(mockRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ positionSeconds: 42.5 }),
+      );
+    });
+  });
+
+  it('handleEnd no hace flush si ya terminó', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+    connectionHandler(mockClient);
+
+    const dataHandler = mockClient.dataHandler as ((data: string) => void) | undefined;
+    // Primer eof-reached dispara handleEnd → flushPosition → save
+    dataHandler?.(JSON.stringify({ event: 'property-change', name: 'time-pos', data: 10 }) + '\n');
+    dataHandler?.(
+      JSON.stringify({ event: 'property-change', name: 'eof-reached', data: true }) + '\n',
+    );
+
+    await vi.waitFor(() => {
+      expect(mockRepo.save).toHaveBeenCalledTimes(1);
+    });
+
+    const saveCallsBefore = mockRepo.save.mock.calls.length;
+
+    // Segundo eof-reached: handleEnd ve hasEnded === true y retorna temprano
+    dataHandler?.(
+      JSON.stringify({ event: 'property-change', name: 'eof-reached', data: true }) + '\n',
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(mockRepo.save).toHaveBeenCalledTimes(saveCallsBefore);
+  });
+
+  it('sendCommand no escribe si el cliente no es writable', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+
+    const nonWritableClient = createMockClient();
+    nonWritableClient.writable = false;
+    connectionHandler(nonWritableClient);
+
+    // sendCommand se llama internamente en handleConnection con observe_property
+    // No debe llamar a write si no es writable
+    expect(nonWritableClient.write).not.toHaveBeenCalled();
+  });
+
+  it('stop flushes pendingPosition si existe', async () => {
+    tracker = new MpvTracker({
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: `/tmp/test-socket-${Date.now()}`,
+    });
+
+    await tracker.start();
+    const { createServer: cs } = await import('node:net');
+    const connectionHandler = (cs as ReturnType<typeof vi.fn>).mock.calls[0]![0]!;
+    connectionHandler(mockClient);
+
+    const dataHandler = mockClient.dataHandler as ((data: string) => void) | undefined;
+    dataHandler?.(JSON.stringify({ event: 'property-change', name: 'time-pos', data: 99 }) + '\n');
+
+    // Detener antes de que el timer de 5s dispare: debe flush inmediato
+    await tracker.stop();
+    expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({ positionSeconds: 99 }));
   });
 });

@@ -295,7 +295,11 @@ describe('playback domain', () => {
     });
 
     it('null cuando mediaId es undefined', () => {
-      const noMediaId = makeFile({ season: 1, episode: 1, mediaId: undefined });
+      const noMediaId = makeFile({
+        season: 1,
+        episode: 1,
+        mediaId: undefined as unknown as number,
+      });
       expect(findNextEpisode(noMediaId, files, repo, baseConfig)).toBeNull();
     });
 

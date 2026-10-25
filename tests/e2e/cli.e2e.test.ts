@@ -24,7 +24,7 @@ describe('mm (e2e, binario compilado)', () => {
     try {
       execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe' });
     } catch (buildError) {
-      throw new Error(`Build falló en beforeAll: ${String(buildError)}`);
+      throw new Error(`Build falló en beforeAll`, { cause: buildError });
     }
 
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-e2e-'));
