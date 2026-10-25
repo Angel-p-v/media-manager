@@ -3,6 +3,7 @@ import pc from 'picocolors';
 import { withCommandContext, type CommandOptions } from './context.js';
 import { parseMediaType, parseSortOrder } from './options.js';
 import { mediaCsvHeader, printMediaList, toMediaCsv, toMediaJson } from './output.js';
+import { ValidationError } from '../shared/errors.js';
 
 import type { MediaType } from '../core/config/schema.js';
 import type { ListMediaOptions } from '../core/db/repositories/mediaRepo.js';
@@ -30,7 +31,7 @@ export async function runListCommand(options: ListCommandOptions): Promise<void>
   const sort = options.sort ?? 'title';
 
   if (options.export !== undefined && options.export !== 'json' && options.export !== 'csv') {
-    throw new Error(
+    throw new ValidationError(
       `Formato de exportación no válido: ${String(options.export)}. Use 'json' o 'csv'.`,
     );
   }
