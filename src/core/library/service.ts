@@ -255,6 +255,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       firstAirDate?: string | null;
       releaseDate?: string | null;
       originalLanguage?: string | null;
+      localPosterPath?: string | null;
     }): MediaMetadataRow {
       return metadataRepo.set({
         mediaId: input.mediaId,
@@ -268,6 +269,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         firstAirDate: input.firstAirDate ?? null,
         releaseDate: input.releaseDate ?? null,
         originalLanguage: input.originalLanguage ?? null,
+        localPosterPath: input.localPosterPath ?? null,
         updatedAt: new Date().toISOString(),
       });
     },
@@ -324,6 +326,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 voteAverage: details.voteAverage,
                 releaseDate: details.releaseDate,
                 originalLanguage: details.originalLanguage,
+                localPosterPath: details.localPosterPath ?? null,
                 updatedAt: now.toISOString(),
               });
             }
@@ -376,6 +379,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
               voteAverage: details.voteAverage,
               releaseDate: details.releaseDate,
               originalLanguage: details.originalLanguage,
+              localPosterPath: details.localPosterPath ?? null,
               updatedAt: new Date().toISOString(),
             });
             refreshed++;

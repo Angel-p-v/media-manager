@@ -14,6 +14,8 @@ export type MediaMetadataRow = {
   originalLanguage: string | null;
   fetchedAt: string;
   updatedAt: string;
+  /** Ruta local al póster descargado en caché, si existe. */
+  localPosterPath: string | null;
 };
 
 type MetadataDbRow = {
@@ -30,6 +32,7 @@ type MetadataDbRow = {
   original_language: string | null;
   fetched_at: string;
   updated_at: string;
+  local_poster_path: string | null;
 };
 
 export type SetMetadataInput = {
@@ -45,6 +48,7 @@ export type SetMetadataInput = {
   releaseDate?: string | null;
   originalLanguage?: string | null;
   updatedAt: string;
+  localPosterPath?: string | null;
 };
 
 /** Repositorio de metadatos externos (TMDB/TVDB). */
@@ -66,10 +70,12 @@ export function createMetadataRepository(db: Db): MetadataRepository {
   const setStatement = db.prepare(`
     INSERT INTO media_metadata (
       media_id, provider, external_id, title, overview, poster_path, backdrop_path,
-      vote_average, first_air_date, release_date, original_language, fetched_at, updated_at
+      vote_average, first_air_date, release_date, original_language, fetched_at, updated_at,
+      local_poster_path
     )
     VALUES (@media_id, @provider, @external_id, @title, @overview, @poster_path, @backdrop_path,
-            @vote_average, @first_air_date, @release_date, @original_language, @fetched_at, @updated_at)
+            @vote_average, @first_air_date, @release_date, @original_language, @fetched_at, @updated_at,
+            @local_poster_path)
     ON CONFLICT(media_id) DO UPDATE SET
       provider = excluded.provider,
       external_id = excluded.external_id,
@@ -82,7 +88,8 @@ export function createMetadataRepository(db: Db): MetadataRepository {
       release_date = excluded.release_date,
       original_language = excluded.original_language,
       fetched_at = excluded.fetched_at,
-      updated_at = excluded.updated_at
+      updated_at = excluded.updated_at,
+      local_poster_path = excluded.local_poster_path
     RETURNING *
   `);
 
@@ -106,6 +113,7 @@ export function createMetadataRepository(db: Db): MetadataRepository {
     originalLanguage: row.original_language,
     fetchedAt: row.fetched_at,
     updatedAt: row.updated_at,
+    localPosterPath: row.local_poster_path,
   });
 
   return {
@@ -135,6 +143,7 @@ export function createMetadataRepository(db: Db): MetadataRepository {
         original_language: input.originalLanguage ?? null,
         fetched_at: now,
         updated_at: input.updatedAt,
+        local_poster_path: input.localPosterPath ?? null,
       }) as MetadataDbRow | undefined;
 
       if (!row) throw new Error('No se pudieron guardar los metadatos');
