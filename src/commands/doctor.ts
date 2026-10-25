@@ -373,8 +373,12 @@ async function findDuplicates(
   for (const filePath of files) {
     try {
       const stat = statSync(filePath);
-      if (!bySize.has(stat.size)) bySize.set(stat.size, []);
-      bySize.get(stat.size)!.push(filePath);
+      let paths = bySize.get(stat.size);
+      if (!paths) {
+        paths = [];
+        bySize.set(stat.size, paths);
+      }
+      paths.push(filePath);
     } catch {
       // Ignore unreadable
     }
@@ -389,8 +393,12 @@ async function findDuplicates(
       const hashes = new Map<string, string[]>();
       for (const p of paths) {
         const hash = await partialHash(p);
-        if (!hashes.has(hash)) hashes.set(hash, []);
-        hashes.get(hash)!.push(p);
+        let dups = hashes.get(hash);
+        if (!dups) {
+          dups = [];
+          hashes.set(hash, dups);
+        }
+        dups.push(p);
       }
       for (const [hash, dups] of hashes) {
         if (dups.length > 1) {
@@ -402,8 +410,12 @@ async function findDuplicates(
       const hashes = new Map<string, string[]>();
       for (const p of paths) {
         const hash = await fullFileHash(p);
-        if (!hashes.has(hash)) hashes.set(hash, []);
-        hashes.get(hash)!.push(p);
+        let dups = hashes.get(hash);
+        if (!dups) {
+          dups = [];
+          hashes.set(hash, dups);
+        }
+        dups.push(p);
       }
       for (const [hash, dups] of hashes) {
         if (dups.length > 1) {

@@ -53,10 +53,13 @@ export class MpvTracker {
 
     this.server = createServer((socket) => this.handleConnection(socket));
 
+    const server = this.server;
+    if (!server) throw new PlayerError('Servidor de socket no inicializado');
+
     await new Promise<void>((resolve, reject) => {
-      this.server!.once('error', reject);
-      this.server!.listen(this.options.socketPath, () => {
-        this.server!.off('error', reject);
+      server.once('error', reject);
+      server.listen(this.options.socketPath, () => {
+        server.off('error', reject);
         this.options.logger.debug('mpv-tracker: servidor escuchando', {
           path: this.options.socketPath,
         });
@@ -80,8 +83,9 @@ export class MpvTracker {
     }
 
     if (this.server) {
+      const server = this.server;
       await new Promise<void>((resolve) => {
-        this.server!.close(() => resolve());
+        server.close(() => resolve());
       });
       this.server = null;
     }

@@ -175,7 +175,9 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         );
       }
 
-      return detailsFor(candidates[0]!);
+      const candidate = candidates[0];
+      if (!candidate) throw new NotFoundError('No se encontró el título');
+      return detailsFor(candidate);
     },
 
     listInProgress(limit = 200): MediaRow[] {

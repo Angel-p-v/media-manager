@@ -36,7 +36,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
     const file = selectMediaFile(files, options.file);
 
     const state = playbackRepo.get(file.id);
-    let updatedState: ReturnType<typeof playbackRepo.save>;
+    let updatedState: ReturnType<typeof playbackRepo.save> | null = null;
 
     if (options.watched) {
       // Marcar como visto: posición = duración (o 0 si no se conoce), completedAt = now
@@ -80,8 +80,12 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       });
     }
 
+    if (!updatedState) {
+      throw new ValidationError('No se pudo determinar el estado de reproducción');
+    }
+
     if (options.json === true) {
-      const calc = calculatePlayback(updatedState!, playbackConfig, new Date().toISOString());
+      const calc = calculatePlayback(updatedState, playbackConfig, new Date().toISOString());
       console.log(
         JSON.stringify(
           {
@@ -90,8 +94,8 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
             position: calc.positionSeconds,
             duration: calc.durationSeconds,
             completed: calc.isCompleted,
-            lastPlayedAt: updatedState!.lastPlayedAt,
-            playCount: updatedState!.playCount,
+            lastPlayedAt: updatedState.lastPlayedAt,
+            playCount: updatedState.playCount,
           },
           null,
           2,
@@ -101,7 +105,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
     }
 
     const year = media.year === null ? '' : ` (${media.year})`;
-    const calc = calculatePlayback(updatedState!, playbackConfig, new Date().toISOString());
+    const calc = calculatePlayback(updatedState, playbackConfig, new Date().toISOString());
     const status = calc.isCompleted ? '✓ visto' : '● en curso';
     const progress = calc.progressPercent !== null ? ` [${calc.progressPercent.toFixed(0)}%]` : '';
     console.log(
