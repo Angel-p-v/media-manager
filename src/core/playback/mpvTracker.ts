@@ -71,6 +71,12 @@ export class MpvTracker {
 
   /** Detiene el tracker y limpia recursos. */
   async stop(): Promise<void> {
+    // Flush final si hay posición pendiente, antes de marcar como destruido
+    // (flushPosition verifica this.destroyed y retornaría temprano si lo hacemos después)
+    if (this.pendingPosition !== null) {
+      await this.flushPosition();
+    }
+
     this.destroyed = true;
 
     if (this.saveTimer) {
