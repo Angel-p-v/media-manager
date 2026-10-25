@@ -184,7 +184,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
             }
           }
         } catch (error) {
-          console.error(pc.red(`Error limpiando caché: ${(error as Error).message}`));
+          console.error(pc.red(`Error limpiando caché: ${formatError(error)}`));
           process.exitCode = 1;
         }
         return;
