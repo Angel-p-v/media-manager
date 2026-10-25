@@ -6,6 +6,8 @@ import path from 'node:path';
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
+import { closeDatabase, openDatabase } from '../core/db/connection.js';
+import { migrations } from '../core/db/migrations/index.js';
 
 import type { Db } from '../core/db/connection.js';
 import type { FileRepository } from '../core/db/repositories/fileRepo.js';
@@ -20,16 +22,11 @@ export type DoctorCommandOptions = CommandOptions & {
 type PragmaIntegrityRow = { integrity_check: string };
 type PragmaForeignKeyRow = { table: string; parent: string; fkid: number };
 
-type FileRepositoryWithDb = {
-  db: Db;
-} & FileRepository;
-
 /** Implementa `mm doctor`: diagnóstico y reparación de la biblioteca. */
 export async function runDoctorCommand(options: DoctorCommandOptions): Promise<void> {
   await withCommandContext(options, async ({ config, repositories }) => {
+    const db = openDatabase(config.database.path);
     const { mediaRepo, fileRepo, indexRunRepo } = repositories;
-    const db = (fileRepo as FileRepositoryWithDb).db;
-
     const issues: DoctorIssue[] = [];
 
     // 1. Integridad SQLite
@@ -196,7 +193,11 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
           {
             status,
             generatedAt: new Date().toISOString(),
-            database: { integrity: 'ok', foreignKeys: 'ok', migrated: false }, // TODO: track migrated
+            database: {
+              integrity: 'ok',
+              foreignKeys: 'ok',
+              migrated: isDatabaseMigrated(db),
+            },
             counts: {
               media: mediaRepo.count(),
               files: fileRepo.count(),
@@ -220,11 +221,13 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
           2,
         ),
       );
+      closeDatabase(db);
       return;
     }
 
     // Human output
     if (issues.length === 0) {
+      closeDatabase(db);
       console.log(pc.green('✓ Biblioteca sana'));
       return;
     }
@@ -248,6 +251,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
     // --prune-missing
     if (options.pruneMissing) {
       if (missingFiles.length === 0) {
+        closeDatabase(db);
         console.log(pc.dim('No hay ficheros ausentes que podar.'));
         return;
       }
@@ -260,6 +264,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
         );
         rl.close();
         if (!/^y(es)?$/i.test(answer.trim())) {
+          closeDatabase(db);
           console.log('Cancelado.');
           return;
         }
@@ -290,7 +295,23 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
         ),
       );
     }
+
+    closeDatabase(db);
   });
+}
+
+/**
+ * Determina si la base de datos tiene aplicada la última migración disponible.
+ * Consulta la tabla `schema_migrations` y compara la versión máxima aplicada
+ * con la última versión declarada en las migraciones.
+ */
+function isDatabaseMigrated(db: Db): boolean {
+  const latestVersion = Math.max(...migrations.map((m) => m.version));
+  const applied = db
+    .prepare<[], { version: number }>('SELECT version FROM schema_migrations')
+    .all()
+    .map((row) => row.version);
+  return applied.length > 0 && Math.max(...applied) >= latestVersion;
 }
 
 type DoctorIssue = {
