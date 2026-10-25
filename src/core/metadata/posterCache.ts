@@ -118,7 +118,7 @@ export async function clearPosterCache(
           deleted++;
         }
       } catch (error) {
-        errors.push((error as Error).message);
+        errors.push(formatError(error));
       }
     }
   } catch {
