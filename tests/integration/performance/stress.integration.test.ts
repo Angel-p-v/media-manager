@@ -10,7 +10,8 @@ import {
 
 const STRESS_ENTRIES = 100_000;
 // ARM64 es inherentemente más lento para escrituras SQLite que x64.
-const SEED_BUDGET_MS = os.arch() === 'arm64' ? 30_000 : 15_000;
+// 60 s da margen en runners ARM64 de bajo rendimiento.
+const SEED_BUDGET_MS = os.arch() === 'arm64' ? 60_000 : 15_000;
 const QUERY_BUDGET_MS = 500;
 
 let db: Db;

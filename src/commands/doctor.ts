@@ -305,7 +305,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
  * Consulta la tabla `schema_migrations` y compara la versión máxima aplicada
  * con la última versión declarada en las migraciones.
  */
-function isDatabaseMigrated(db: Db): boolean {
+export function isDatabaseMigrated(db: Db): boolean {
   const latestVersion = Math.max(...migrations.map((m) => m.version));
   const applied = db
     .prepare<[], { version: number }>('SELECT version FROM schema_migrations')
