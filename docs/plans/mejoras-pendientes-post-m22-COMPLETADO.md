@@ -1,4 +1,7 @@
-# Plan: Mejoras pendientes post-M22 — COMPLETADO
+# Plan: Mejoras pendientes post-M22 — COMPLETADO ✅
+
+> **Estado:** todos los 10 ítems completados y mergeados en `main`.
+> **Índice de planes:** [`docs/plans/README.md`](./README.md)
 
 **Objetivo:** Revisar e implementar las mejoras y correcciones restantes tras completar todos los hitos M0–M22. ✅ **Todos los ítems completados y mergeados en `main`.**
 
