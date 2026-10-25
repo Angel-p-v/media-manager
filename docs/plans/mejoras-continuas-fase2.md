@@ -48,11 +48,11 @@ Este plan documenta la siguiente ola de mejoras, ordenadas por valor e impacto. 
 
 ### Fase E — CLI y comandos
 
-| #   | Área | Descripción                                                                         | Prioridad | Esfuerzo | Rama sugerida                  |
-| --- | ---- | ----------------------------------------------------------------------------------- | --------- | -------- | ------------------------------ |
-| E1  | CLI  | Comandos `mm db backup` y `mm db restore` para backup/restauración de la BD SQLite. | Media     | Medio    | `feat/cli-db-backup-restore`   |
-| E2  | CLI  | `mm config check`: validar el YAML de configuración sin ejecutar subcomandos.       | Baja      | Bajo     | `feat/cli-config-check`        |
-| E3  | CLI  | `--dry-run` en operaciones destructivas (`prune`, `delete`, `mark`).                | Media     | Bajo     | `feat/cli-dry-run-destructivo` |
+| #   | Área | Descripción                                                                         | Prioridad | Esfuerzo | Rama sugerida                  | Estado |
+| --- | ---- | ----------------------------------------------------------------------------------- | --------- | -------- | ------------------------------ | ------ |
+| E1  | CLI  | Comandos `mm db backup` y `mm db restore` para backup/restauración de la BD SQLite. | Media     | Medio    | `feat/cli-db-backup-restore`   |        |
+| E2  | CLI  | `mm config check`: validar el YAML de configuración sin ejecutar subcomandos.       | Baja      | Bajo     | `feat/cli-config-check`        |        |
+| E3  | CLI  | `--dry-run` en operaciones destructivas (`prune`, `delete`, `mark`).                | Media     | Bajo     | `feat/cli-dry-run-destructivo` | ✅     |
 
 ### Fase F — Observabilidad y doctor
 
