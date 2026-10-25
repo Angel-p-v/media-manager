@@ -531,4 +531,39 @@ describe('MpvTracker', () => {
     await tracker.stop();
     expect(mockRepo.save).toHaveBeenCalledWith(expect.objectContaining({ positionSeconds: 99 }));
   });
+
+  it('launchWithTracker spawns mpv con --input-ipc-server y retorna limpieza', async () => {
+    const { spawn } = await import('node:child_process');
+    const mockSpawn = spawn as ReturnType<typeof vi.fn>;
+    vi.clearAllMocks();
+
+    const cleanup = await launchWithTracker('mpv', ['--no-config'], '/media/serie.mkv', {
+      mediaFileId: 42,
+      playbackRepo: mockRepo,
+      playbackConfig: mockConfig,
+      logger: mockLogger,
+      socketPath: '/tmp/ignored',
+    });
+
+    // spawn se llamó con mpv y args que incluyen --input-ipc-server y el fichero
+    expect(mockSpawn).toHaveBeenCalledTimes(1);
+    const callArgs = mockSpawn.mock.calls[0]!;
+    expect(callArgs[0]).toBe('mpv');
+    const args = callArgs[1] as string[];
+    expect(args).toContain('/media/serie.mkv');
+    // --input-ipc-server debe ir justo antes del fichero (como --input-ipc-server=<ruta>)
+    const fileIndex = args.indexOf('/media/serie.mkv');
+    expect(fileIndex).toBeGreaterThanOrEqual(0);
+    expect(args[fileIndex - 1]).toMatch(/^--input-ipc-server=/);
+
+    // La función de limpieza detiene el tracker y mata el child
+    await cleanup();
+
+    const child = mockSpawn.mock.results[0]!.value as {
+      kill: ReturnType<typeof vi.fn>;
+      killed: boolean;
+      unref: ReturnType<typeof vi.fn>;
+    };
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+  });
 });
