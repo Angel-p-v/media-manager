@@ -117,6 +117,23 @@ describe('playback domain', () => {
       ).toBe(false);
     });
 
+    it('canResume false cuando position alcanza duration; true si duration es null', () => {
+      expect(
+        calculatePlayback(
+          makeState({ positionSeconds: 60, durationSeconds: null }),
+          baseConfig,
+          baseNow,
+        ).canResume,
+      ).toBe(true);
+      expect(
+        calculatePlayback(
+          makeState({ positionSeconds: 3000, durationSeconds: 3000 }),
+          baseConfig,
+          baseNow,
+        ).canResume,
+      ).toBe(false);
+    });
+
     it('progressPercent null sin duración y clamp 0-100', () => {
       expect(
         calculatePlayback(
@@ -276,6 +293,23 @@ describe('playback domain', () => {
       const movieFile = makeFile({ season: null, episode: null });
       expect(findNextEpisode(movieFile, files, repo, baseConfig)).toBeNull();
     });
+
+    it('null cuando mediaId es undefined', () => {
+      const noMediaId = makeFile({ season: 1, episode: 1, mediaId: undefined });
+      expect(findNextEpisode(noMediaId, files, repo, baseConfig)).toBeNull();
+    });
+
+    it('null cuando todos los candidatos de la temporada están completados', () => {
+      const allDoneRepo = {
+        get(id: number): PlaybackStateRow | undefined {
+          if (id === 2) return makeState({ completedAt: baseNow });
+          if (id === 3) return makeState({ completedAt: baseNow });
+          return undefined;
+        },
+      };
+      const current = files[0]!; // S01E01, candidatos E02 y E03 ambos completados
+      expect(findNextEpisode(current, files, allDoneRepo, baseConfig)).toBeNull();
+    });
   });
 
   describe('isEpisodic', () => {
@@ -315,6 +349,11 @@ describe('playback domain', () => {
   describe('nowIso', () => {
     it('devuelve ISO-8601 UTC', () => {
       expect(nowIso(new Date('2026-10-23T10:15:30.123Z'))).toBe('2026-10-23T10:15:30.123Z');
+    });
+
+    it('usa el reloj actual cuando no se pasa now', () => {
+      const result = nowIso();
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
     });
   });
 });

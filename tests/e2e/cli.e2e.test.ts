@@ -21,9 +21,10 @@ describe('mm (e2e, binario compilado)', () => {
   let configPath: string;
 
   beforeAll(async () => {
-    const build = execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe' });
-    if (build.status !== 0) {
-      throw new Error(`Build falló en beforeAll: ${build.stderr}`);
+    try {
+      execFileSync('npm', ['run', 'build'], { cwd: ROOT, stdio: 'pipe' });
+    } catch (buildError) {
+      throw new Error(`Build falló en beforeAll: ${String(buildError)}`);
     }
 
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-e2e-'));
@@ -53,7 +54,9 @@ describe('mm (e2e, binario compilado)', () => {
   }, 60_000);
 
   afterAll(async () => {
-    await rm(workDir, { recursive: true, force: true });
+    if (workDir) {
+      await rm(workDir, { recursive: true, force: true });
+    }
   });
 
   function run(args: string[], env: NodeJS.ProcessEnv = {}): RunResult {
