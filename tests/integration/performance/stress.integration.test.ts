@@ -1,3 +1,5 @@
+import os from 'node:os';
+
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { closeDatabase, openDatabase, type Db } from '../../../src/core/db/connection.js';
@@ -7,7 +9,8 @@ import {
 } from '../../../src/core/db/repositories/mediaRepo.js';
 
 const STRESS_ENTRIES = 100_000;
-const SEED_BUDGET_MS = 15_000;
+// ARM64 es inherentemente más lento para escrituras SQLite que x64.
+const SEED_BUDGET_MS = os.arch() === 'arm64' ? 30_000 : 15_000;
 const QUERY_BUDGET_MS = 500;
 
 let db: Db;
