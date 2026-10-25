@@ -1,3 +1,5 @@
+import { rateLimiters } from './rateLimiter.js';
+
 /** Respuesta de búsqueda de TMDB. */
 type TmdbSearchResponse = {
   results: TmdbSearchResult[];
@@ -117,6 +119,8 @@ export class MetadataService {
       throw new Error('TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.');
     }
 
+    await rateLimiters.tmdb.waitForSlot();
+
     const url = new URL('https://api.themoviedb.org/3/search/multi');
     url.searchParams.set('query', query);
     url.searchParams.set('api_key', this.config.tmdbApiKey);
@@ -158,6 +162,8 @@ export class MetadataService {
       throw new Error('TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.');
     }
 
+    await rateLimiters.tmdb.waitForSlot();
+
     const url = new URL(`https://api.themoviedb.org/3/${mediaType}/${externalId}`);
     url.searchParams.set('api_key', this.config.tmdbApiKey);
     url.searchParams.set('language', 'es-ES');
@@ -193,6 +199,8 @@ export class MetadataService {
     if (!this.config.tvdbApiKey) {
       throw new Error('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
     }
+
+    await rateLimiters.tvdb.waitForSlot();
 
     // TVDB v4 API requiere autenticación con Bearer token
     const url = new URL('https://api.thetvdb.com/v4/search');
@@ -239,6 +247,8 @@ export class MetadataService {
     if (!this.config.tvdbApiKey) {
       throw new Error('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
     }
+
+    await rateLimiters.tvdb.waitForSlot();
 
     const url = new URL(`https://api.thetvdb.com/v4/${mediaType}/${externalId}`);
 
