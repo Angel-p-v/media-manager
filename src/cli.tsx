@@ -66,6 +66,7 @@ program
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--dry-run', 'simula la indexación sin escribir en la base de datos')
   .option('--root <ruta>', 'indexa solo la raíz indicada')
+  .option('--folder <ruta>', 'indexa solo la carpeta indicada dentro de la raíz')
   .option('--json', 'salida en formato JSON')
   .action(runIndexCommand);
 
