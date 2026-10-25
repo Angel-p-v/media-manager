@@ -4,16 +4,16 @@ Este directorio contiene los planes de ejecución del proyecto `media-manager`. 
 
 ## Planes activos
 
-| Plan                                                                         | Estado    | Descripción                                                                                                         |
-| ---------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
-| [`plan-01-mejoras-continuas-fase2.md`](./plan-01-mejoras-continuas-fase2.md) | 🟡 Activo | Mejoras continuas post-M22 (Fase 2): pruebas, indexador, metadatos, TUI, CLI, doctor, empaquetado, i18n, seguridad. |
-| [`plan-09-nuevas-mejoras-futuras.md`](./plan-09-nuevas-mejoras-futuras.md)   | 🟡 Activo | Nuevas mejoras futuras: TUI, indexador, metadatos, reproductor, distribución, testing, documentación y comunidad.   |
+| Plan                                                                         | Estado        | Descripción                                                                                                         |
+| ---------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
+| [`plan-01-mejoras-continuas-fase2.md`](./plan-01-mejoras-continuas-fase2.md) | ✅ Completado | Mejoras continuas post-M22 (Fase 2): pruebas, indexador, metadatos, TUI, CLI, doctor, empaquetado, i18n, seguridad. |
+| [`plan-09-nuevas-mejoras-futuras.md`](./plan-09-nuevas-mejoras-futuras.md)   | 🟡 Activo     | Nuevas mejoras futuras: TUI, indexador, metadatos, reproductor, distribución, testing, documentación y comunidad.   |
 
 ## Planes pendientes de ejecución
 
-| Plan                                                             | Estado       | Descripción                                                                                                                           |
-| ---------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [`plan-02-fixes-code-review.md`](./plan-02-fixes-code-review.md) | 🔴 Pendiente | Corrección de errores del code review: bug `find` en install.sh, `countFavorites`, SQL injection en mediaRepo, tests de filtros, etc. |
+| Plan                                                             | Estado        | Descripción                                                                                                                           |
+| ---------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| [`plan-02-fixes-code-review.md`](./plan-02-fixes-code-review.md) | ✅ Completado | Corrección de errores del code review: bug `find` en install.sh, `countFavorites`, SQL injection en mediaRepo, tests de filtros, etc. |
 
 ## Planes completados
 

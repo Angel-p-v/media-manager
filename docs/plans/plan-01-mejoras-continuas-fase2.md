@@ -1,5 +1,7 @@
 # Plan: Mejoras continuas post-M22 (Fase 2)
 
+**Estado:** ✅ Completado — todos los ítems implementados en código y verificados con `npm run verify` (599 tests pasando).
+
 **Objetivo:** Implementar mejoras y funcionalidades adicionales tras completar todos los hitos M0–M22 y los 10 ítems del plan post-M22. Cada ítem se ejecuta en su propia rama, se verifica con `npm run verify`, se abre PR y se mergea con squash antes de pasar al siguiente.
 
 ## Contexto
