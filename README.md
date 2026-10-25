@@ -248,6 +248,32 @@ mm metadata clear                  # limpia metadatos de un título
 
 ---
 
+## 🐚 Autocompletado de shell
+
+`mm` puede generar scripts de autocompletado para Bash, Zsh y Fish:
+
+```bash
+# Generar el script
+mm completion bash   # o: zsh | fish
+
+# Instalar (ejemplos para Bash)
+mm completion bash > /etc/bash_completion.d/mm
+# o para usuario:
+mm completion bash >> ~/.bashrc
+
+# Zsh
+mm completion zsh > /usr/local/share/zsh/site-functions/_mm
+# o para usuario:
+mm completion zsh >> ~/.zshrc
+
+# Fish
+mm completion fish > ~/.config/fish/completions/mm.fish
+```
+
+Después de instalar, reinicia la shell o recarga su configuración para que los comandos y opciones de `mm` se autocompleten al presionar <kbd>Tab</kbd>.
+
+---
+
 ## ⚙️ Configuración
 
 Archivo: `~/.config/media-manager/config.yaml` (respeta `XDG_CONFIG_HOME`)
