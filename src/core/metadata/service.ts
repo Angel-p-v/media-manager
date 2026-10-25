@@ -1,4 +1,4 @@
-import { cachePoster } from './posterCache.js';
+import { cachePoster, getCachedPoster } from './posterCache.js';
 import { rateLimiters } from './rateLimiter.js';
 
 import type { Logger } from '../../shared/logger.js';
@@ -206,11 +206,14 @@ export class MetadataService {
 
     const data = (await response.json()) as TmdbDetails;
 
-    const localPosterPath = await cachePoster(
+    let localPosterPath = await cachePoster(
       data.poster_path,
       data.id,
       adaptLogger(this.config.logger),
     );
+
+    // Fallback: si la descarga falló, usar el póster previamente cacheado
+    localPosterPath ??= await getCachedPoster(data.id);
 
     return {
       provider: 'tmdb',
@@ -303,7 +306,10 @@ export class MetadataService {
     const posterPath = data.artwork?.['240']?.original ?? null;
     const backdropPath = data.artwork?.['1071']?.original ?? null;
 
-    const localPosterPath = await cachePoster(posterPath, data.id, adaptLogger(this.config.logger));
+    let localPosterPath = await cachePoster(posterPath, data.id, adaptLogger(this.config.logger));
+
+    // Fallback: si la descarga falló, usar el póster previamente cacheado
+    localPosterPath ??= await getCachedPoster(data.id);
 
     return {
       provider: 'tvdb',
