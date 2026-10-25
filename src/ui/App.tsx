@@ -103,12 +103,28 @@ function AppImpl({
     setSelected(0);
   }, [view, section, query]);
 
-  // Sincronización automática de metadatos expirados al montar la TUI
+  // Sincronización automática de metadatos expirados al montar la TUI.
+  // Si hay metadatos expirados y un proveedor configurado, se refrescan
+  // automáticamente al abrir la biblioteca (M19.2).
   useEffect(() => {
     if (view !== 'library') return;
     const expiredCount = library.getExpiredMetadataCount();
     if (expiredCount > 0 && library.hasMetadataProviderConfigured()) {
-      setStatus(`Hay ${expiredCount} metadatos expirados. Pulsa «R» para actualizar todos.`);
+      setStatus(`Refrescando ${expiredCount} metadatos expirados…`);
+      void library
+        .refreshExpiredMetadata()
+        .then(({ refreshed, failed }) => {
+          if (refreshed === 0 && failed === 0) {
+            setStatus('No hay metadatos expirados para actualizar.');
+          } else if (failed === 0) {
+            setStatus(`Metadatos actualizados: ${refreshed}.`);
+          } else {
+            setStatus(`Metadatos actualizados: ${refreshed} correctos, ${failed} fallidos.`);
+          }
+        })
+        .catch(() => {
+          setStatus('No se pudieron refrescar los metadatos expirados.');
+        });
     }
   }, [library, config.metadata?.cacheTtlHours, view]);
 
