@@ -46,7 +46,7 @@ describe('runListCommand', () => {
   it('lanza error cuando export es un formato invalido', async () => {
     mockCommandContext();
     await expect(runListCommand({ export: 'xml' as unknown as 'json' | 'csv' })).rejects.toThrow(
-      'Formato de exportacion no valido',
+      'Formato de exportación no válido',
     );
   });
 
@@ -97,7 +97,7 @@ describe('runListCommand', () => {
 
     await runListCommand({});
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No hay titulos indexados'));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('No hay títulos indexados'));
   });
 
   it('imprime "No hay resultados en esta pagina" cuando items vacio pero total > 0', async () => {
@@ -110,7 +110,7 @@ describe('runListCommand', () => {
     await runListCommand({ offset: 50 });
 
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining('No hay resultados en esta pagina'),
+      expect.stringContaining('No hay resultados en esta página'),
     );
   });
 
@@ -137,7 +137,7 @@ describe('runListCommand', () => {
     expect(output).toContain('favoritos');
     expect(output).toContain('no vistos');
     expect(output).toContain('tag: 1,2');
-    expect(output).toContain('orden: year');
+    expect(output).toContain('orden: recent');
   });
 
   it('usa valores por defecto cuando no se pasan opciones', async () => {
