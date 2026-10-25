@@ -144,10 +144,16 @@ CREATE TABLE IF NOT EXISTS media_metadata (
 CREATE INDEX IF NOT EXISTS idx_metadata_provider ON media_metadata(provider, external_id);
 `;
 
+// v6: caché local de imágenes. Aditiva: columna local_poster_path en media_metadata.
+const posterCacheSql = `
+ALTER TABLE media_metadata ADD COLUMN local_poster_path TEXT;
+`;
+
 export const migrations: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'performance-indexes', sql: performanceIndexesSql },
   { version: 3, name: 'playback-and-preferences', sql: playbackAndPreferencesSql },
   { version: 4, name: 'tags-and-collections', sql: tagsSql },
   { version: 5, name: 'external-metadata', sql: metadataSql },
+  { version: 6, name: 'poster-cache', sql: posterCacheSql },
 ];

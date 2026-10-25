@@ -1,4 +1,7 @@
+import { cachePoster } from './posterCache.js';
 import { rateLimiters } from './rateLimiter.js';
+
+import type { Logger } from '../../shared/logger.js';
 
 /** Respuesta de búsqueda de TMDB. */
 type TmdbSearchResponse = {
@@ -95,7 +98,31 @@ export type MetadataSearchResult = {
   voteAverage: number | null;
   releaseDate: string | null;
   originalLanguage: string | null;
+  /** Ruta local al póster descargado en caché, si existe. */
+  localPosterPath: string | null;
 };
+
+/**
+ * Adapta el logger de la configuración (que tiene un tipo limitado) al tipo
+ * Logger completo que requiere cachePoster.
+ */
+type ConfigLogger = {
+  debug(msg: string, bindings?: Record<string, unknown>): void;
+  warn(msg: string, bindings?: Record<string, unknown>): void;
+  error(msg: string, bindings?: Record<string, unknown>): void;
+};
+
+function adaptLogger(configLogger: ConfigLogger): Logger {
+  return {
+    level: 'debug',
+    format: 'text',
+    error: (event: string, fields?: Record<string, unknown>) => configLogger.error(event, fields),
+    warn: (event: string, fields?: Record<string, unknown>) => configLogger.warn(event, fields),
+    info: (event: string, fields?: Record<string, unknown>) => configLogger.debug(event, fields),
+    debug: (event: string, fields?: Record<string, unknown>) => configLogger.debug(event, fields),
+    child: () => adaptLogger(configLogger),
+  };
+}
 
 /**
  * Servicio para obtener metadatos externos de TMDB y TVDB.
@@ -148,6 +175,7 @@ export class MetadataService {
         voteAverage: r.vote_average,
         releaseDate: r.release_date ?? r.first_air_date,
         originalLanguage: r.original_language,
+        localPosterPath: null,
       }));
   }
 
@@ -178,6 +206,12 @@ export class MetadataService {
 
     const data = (await response.json()) as TmdbDetails;
 
+    const localPosterPath = await cachePoster(
+      data.poster_path,
+      data.id,
+      adaptLogger(this.config.logger),
+    );
+
     return {
       provider: 'tmdb',
       externalId: data.id,
@@ -188,6 +222,7 @@ export class MetadataService {
       voteAverage: data.vote_average,
       releaseDate: data.release_date ?? data.first_air_date,
       originalLanguage: data.original_language,
+      localPosterPath,
     };
   }
 
@@ -233,6 +268,7 @@ export class MetadataService {
         voteAverage: null, // TVDB no proporciona calificación promedio en búsqueda
         releaseDate: r.first_aired,
         originalLanguage: r.original_language,
+        localPosterPath: null,
       };
     });
   }
@@ -267,6 +303,8 @@ export class MetadataService {
     const posterPath = data.artwork?.['240']?.original ?? null;
     const backdropPath = data.artwork?.['1071']?.original ?? null;
 
+    const localPosterPath = await cachePoster(posterPath, data.id, adaptLogger(this.config.logger));
+
     return {
       provider: 'tvdb',
       externalId: data.id,
@@ -277,6 +315,7 @@ export class MetadataService {
       voteAverage: null,
       releaseDate: data.first_aired,
       originalLanguage: data.original_language,
+      localPosterPath,
     };
   }
 
