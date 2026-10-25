@@ -85,6 +85,7 @@ program
     [],
   )
   .option('--json', 'salida en formato JSON')
+  .option('--export <formato>', 'exporta a archivo: json o csv')
   .action(runListCommand);
 
 program
