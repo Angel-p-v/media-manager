@@ -4,7 +4,7 @@ import path from 'node:path';
 import { glob } from 'tinyglobby';
 
 import { VIDEO_EXTENSIONS } from './video.js';
-import { IndexError } from '../../shared/errors.js';
+import { IndexError, formatError } from '../../shared/errors.js';
 
 const VIDEO_GLOB = `**/*.{${VIDEO_EXTENSIONS.join(',')}}`;
 
@@ -57,7 +57,7 @@ export async function scanLibrary(
       caseSensitiveMatch: false,
     });
   } catch (error) {
-    throw new IndexError(`No se pudo recorrer ${scanRoot}: ${(error as Error).message}`, {
+    throw new IndexError(`No se pudo recorrer ${scanRoot}: ${formatError(error)}`, {
       cause: error,
     });
   }
@@ -87,7 +87,7 @@ async function assertDirectory(rootPath: string): Promise<void> {
     }
   } catch (error) {
     if (error instanceof IndexError) throw error;
-    throw new IndexError(`No se pudo leer la raíz ${rootPath}: ${(error as Error).message}`, {
+    throw new IndexError(`No se pudo leer la raíz ${rootPath}: ${formatError(error)}`, {
       cause: error,
     });
   }

@@ -7,7 +7,7 @@ import process from 'node:process';
 import type { Logger } from '../../shared/logger.js';
 import type { PlaybackConfig } from '../config/schema.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
-import { PlayerError } from '../../shared/errors.js';
+import { PlayerError, formatError } from '../../shared/errors.js';
 
 /** Eventos que emite mpv a través del socket IPC. */
 type MpvEvent = {
@@ -132,7 +132,7 @@ export class MpvTracker {
     });
 
     socket.on('error', (error) => {
-      this.options.logger.warn('mpv-tracker: error en socket', { error: error.message });
+      this.options.logger.warn('mpv-tracker: error en socket', { error: formatError(error) });
     });
 
     // Observar propiedades

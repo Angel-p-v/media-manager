@@ -9,7 +9,7 @@ import { defaultConfig } from './defaults.js';
 import { mergeDeep, isPlainObject } from './merge.js';
 import { defaultConfigPath } from './paths.js';
 import { configSchema, logFormatSchema, logLevelSchema, type AppConfig } from './schema.js';
-import { ConfigError } from '../../shared/errors.js';
+import { ConfigError, formatError } from '../../shared/errors.js';
 import { resolvePath } from '../../shared/paths.js';
 
 export type LoadConfigOptions = {
@@ -52,7 +52,7 @@ export async function readConfigFile(configPath: string): Promise<unknown> {
     content = await readFile(configPath, 'utf8');
   } catch (error) {
     throw new ConfigError(
-      `No se pudo leer la configuración: ${(error as Error).message}`,
+      `No se pudo leer la configuración: ${formatError(error)}`,
       configPath,
       {
         cause: error,
@@ -73,7 +73,7 @@ export async function readConfigFile(configPath: string): Promise<unknown> {
   } catch (error) {
     if (error instanceof ConfigError) throw error;
     throw new ConfigError(
-      `El archivo no contiene YAML válido: ${(error as Error).message}`,
+      `El archivo no contiene YAML válido: ${formatError(error)}`,
       configPath,
       { cause: error },
     );

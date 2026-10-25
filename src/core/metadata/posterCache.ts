@@ -4,6 +4,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 import type { Logger } from '../../shared/logger.js';
+import { formatError } from '../../shared/errors.js';
 
 const DEFAULT_CACHE_DIR = join(homedir(), '.cache', 'media-manager', 'posters');
 
@@ -50,7 +51,7 @@ export async function cachePoster(
     logger.debug('poster.cache.stored', { mediaId, localPath, bytes: buffer.length });
     return localPath;
   } catch (error) {
-    logger.warn('poster.cache.error', { mediaId, posterUrl, error: (error as Error).message });
+    logger.warn('poster.cache.error', { mediaId, posterUrl, error: formatError(error) });
     return null;
   }
 }

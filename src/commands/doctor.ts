@@ -12,6 +12,7 @@ import { formatBytes } from './output.js';
 import { closeDatabase, openDatabase } from '../core/db/connection.js';
 import { migrations } from '../core/db/migrations/index.js';
 import { databaseSizeBytes } from '../core/db/size.js';
+import { formatError } from '../shared/errors.js';
 
 import type { Db } from '../core/db/connection.js';
 import type { FileRepository } from '../core/db/repositories/fileRepo.js';
@@ -48,7 +49,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
       issues.push({
         kind: 'integrity',
         severity: 'error',
-        detail: (error as Error).message,
+        detail: formatError(error),
       });
     }
 
@@ -65,7 +66,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
       issues.push({
         kind: 'foreign-key',
         severity: 'error',
-        detail: (error as Error).message,
+        detail: formatError(error),
       });
     }
 
@@ -89,9 +90,9 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
         // Check read permission
         accessSync(filePath, constants.R_OK);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'EACCES') {
+        if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'EACCES') {
           permissionErrors.push(filePath);
-        } else if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        } else if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT') {
           missingFiles.push(filePath);
         }
       }
@@ -316,7 +317,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
         backupDatabase(doctorDb, config.database.path, 'doctor');
         doctorDb.close();
       } catch (error) {
-        console.error(pc.red(`Error creando backup: ${(error as Error).message}`));
+        console.error(pc.red(`Error creando backup: ${formatError(error)}`));
         process.exit(1);
       }
 

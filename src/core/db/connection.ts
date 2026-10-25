@@ -6,7 +6,7 @@ import Database from 'better-sqlite3';
 import { backupDatabase } from './backup.js';
 import { optimizeDatabase } from './maintenance.js';
 import { migrations, type Migration } from './migrations/index.js';
-import { DbError } from '../../shared/errors.js';
+import { DbError, formatError } from '../../shared/errors.js';
 
 export type Db = Database.Database;
 
@@ -22,7 +22,7 @@ export function openDatabase(dbPath: string, options: OpenDatabaseOptions = {}):
       mkdirSync(path.dirname(dbPath), { recursive: true });
     } catch (error) {
       throw new DbError(
-        `No se pudo crear la carpeta de la base de datos: ${(error as Error).message}`,
+        `No se pudo crear la carpeta de la base de datos: ${formatError(error)}`,
         {
           cause: error,
         },
@@ -34,7 +34,7 @@ export function openDatabase(dbPath: string, options: OpenDatabaseOptions = {}):
   try {
     db = new Database(dbPath);
   } catch (error) {
-    throw new DbError(`No se pudo abrir la base de datos: ${(error as Error).message}`, {
+    throw new DbError(`No se pudo abrir la base de datos: ${formatError(error)}`, {
       cause: error,
     });
   }
@@ -107,7 +107,7 @@ export function runMigrations(
     } catch (error) {
       db.exec('ROLLBACK');
       throw new DbError(
-        `Falló la migración ${migration.version} (${migration.name}): ${(error as Error).message}`,
+        `Falló la migración ${migration.version} (${migration.name}): ${formatError(error)}`,
         { cause: error },
       );
     }

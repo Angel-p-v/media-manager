@@ -1,4 +1,4 @@
-import { DbError } from '../../shared/errors.js';
+import { DbError, formatError } from '../../shared/errors.js';
 
 import type { Db } from './connection.js';
 
@@ -28,7 +28,7 @@ export function optimizeDatabase(db: Db): void {
   try {
     db.pragma('optimize');
   } catch (error) {
-    throw new DbError(`No se pudo optimizar la base de datos: ${(error as Error).message}`, {
+    throw new DbError(`No se pudo optimizar la base de datos: ${formatError(error)}`, {
       cause: error,
     });
   }
@@ -41,7 +41,7 @@ export function vacuumDatabase(db: Db): void {
     db.pragma('wal_checkpoint(TRUNCATE)');
     db.exec('VACUUM');
   } catch (error) {
-    throw new DbError(`No se pudo compactar la base de datos: ${(error as Error).message}`, {
+    throw new DbError(`No se pudo compactar la base de datos: ${formatError(error)}`, {
       cause: error,
     });
   }
