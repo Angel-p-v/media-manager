@@ -6,7 +6,12 @@ import { Command, CommanderError } from 'commander';
 import { generateCompletion } from './commands/completion.js';
 import { runConfigCommand } from './commands/config.js';
 import { runContinueCommand } from './commands/continue.js';
-import { runDbOptimizeCommand, runDbStatsCommand } from './commands/db.js';
+import {
+  runDbBackupCommand,
+  runDbOptimizeCommand,
+  runDbRestoreCommand,
+  runDbStatsCommand,
+} from './commands/db.js';
 import { runDoctorCommand } from './commands/doctor.js';
 import { reportFatalError } from './commands/errorHandler.js';
 import { runFavoriteCommand } from './commands/favorite.js';
@@ -236,6 +241,22 @@ dbCommand
   .option('--vacuum', 'compacta el fichero (puede tardar)')
   .option('--json', 'salida en formato JSON')
   .action(runDbOptimizeCommand);
+
+dbCommand
+  .command('backup')
+  .description('crea una copia de seguridad de la base de datos')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--label <etiqueta>', 'etiqueta para identificar el backup', 'manual')
+  .option('--json', 'salida en formato JSON')
+  .action(runDbBackupCommand);
+
+dbCommand
+  .command('restore')
+  .description('restaura la base de datos desde un fichero de backup')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--from <ruta>', 'ruta al fichero de backup a restaurar', '')
+  .option('--json', 'salida en formato JSON')
+  .action(runDbRestoreCommand);
 
 async function main(): Promise<void> {
   // Sin subcomando se abre la interfaz interactiva; con subcomando, la CLI headless.
