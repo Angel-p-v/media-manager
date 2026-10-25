@@ -57,11 +57,11 @@ Recopilar mejoras de valor para el proyecto que no entraron en planes anteriores
 
 ## 6. Distribución y despliegue
 
-| #   | Área         | Descripción                                                                      | Prioridad | Esfuerzo | Rama sugerida                  |
-| --- | ------------ | -------------------------------------------------------------------------------- | --------- | -------- | ------------------------------ |
-| D1  | Distribución | Docker Compose completo: base de datos persistente + config + volúmenes de media | Media     | Bajo     | `feat/docker-compose-completo` |
-| D2  | Distribución | Paquetes .deb y .rpm para instalación nativa en Debian/RedHat sin script         | Media     | Medio    | `feat/paquetes-deb-rpm`        |
-| D3  | Distribución | Actualización delta: descargar solo lo que cambió, no el bundle entero           | Alta      | Alta     | `feat/actualizacion-delta`     |
+| #   | Área         | Descripción                                                                      | Prioridad | Esfuerzo | Rama sugerida                  | Estado        |
+| --- | ------------ | -------------------------------------------------------------------------------- | --------- | -------- | ------------------------------ | ------------- |
+| D1  | Distribución | Docker Compose completo: base de datos persistente + config + volúmenes de media | Media     | Bajo     | `feat/docker-compose-completo` | ✅ completado |
+| D2  | Distribución | Paquetes .deb y .rpm para instalación nativa en Debian/RedHat sin script         | Media     | Medio    | `feat/paquetes-deb-rpm`        |               |
+| D3  | Distribución | Actualización delta: descargar solo lo que cambió, no el bundle entero           | Alta      | Alta     | `feat/actualizacion-delta`     |               |
 
 ---
 
@@ -89,7 +89,7 @@ Recopilar mejoras de valor para el proyecto que no entraron en planes anteriores
 
 Se sugiere ejecutar los ítems en este orden para mantener el proyecto estable:
 
-1. **D1** — Docker Compose completo (Bajo esfuerzo, valor real inmediato)
+1. **D1** — Docker Compose completo ✅ completado (PR #171)
 2. **C1** — Guía de migración desde Plex/Jellyfin (Bajo esfuerzo, atrae comunidad)
 3. **T5** — Soporte para subtítulos (Media esfuerzo, muy pedido por usuarios)
 4. **M2** — Proveedor AniList (Media esfuerzo, mejora metadatos de anime)
