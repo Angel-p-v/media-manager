@@ -1,18 +1,21 @@
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
+import { clearPosterCache, DEFAULT_CACHE_DIR } from '../core/metadata/posterCache.js';
 import { MetadataService } from '../core/metadata/service.js';
 import { formatError } from '../shared/errors.js';
 
 import type { MetadataServiceConfig } from '../core/metadata/service.js';
 
 export type MetadataCommandOptions = CommandOptions & {
-  action?: 'fetch' | 'search' | 'clear';
+  action?: 'fetch' | 'search' | 'clear' | 'cache';
   mediaId?: number;
   query?: string;
   provider?: 'tmdb' | 'tvdb' | 'omdb';
   externalId?: number;
   json?: boolean;
+  cacheClear?: boolean;
+  maxAgeDays?: number;
 };
 
 /** Implementa `mm metadata`: gestiona metadatos externos (TMDB/TVDB). */
@@ -144,8 +147,50 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
         }
         return;
       }
+      case 'cache': {
+        if (!options.cacheClear) {
+          console.error(pc.red('Uso: mm metadata cache --clear [--max-age-dias <n>] [--json]'));
+          process.exitCode = 2;
+          return;
+        }
+
+        const maxAgeDays = options.maxAgeDays ?? 30;
+
+        try {
+          const result = await clearPosterCache(DEFAULT_CACHE_DIR, maxAgeDays);
+
+          if (options.json) {
+            console.log(
+              JSON.stringify(
+                {
+                  action: 'cache-clear',
+                  deleted: result.deleted,
+                  errors: result.errors,
+                },
+                null,
+                2,
+              ),
+            );
+          } else {
+            console.log(
+              pc.green(
+                `Caché de pósters limpiado: ${result.deleted} archivo(s) eliminado(s) (más de ${maxAgeDays} días).`,
+              ),
+            );
+            if (result.errors.length > 0) {
+              console.error(
+                pc.yellow(`Se produjeron ${result.errors.length} error(es) al limpiar el caché.`),
+              );
+            }
+          }
+        } catch (error) {
+          console.error(pc.red(`Error limpiando caché: ${(error as Error).message}`));
+          process.exitCode = 1;
+        }
+        return;
+      }
       default: {
-        console.error(pc.red('Uso: mm metadata <fetch|search|clear> [opciones] [--json]'));
+        console.error(pc.red('Uso: mm metadata <fetch|search|clear|cache> [opciones] [--json]'));
         process.exitCode = 2;
         return;
       }
