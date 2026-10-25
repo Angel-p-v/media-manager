@@ -16,6 +16,7 @@ export type MetadataCommandOptions = CommandOptions & {
   json?: boolean;
   cacheClear?: boolean;
   maxAgeDays?: number;
+  dryRun?: boolean;
 };
 
 /** Implementa `mm metadata`: gestiona metadatos externos (TMDB/TVDB). */
@@ -128,8 +129,40 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
       }
       case 'clear': {
         if (!options.mediaId) {
-          console.error(pc.red('Uso: mm metadata clear <id> [--json]'));
+          console.error(pc.red('Uso: mm metadata clear <id> [--json] [--dry-run]'));
           process.exitCode = 2;
+          return;
+        }
+
+        const dryRun = options.dryRun === true;
+        const existing = library.getMetadata(options.mediaId);
+        const wouldRemove = existing !== undefined;
+
+        if (dryRun) {
+          if (options.json) {
+            console.log(
+              JSON.stringify(
+                {
+                  action: 'clear',
+                  dryRun: true,
+                  mediaId: options.mediaId,
+                  wouldRemove,
+                },
+                null,
+                2,
+              ),
+            );
+          } else {
+            if (wouldRemove) {
+              console.log(
+                pc.yellow(`[dry-run] Se eliminarían los metadatos del título #${options.mediaId}.`),
+              );
+            } else {
+              console.log(
+                pc.dim(`[dry-run] No había metadatos para el título #${options.mediaId}.`),
+              );
+            }
+          }
           return;
         }
 
