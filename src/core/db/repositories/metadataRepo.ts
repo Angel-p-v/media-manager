@@ -1,3 +1,5 @@
+import { DbError } from '../../../shared/errors.js';
+
 import type { Db } from '../connection.js';
 
 export type MediaMetadataRow = {
@@ -146,7 +148,7 @@ export function createMetadataRepository(db: Db): MetadataRepository {
         local_poster_path: input.localPosterPath ?? null,
       }) as MetadataDbRow | undefined;
 
-      if (!row) throw new Error('No se pudieron guardar los metadatos');
+      if (!row) throw new DbError('No se pudieron guardar los metadatos');
       return toMetadataRow(row);
     },
 

@@ -4,6 +4,7 @@ import { withCommandContext, type CommandOptions } from './context.js';
 import { toMediaFileJson, toMediaJson } from './output.js';
 import { calculatePlayback, nowIso } from '../core/playback/index.js';
 import { selectMediaFile } from '../core/player/selection.js';
+import { ValidationError } from '../shared/errors.js';
 
 export type MarkCommandOptions = CommandOptions & {
   watched?: boolean;
@@ -23,10 +24,10 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       Boolean,
     ).length;
     if (actions === 0) {
-      throw new Error('Debe indicar una acción: --watched, --unwatched o --position.');
+      throw new ValidationError('Debe indicar una acción: --watched, --unwatched o --position.');
     }
     if (actions > 1) {
-      throw new Error(
+      throw new ValidationError(
         'Las opciones --watched, --unwatched y --position son mutuamente excluyentes.',
       );
     }
@@ -35,7 +36,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
     const file = selectMediaFile(files, options.file);
 
     const state = playbackRepo.get(file.id);
-    let updatedState: ReturnType<typeof playbackRepo.save>;
+    let updatedState: ReturnType<typeof playbackRepo.save> | null = null;
 
     if (options.watched) {
       // Marcar como visto: posición = duración (o 0 si no se conoce), completedAt = now
@@ -64,7 +65,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       // Posición manual
       const positionValue = options.position;
       if (positionValue < 0) {
-        throw new Error('La posición no puede ser negativa.');
+        throw new ValidationError('La posición no puede ser negativa.');
       }
       const duration = state?.durationSeconds ?? null;
       const position = duration === null ? positionValue : Math.min(positionValue, duration);
@@ -79,8 +80,12 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
       });
     }
 
+    if (!updatedState) {
+      throw new ValidationError('No se pudo determinar el estado de reproducción');
+    }
+
     if (options.json === true) {
-      const calc = calculatePlayback(updatedState!, playbackConfig, new Date().toISOString());
+      const calc = calculatePlayback(updatedState, playbackConfig, new Date().toISOString());
       console.log(
         JSON.stringify(
           {
@@ -89,8 +94,8 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
             position: calc.positionSeconds,
             duration: calc.durationSeconds,
             completed: calc.isCompleted,
-            lastPlayedAt: updatedState!.lastPlayedAt,
-            playCount: updatedState!.playCount,
+            lastPlayedAt: updatedState.lastPlayedAt,
+            playCount: updatedState.playCount,
           },
           null,
           2,
@@ -100,7 +105,7 @@ export async function runMarkCommand(query: string, options: MarkCommandOptions)
     }
 
     const year = media.year === null ? '' : ` (${media.year})`;
-    const calc = calculatePlayback(updatedState!, playbackConfig, new Date().toISOString());
+    const calc = calculatePlayback(updatedState, playbackConfig, new Date().toISOString());
     const status = calc.isCompleted ? '✓ visto' : '● en curso';
     const progress = calc.progressPercent !== null ? ` [${calc.progressPercent.toFixed(0)}%]` : '';
     console.log(

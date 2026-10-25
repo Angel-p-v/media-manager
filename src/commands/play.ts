@@ -17,6 +17,7 @@ import {
   type TrackerDeps,
 } from '../core/player/launcher.js';
 import { selectMediaFile } from '../core/player/selection.js';
+import { ValidationError } from '../shared/errors.js';
 import { createLogger } from '../shared/logger.js';
 
 import type { MediaFileRow, MediaRow } from '../core/db/types.js';
@@ -60,12 +61,12 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
 
     if (options.next) {
       if (!isEpisodic(media.type)) {
-        throw new Error('La opción --next solo está disponible para series y anime.');
+        throw new ValidationError('La opción --next solo está disponible para series y anime.');
       }
       const current = selectMediaFile(files, options.file);
       const next = findNextEpisode(current, files, playbackRepo, playbackConfig);
       if (!next) {
-        throw new Error('No hay siguiente episodio no completado.');
+        throw new ValidationError('No hay siguiente episodio no completado.');
       }
       media = next.media;
       file = next.file;

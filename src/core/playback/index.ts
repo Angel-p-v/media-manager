@@ -1,3 +1,5 @@
+import { PlayerError } from '../../shared/errors.js';
+
 import type { MediaType } from '../config/schema.js';
 import type { MediaFileRow, MediaRow, PlaybackStateRow } from '../db/types.js';
 
@@ -114,7 +116,7 @@ function resolveResumeDecisionImpl(options: ResumeOptions): ResumeDecision {
   if (options.restart) return 'restart';
   if (options.resume) {
     if (!options.hasSavedState || !options.canResume) {
-      throw new Error('No hay posición guardada reanudable para --resume');
+      throw new PlayerError('No hay posición guardada reanudable para --resume');
     }
     return 'resume';
   }

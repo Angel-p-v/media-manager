@@ -1,5 +1,6 @@
 import { cachePoster, getCachedPoster } from './posterCache.js';
 import { rateLimiters } from './rateLimiter.js';
+import { MetadataError, formatError } from '../../shared/errors.js';
 
 import type { Logger } from '../../shared/logger.js';
 
@@ -175,7 +176,9 @@ export class MetadataService {
    */
   async searchTmdb(query: string): Promise<MetadataSearchResult[]> {
     if (!this.config.tmdbApiKey) {
-      throw new Error('TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tmdb.waitForSlot();
@@ -190,7 +193,7 @@ export class MetadataService {
     });
 
     if (!response.ok) {
-      throw new Error(`TMDB API respondió ${response.status}`);
+      throw new MetadataError(`TMDB API respondió ${response.status}`);
     }
 
     const data = (await response.json()) as TmdbSearchResponse;
@@ -219,7 +222,9 @@ export class MetadataService {
     mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
     if (!this.config.tmdbApiKey) {
-      throw new Error('TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tmdb.waitForSlot();
@@ -233,7 +238,7 @@ export class MetadataService {
     });
 
     if (!response.ok) {
-      throw new Error(`TMDB API respondió ${response.status}`);
+      throw new MetadataError(`TMDB API respondió ${response.status}`);
     }
 
     const data = (await response.json()) as TmdbDetails;
@@ -267,7 +272,9 @@ export class MetadataService {
    */
   async searchTvdb(query: string): Promise<MetadataSearchResult[]> {
     if (!this.config.tvdbApiKey) {
-      throw new Error('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tvdb.waitForSlot();
@@ -285,7 +292,7 @@ export class MetadataService {
     });
 
     if (!response.ok) {
-      throw new Error(`TVDB API respondió ${response.status}`);
+      throw new MetadataError(`TVDB API respondió ${response.status}`);
     }
 
     const data = (await response.json()) as TvdbSearchResponse;
@@ -316,7 +323,9 @@ export class MetadataService {
     mediaType: 'movie' | 'tv' = 'tv',
   ): Promise<MetadataSearchResult> {
     if (!this.config.tvdbApiKey) {
-      throw new Error('TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.tvdb.waitForSlot();
@@ -331,7 +340,7 @@ export class MetadataService {
     });
 
     if (!response.ok) {
-      throw new Error(`TVDB API respondió ${response.status}`);
+      throw new MetadataError(`TVDB API respondió ${response.status}`);
     }
 
     const data = (await response.json()) as TvdbDetails;
@@ -388,7 +397,9 @@ export class MetadataService {
    */
   async searchOmdb(query: string): Promise<MetadataSearchResult[]> {
     if (!this.config.omdbApiKey) {
-      throw new Error('OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.omdb.waitForSlot();
@@ -403,7 +414,7 @@ export class MetadataService {
     });
 
     if (!response.ok) {
-      throw new Error(`OMDB API respondió ${response.status}`);
+      throw new MetadataError(`OMDB API respondió ${response.status}`);
     }
 
     const data = (await response.json()) as OmdbSearchResponse;
@@ -434,7 +445,9 @@ export class MetadataService {
     _mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
     if (!this.config.omdbApiKey) {
-      throw new Error('OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.');
+      throw new MetadataError(
+        'OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.',
+      );
     }
 
     await rateLimiters.omdb.waitForSlot();
@@ -449,13 +462,13 @@ export class MetadataService {
     });
 
     if (!response.ok) {
-      throw new Error(`OMDB API respondió ${response.status}`);
+      throw new MetadataError(`OMDB API respondió ${response.status}`);
     }
 
     const data = (await response.json()) as OmdbDetails;
 
     if (data.Response !== 'True') {
-      throw new Error(`OMDB no encontró el título ${externalId}`);
+      throw new MetadataError(`OMDB no encontró el título ${externalId}`);
     }
 
     const localPosterPath = await cachePoster(
@@ -490,7 +503,7 @@ export class MetadataService {
         results.push(...tmdbResults);
       } catch (error) {
         this.config.logger.warn('TMDB búsqueda falló', {
-          error: (error as Error).message,
+          error: formatError(error),
         });
       }
     }
@@ -501,7 +514,7 @@ export class MetadataService {
         results.push(...tvdbResults);
       } catch (error) {
         this.config.logger.warn('TVDB búsqueda falló', {
-          error: (error as Error).message,
+          error: formatError(error),
         });
       }
     }
@@ -512,7 +525,7 @@ export class MetadataService {
         results.push(...omdbResults);
       } catch (error) {
         this.config.logger.warn('OMDB búsqueda falló', {
-          error: (error as Error).message,
+          error: formatError(error),
         });
       }
     }

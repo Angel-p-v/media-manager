@@ -4,7 +4,7 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-import { PlayerError } from '../../shared/errors.js';
+import { PlayerError, formatError } from '../../shared/errors.js';
 import { launchWithTracker } from '../playback/mpvTracker.js';
 
 import type { Logger } from '../../shared/logger.js';
@@ -163,7 +163,7 @@ export async function launchPlayer(
       );
     } catch (error) {
       trackerDeps.logger.warn('No se pudo iniciar tracker mpv, continuando sin tracking', {
-        error: (error as Error).message,
+        error: formatError(error),
       });
     }
   }
@@ -228,7 +228,9 @@ function waitForSpawn(child: ChildProcess, plan: LaunchPlan): Promise<void> {
     const onError = (error: Error): void => {
       cleanup();
       reject(
-        new PlayerError(`No se pudo lanzar «${plan.player}»: ${error.message}`, { cause: error }),
+        new PlayerError(`No se pudo lanzar «${plan.player}»: ${formatError(error)}`, {
+          cause: error,
+        }),
       );
     };
 

@@ -1,6 +1,6 @@
 import { chmodSync, copyFileSync, rmSync } from 'node:fs';
 
-import { DbError } from '../../shared/errors.js';
+import { DbError, formatError } from '../../shared/errors.js';
 
 import type { Db } from './connection.js';
 
@@ -46,7 +46,7 @@ export function backupDatabase(
   } catch (error) {
     rmSync(target, { force: true });
     throw new DbError(
-      `No se pudo crear el backup de la base de datos en ${target}: ${(error as Error).message}`,
+      `No se pudo crear el backup de la base de datos en ${target}: ${formatError(error)}`,
       { cause: error },
     );
   }

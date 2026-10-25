@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { classifyFile, type ClassifiedFile } from './classifier.js';
 import { scanLibrary, type ScanLibraryOptions } from './scanner.js';
-import { IndexError } from '../../shared/errors.js';
+import { IndexError, formatError } from '../../shared/errors.js';
 import { resolvePath } from '../../shared/paths.js';
 
 import type { Logger } from '../../shared/logger.js';
@@ -178,7 +178,7 @@ export async function indexLibrary(
       });
     }
     if (error instanceof IndexError) throw error;
-    throw new IndexError(`Falló la indexación: ${(error as Error).message}`, { cause: error });
+    throw new IndexError(`Falló la indexación: ${formatError(error)}`, { cause: error });
   }
 }
 

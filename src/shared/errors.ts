@@ -4,6 +4,9 @@ export type ErrorCode =
   | 'DB_ERROR'
   | 'INDEX_ERROR'
   | 'PLAYER_ERROR'
+  | 'METADATA_ERROR'
+  | 'SELF_UPDATE_ERROR'
+  | 'VALIDATION_ERROR'
   | 'NOT_FOUND'
   | 'AMBIGUOUS';
 
@@ -63,6 +66,27 @@ export class NotFoundError extends AppError {
 export class AmbiguousError extends AppError {
   constructor(message: string, options?: { cause?: unknown }) {
     super(message, 'AMBIGUOUS', options);
+  }
+}
+
+/** Error al obtener o procesar metadatos de proveedores externos (TMDB, TVDB, OMDB). */
+export class MetadataError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'METADATA_ERROR', options);
+  }
+}
+
+/** Error durante la auto-actualización (`mm self-update`). */
+export class SelfUpdateError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'SELF_UPDATE_ERROR', options);
+  }
+}
+
+/** Error de validación de argumentos o entrada del usuario. */
+export class ValidationError extends AppError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, 'VALIDATION_ERROR', options);
   }
 }
 

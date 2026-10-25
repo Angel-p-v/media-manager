@@ -2,6 +2,7 @@ import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
 import { MetadataService } from '../core/metadata/service.js';
+import { formatError } from '../shared/errors.js';
 
 import type { MetadataServiceConfig } from '../core/metadata/service.js';
 
@@ -62,7 +63,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
             }
           }
         } catch (error) {
-          console.error(pc.red(`Error buscando: ${(error as Error).message}`));
+          console.error(pc.red(`Error buscando: ${formatError(error)}`));
           process.exitCode = 1;
         }
         return;
@@ -117,7 +118,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
             console.log(`  Fecha: ${saved.releaseDate ?? 'N/A'}`);
           }
         } catch (error) {
-          console.error(pc.red(`Error obteniendo metadatos: ${(error as Error).message}`));
+          console.error(pc.red(`Error obteniendo metadatos: ${formatError(error)}`));
           process.exitCode = 1;
         }
         return;

@@ -1,3 +1,5 @@
+import { DbError } from '../../../shared/errors.js';
+
 import type { MediaType } from '../../config/schema.js';
 import type { Db } from '../connection.js';
 import type { PlaybackEntryRow, PlaybackInput, PlaybackStateRow } from '../types.js';
@@ -113,7 +115,7 @@ export function createPlaybackRepository(db: Db): PlaybackRepository {
         updated_at: input.updatedAt,
       }) as PlaybackDbRow | undefined;
 
-      if (!row) throw new Error('No se pudo guardar el estado de reproducción');
+      if (!row) throw new DbError('No se pudo guardar el estado de reproducción');
       return toPlaybackState(row);
     },
 

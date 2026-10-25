@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
+import { PlayerError, formatError } from '../../shared/errors.js';
+
 import type { Logger } from '../../shared/logger.js';
 import type { PlaybackConfig } from '../config/schema.js';
 import type { PlaybackRepository } from '../db/repositories/playbackRepo.js';
@@ -48,14 +50,17 @@ export class MpvTracker {
 
   /** Inicia el servidor de socket y espera la conexión de mpv. */
   async start(): Promise<void> {
-    if (this.destroyed) throw new Error('Tracker ya destruido');
+    if (this.destroyed) throw new PlayerError('Tracker ya destruido');
 
     this.server = createServer((socket) => this.handleConnection(socket));
 
+    const server = this.server;
+    if (!server) throw new PlayerError('Servidor de socket no inicializado');
+
     await new Promise<void>((resolve, reject) => {
-      this.server!.once('error', reject);
-      this.server!.listen(this.options.socketPath, () => {
-        this.server!.off('error', reject);
+      server.once('error', reject);
+      server.listen(this.options.socketPath, () => {
+        server.off('error', reject);
         this.options.logger.debug('mpv-tracker: servidor escuchando', {
           path: this.options.socketPath,
         });
@@ -79,8 +84,9 @@ export class MpvTracker {
     }
 
     if (this.server) {
+      const server = this.server;
       await new Promise<void>((resolve) => {
-        this.server!.close(() => resolve());
+        server.close(() => resolve());
       });
       this.server = null;
     }
@@ -127,7 +133,7 @@ export class MpvTracker {
     });
 
     socket.on('error', (error) => {
-      this.options.logger.warn('mpv-tracker: error en socket', { error: error.message });
+      this.options.logger.warn('mpv-tracker: error en socket', { error: formatError(error) });
     });
 
     // Observar propiedades
