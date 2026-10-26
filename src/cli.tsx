@@ -70,6 +70,7 @@ program
   .option('--validate', 'valida el archivo de configuración y termina')
   .option('--json', 'salida en formato JSON')
   .option('--init', 'crea el archivo de configuración por defecto si no existe')
+  .option('--set <clave=valor>', 'establece una clave anidada, p. ej. player.default=vlc')
   .action(runConfigCommand);
 
 program

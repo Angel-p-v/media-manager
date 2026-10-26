@@ -6,7 +6,8 @@ import pc from 'picocolors';
 import { stringify as stringifyYaml } from 'yaml';
 
 import { defaultConfig } from '../core/config/defaults.js';
-import { loadConfig, resolveConfigPath } from '../core/config/loader.js';
+import { loadConfig, resolveConfigPath, saveConfig } from '../core/config/loader.js';
+import { ValidationError } from '../shared/errors.js';
 
 export type ConfigCommandOptions = {
   path?: boolean;
@@ -14,7 +15,40 @@ export type ConfigCommandOptions = {
   json?: boolean;
   init?: boolean;
   config?: string;
+  /** Establece una clave anidada, p. ej. `player.default=vlc`. */
+  set?: string;
 };
+
+/** Asigna un valor en un objeto anidado usando una ruta con puntos (p. ej. `player.default`). */
+function setNestedValue(obj: Record<string, unknown>, dottedKey: string, value: unknown): void {
+  const keys = dottedKey.split('.');
+  const lastKey = keys.at(-1);
+  if (lastKey === undefined) {
+    throw new ValidationError(`Clave vacía: '${dottedKey}'.`);
+  }
+
+  let current: Record<string, unknown> = obj;
+  let pathSoFar = '';
+  for (const key of keys.slice(0, -1)) {
+    pathSoFar = pathSoFar ? `${pathSoFar}.${key}` : key;
+    const next: Record<string, unknown> = current[key] as Record<string, unknown>;
+    if (next === null || next === undefined || typeof next !== 'object' || Array.isArray(next)) {
+      throw new ValidationError(
+        `No se puede establecer '${dottedKey}': la ruta '${pathSoFar}' no es un objeto.`,
+      );
+    }
+    current = next;
+  }
+  current[lastKey] = value;
+}
+
+/** Coerciona el valor de cadena de `--set` a booleano, número o cadena. */
+function coerceValue(value: string): string | boolean | number {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (value !== '' && !Number.isNaN(Number(value))) return Number(value);
+  return value;
+}
 
 /** Implementa `mm config`. */
 export async function runConfigCommand(options: ConfigCommandOptions): Promise<void> {
@@ -39,6 +73,23 @@ export async function runConfigCommand(options: ConfigCommandOptions): Promise<v
     const yaml = stringifyYaml(defaultConfig);
     await writeFile(configPath, yaml, 'utf8');
     console.log(pc.green('✔') + ` Configuración creada en ${configPath}`);
+    return;
+  }
+
+  if (options.set !== undefined) {
+    const equals = options.set.indexOf('=');
+    if (equals <= 0) {
+      throw new ValidationError(
+        `Opción --set inválida: '${options.set}'. Usa el formato clave=valor, p. ej. player.default=vlc.`,
+      );
+    }
+    const key = options.set.slice(0, equals);
+    const rawValue = options.set.slice(equals + 1);
+
+    const config = await loadConfig({ configPath });
+    setNestedValue(config, key, coerceValue(rawValue));
+    await saveConfig(config, configPath);
+    console.log(pc.green('✔') + ` ${key} = ${rawValue}`);
     return;
   }
 
