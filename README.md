@@ -113,6 +113,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
 | 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación)   | ✅     |
 | 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
+| 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)          | ✅     |
 
 ## 🚀 Instalación rápida
 
@@ -266,6 +267,7 @@ mm metadata clear                  # limpia metadatos de un título
 | `w`            | Marcar visto / no visto                                           |
 | `f`            | ⭐ Favorito / quitar favorito                                     |
 | `m`            | 📋 Mostrar/ocultar panel de detalles                              |
+| `r`            | 🔄 Obtener metadatos del título seleccionado                      |
 | `n`            | ▶️ Siguiente episodio                                             |
 | `g`            | 🔄 Ciclo filtros (todos / en curso / no vistos / favoritos)       |
 | `s`            | ⚙️ Configuración                                                  |
@@ -355,6 +357,12 @@ logging:
   level: warn
   format: text
 
+metadata:
+  tmdbApiKey: TU_CLAVE_TMDB # opcional, para obtener metadatos externos
+  tvdbApiKey: TU_CLAVE_TVDB # opcional, proveedor alternativo
+  cacheTtlHours: 24 # horas antes de refrescar metadatos
+  autoFetch: false # true = obtener metadatos al abrir la TUI
+
 keybindings:
   quit: q
   help: '?'
@@ -362,6 +370,22 @@ keybindings:
   play: p
   nextSection: tab
 ```
+
+### 🤖 Metadatos automáticos (tipo Sonarr/Radarr)
+
+Si activas `metadata.autoFetch: true` y configuras al menos una clave API (TMDB o TVDB), al abrir la TUI se buscarán automáticamente los metadatos de **todos los títulos que no los tienen aún**, sin que tengas que pulsar `r` en cada uno individualmente.
+
+```yaml
+metadata:
+  tmdbApiKey: TU_CLAVE_TMDB
+  autoFetch: true
+```
+
+El proceso respeta el rate limiting de cada proveedor (TMDB: 40 req/10s, TVDB: 10 req/10s) y procesa los títulos en lotes para no bloquear la aplicación. Al finalizar, verás un resumen en la barra de estado con cuántos metadatos se obtuvieron y cuántos fallaron.
+
+> **💡 Por defecto** `autoFetch` está desactivado (`false`) para no hacer llamadas API inesperadas si no tienes claves configuradas.
+
+> **⌨️ Tecla `r`**: si prefieres obtener metadatos título por título manualmente, pulsa `r` sobre cualquier título seleccionado en la biblioteca.
 
 > **💡 Placeholder `{start}`**: si la plantilla lo incluye y hay posición de reanudación, se sustituye por los segundos; si no hay reanudación, se elimina el argumento completo.
 
