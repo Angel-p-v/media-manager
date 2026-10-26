@@ -1,8 +1,8 @@
-# macOS - Sin assets oficiales en v2.1
+# macOS - Sin assets oficiales en v3.1.0
 
 ## Estado
 
-**No hay assets oficiales de macOS en v2.1.**
+**No hay assets oficiales de macOS en v3.1.0.**
 
 ## Razón
 

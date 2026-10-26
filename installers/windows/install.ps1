@@ -7,8 +7,8 @@
 #
 # Uso: .\install.ps1 [opciones]
 #   .\install.ps1
-#   .\install.ps1 --version v2.1.0
-#   .\install.ps1 --file media-manager-cli-2.1.0-windows-x64.zip --sha256 ...sha256
+#   .\install.ps1 --version v3.1.0
+#   .\install.ps1 --file media-manager-cli-3.1.0-windows-x64.zip --sha256 ...sha256
 
 $ErrorActionPreference = 'Stop'
 $PSDefaultParameterValues['*:Encoding'] = 'utf8'
@@ -50,9 +50,9 @@ Opciones:
 
 Ejemplos:
   .\install.ps1
-  .\install.ps1 --version v2.1.0
-  .\install.ps1 --file media-manager-cli-2.1.0-windows-x64.zip `
-    --sha256 media-manager-cli-2.1.0-windows-x64.zip.sha256
+  .\install.ps1 --version v3.1.0
+  .\install.ps1 --file media-manager-cli-3.1.0-windows-x64.zip `
+    --sha256 media-manager-cli-3.1.0-windows-x64.zip.sha256
 
 Códigos de salida:
   0 éxito · 1 red/checksum · 2 uso incorrecto · 3 plataforma no soportada
