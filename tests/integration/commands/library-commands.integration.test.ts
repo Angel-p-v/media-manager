@@ -205,7 +205,7 @@ describe('comandos de consulta (integración)', () => {
 
     expect(payload.database.path).toBe(path.join(workDir, 'library.db'));
     expect(payload.database.sizeBytes).toBeGreaterThan(0);
-    expect(payload.media).toEqual({ total: 5, series: 2, anime: 1, movie: 2 });
+    expect(payload.media).toEqual({ total: 5, series: 2, anime: 1, movie: 2, unknown: 0 });
     expect(payload.files).toBe(8);
     expect(payload.lastRun).toMatchObject({
       status: 'completed',
