@@ -263,4 +263,18 @@ describe('saveConfig', () => {
     // El archivo no debe haberse creado
     expect(await readConfigFile(file)).toEqual({});
   });
+
+  it('crea el directorio padre y el archivo si no existen (primera ejecución)', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'mm-save-'));
+    // La subcarpeta no existe: saveConfig debe crearla antes de escribir.
+    const file = path.join(dir, 'aun-no-existe', 'config.yaml');
+
+    await saveConfig(defaultConfig, file);
+
+    const reloaded = await loadConfig({ configPath: file, env: {} });
+    expect(reloaded.player.default).toBe(defaultConfig.player.default);
+    expect(reloaded.database.path).toBe(
+      path.resolve(homedir(), '.local/share/media-manager/library.db'),
+    );
+  });
 });
