@@ -40,6 +40,26 @@
 
 ---
 
+## ⚡ Comenzando en 30 segundos
+
+```bash
+# 1. Instalar (Linux, sin sudo)
+curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
+sh /tmp/mm-install.sh
+
+# 2. Abrir la interfaz
+mm
+
+# 3. Desde la CLI
+mm search "cowboy bebop"
+mm play "cowboy bebop" --resume   # reanuda donde lo dejaste
+mm index                          # re-escanea tu biblioteca
+```
+
+Windows y macOS: véase [Instalación rápida](#instalación-rápida).
+
+---
+
 ## 🎯 ¿Qué es media-manager?
 
 `media-manager` (CLI: `mm`) es una aplicación de línea de comandos **100% terminal** para organizar y consumir una biblioteca multimedia personal que ya vive en tu disco.
@@ -68,30 +88,30 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ## ✨ Características principales
 
-| Capacidad                                                        | Estado |
-| ---------------------------------------------------------------- | ------ |
-| 🖥️ TUI navegable (Ink + React)                                   | ✅     |
-| 🗃️ Índice local en SQLite con FTS5                               | ✅     |
-| 🔄 Indexación recursiva + incremental                            | ✅     |
-| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`) | ✅     |
-| 🔍 Búsqueda instantánea (CLI + TUI)                              | ✅     |
-| 🎮 Reproducción con `mpv` / `vlc`                                | ✅     |
-| ⚙️ Configuración YAML validada con Zod                           | ✅     |
-| 👀 Modo _watch_ (reindexado automático)                          | ✅     |
-| 📤 Salida `--json` para scripts                                  | ✅     |
-| 📝 Logs estructurados, `--verbose`, errores con código           | ✅     |
-| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                  | ✅     |
-| ✅ Instalador verificado, checksums, distribución portable       | ✅     |
-| ▶️ Estado de reproducción (continuar, historial, marcas)         | ✅     |
-| 📡 Tracker IPC mpv y reanudación automática                      | ✅     |
-| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`  | ✅     |
-| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`          | ✅     |
-| 🔄 Auto-actualización con `self-update`                          | ✅     |
-| 📋 Sección "Continuar" en la TUI                                 | ✅     |
-| 📡 Tracker IPC mpv (socket Unix, eventos property-change)        | ✅     |
-| 🧪 Tests E2E con IPC falso y `--dry-run`                         | ✅     |
-| 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación) | ✅     |
-| 🔄 Sincronización automática de metadatos con TTL                | ✅     |
+| Capacidad                                                          | Estado |
+| ------------------------------------------------------------------ | ------ |
+| 🖥️ TUI navegable (Ink + React)                                     | ✅     |
+| 🗃️ Índice local en SQLite con FTS5                                 | ✅     |
+| 🔄 Indexación recursiva + incremental                              | ✅     |
+| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`)   | ✅     |
+| 🔍 Búsqueda instantánea (CLI + TUI)                                | ✅     |
+| 🎮 Reproducción con `mpv` / `vlc`                                  | ✅     |
+| ⚙️ Configuración YAML validada con Zod                             | ✅     |
+| 👀 Modo _watch_ (reindexado automático)                            | ✅     |
+| 📤 Salida `--json` para scripts                                    | ✅     |
+| 📝 Logs estructurados, `--verbose`, errores con código             | ✅     |
+| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                    | ✅     |
+| ✅ Instalador verificado, checksums, distribución portable         | ✅     |
+| ▶️ Estado de reproducción (continuar, historial, marcas)           | ✅     |
+| 📡 Tracker IPC mpv (reanudación automática y guardado de posición) | ✅     |
+| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`    | ✅     |
+| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`            | ✅     |
+| 🔄 Auto-actualización con `self-update`                            | ✅     |
+| 📋 Sección "Continuar" en la TUI                                   | ✅     |
+| 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)   | ✅     |
+| 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
+| 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación)   | ✅     |
+| 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
 
 ---
 
@@ -140,7 +160,7 @@ mm --version
 
 #### macOS (x64, arm64)
 
-> **Nota:** No hay assets oficiales de macOS en v3.0.0. Consulta [`installers/macos/README.md`](./installers/macos/README.md) para más información.
+> **Nota:** No hay assets oficiales de macOS en v3.1.0. Consulta [`installers/macos/README.md`](./installers/macos/README.md) para más información.
 
 Para compilar en macOS:
 
@@ -160,7 +180,7 @@ npm run standalone -- --node-source official
 > ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: sin assets oficiales (compila localmente)**
 
 > **Plataformas con assets oficiales:** Linux (x64, arm64) · Windows (x64)  
-> **macOS:** sin assets oficiales en v3.0.0 (compila localmente)
+> **macOS:** sin assets oficiales en v3.1.0 (compila localmente)
 
 ### 🔐 Verificar descarga manual
 
@@ -251,7 +271,7 @@ mm metadata clear                  # limpia metadatos de un título
 | `Tab`          | Siguiente sección (Todo, **Continuar**, Series, Anime, Películas) |
 | `↑` `↓`        | Mover selección                                                   |
 | `/`            | Buscar • `Esc` vuelve                                             |
-| `p`            | Reproducir                                                        |
+| `p`            | ▶️ Reproducir                                                     |
 | `w`            | Marcar visto / no visto                                           |
 | `f`            | ⭐ Favorito / quitar favorito                                     |
 | `m`            | 📋 Mostrar/ocultar panel de detalles                              |
@@ -259,7 +279,7 @@ mm metadata clear                  # limpia metadatos de un título
 | `g`            | 🔄 Ciclo filtros (todos / en curso / no vistos / favoritos)       |
 | `s`            | ⚙️ Configuración                                                  |
 | `?`            | ❓ Ayuda                                                          |
-| `p`            | ▶️ Reproducir                                                     |
+| `k`            | ⌨️ Reasignar atajos de teclado (desde la TUI)                     |
 
 ---
 
@@ -438,7 +458,7 @@ flowchart TD
 npm install          # instala dependencias (prepara hooks Husky)
 npm run dev          # CLI en modo watch
 npm run verify       # lint + formato + tipos + tests (gate local)
-npm test             # suite completa (450 tests)
+npm test             # suite completa (635 tests)
 npm run test:unit    # solo unitarias
 npm run test:integration
 npm run test:e2e
@@ -478,11 +498,21 @@ npm run standalone   # distribución portable con Node incluido
 
 ---
 
+## 🗺️ Próximos pasos
+
+Todos los planes de desarrollo (M0–M22, Plan 01, Plan 02, Plan 09) están implementados y mergeados en `main`. El proyecto está estable y cada commit pasa `npm run verify`.
+
+Si tienes ideas para nuevas funcionalidades, puedes:
+
+1. Abrir un [issue](https://github.com/Angel-p-v/media-manager/issues) con tu propuesta.
+2. Proponer un [PR](https://github.com/Angel-p-v/media-manager/pulls) siguiendo las convenciones del proyecto (ver [`CONTRIBUTING.md`](./CONTRIBUTING.md)).
+3. Consultar los [`docs/plans/`](./docs/plans) para ver el historial de planes completados.
+
+---
+
 ## 📄 Licencia
 
 [MIT](./LICENSE) © 2026 media-manager contributors
-
----
 
 <p align="center">
   <sub>Hecho con ❤️ para quienes prefieren la terminal.</sub><br/>
