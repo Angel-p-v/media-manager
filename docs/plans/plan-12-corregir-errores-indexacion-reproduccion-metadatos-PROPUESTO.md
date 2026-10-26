@@ -49,9 +49,10 @@ Cambiar `classifyFile()` para que determine el tipo de contenido inspeccionando 
 
 - Si el nombre del archivo coincide con un patrón de episodio (S01E02, 1x02, etc.) → clasificar como `series` o `anime` según corresponda.
 - Si el nombre del archivo tiene patrón de película (título + año) → clasificar como `movie`.
-- Si no coincide con ningún patrón conocido, no descartar silenciosamente: devolver un tipo `unknown` o intentar heurística adicional (tamaño, extensión, carpeta padre).
+- Si no coincide con ningún patrón conocido, intentar heurística de carpeta padre (nombre de la carpeta contenedora).
+- Si tras todos los intentos no se puede determinar, devolver tipo `unknown` en lugar de descartar el archivo.
 
-**Criterio de aceptación:** Un archivo con patrón de episodio se indexa como `series`/`anime` incluso si está en una raíz configurada como `movie`, y viceversa. Un fichero suelto sin patrón reconocible se indexa con tipo `unknown` en lugar de descartarse.
+**Criterio de aceptación:** Un archivo con patrón de episodio se indexa como `series`/`anime` incluso si está en una raíz configurada como `movie`, y viceversa. Si se puede inferir por carpeta padre, se usa ese tipo. Si tras todos los intentos no se puede determinar, se indexa con tipo `unknown` en lugar de descartarse.
 
 ---
 
@@ -62,7 +63,7 @@ Cambiar `classifyFile()` para que determine el tipo de contenido inspeccionando 
 1. **Arreglar desajuste de keybinding:** Renombrar el handler de `refreshMetadata` a `refresh` (o viceversa) para que coincida con la clave del keybinding por defecto (`refresh: 'r'`).
 2. **Arreglar `getOrFetchMetadata`:** Cuando `existing === undefined`, llamar a `metadataService.search()` con el título del media para obtener un `externalId`, y luego `metadataService.getDetails()` para poblar los metadatos.
 
-**Criterio de aceptación:** Presionar 'r' sobre un capítulo o película sin metadatos previos busca en TMDB/TVDB y muestra los metadatos obtenidos en el panel de detalles.
+**Criterio de aceptación:** Presionar 'r' sobre un capítulo o película sin metadatos previos muestra una notificación de estado ("Buscando metadatos…") mientras se consulta TMDB/TVDB, y al terminar muestra los metadatos obtenidos en el panel de detalles.
 
 ---
 
@@ -86,7 +87,7 @@ Cambiar `classifyFile()` para que determine el tipo de contenido inspeccionando 
 - Una rama por feature, PR a `main`, merge con squash.
 - Los cambios en scripts de instalación (`install.sh`, `install.ps1`) y README van en la misma PR que los cambios de la aplicación, si es necesario.
 
-## Pendiente de confirmación con el usuario
+## Decisiones tomadas
 
-- ¿Preferís que el tipo desconocido se indexe como `unknown` o que se intente una heurística de carpeta padre?
-- Para el Hito 3, ¿debería 'r' mostrar una notificación de estado mientras se busca en TMDB/TVDB?
+- **Tipo desconocido:** Se intenta determinar el tipo por todos los medios disponibles (patrón de episodio, patrón de película, heurística de carpeta padre). Si tras todo no se puede determinar, se indexa como `unknown` en lugar de descartar el archivo.
+- **Metadatos 'r':** Se muestra una notificación de estado ("Buscando metadatos…") al usuario mientras se consulta TMDB/TVDB, para que sepa que la aplicación está trabajando.
