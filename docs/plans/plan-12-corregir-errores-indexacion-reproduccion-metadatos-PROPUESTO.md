@@ -1,4 +1,4 @@
-# Plan: Corregir errores de indexación, reproducción y metadatos de mm
+# Plan: Corregir errores de indexación y metadatos de mm
 
 ## Problemas reportados
 
@@ -13,21 +13,13 @@ Los archivos se indexan con el tipo equivocado (`series` / `anime` / `movie`) o 
 - Los ficheros sueltos en la raíz de una carpeta `series`/`anime` se descartan completamente (línea 65: `rest.length === 0` → retorna `null`).
 - No existe detección de contenido ni reasignación automática de tipo. Si el usuario configura mal una raíz, los archivos se indexan con el tipo equivocado o se pierden por completo.
 
-### 2. Al seleccionar un video y dar Enter, no se empieza a reproducir
-
-**Causa raíz:** En `src/ui/App.tsx` (líneas 356-392), el objeto de handlers pasado a `useKeymap` **no incluye una clave para la acción `enter`**. Aunque el keybinding por defecto en `src/core/config/defaults.ts` define `enter: 'return'`, nunca se registra un handler para `enter`. Por lo tanto:
-
-- Presionar Enter en un video no dispara ninguna acción de reproducción.
-- Solo la tecla `'p'` (mapeada a la acción `play` vía `handlePlay`) lanza el reproductor.
-- `useKeymap` itera solo sobre las claves del objeto `handlers` (`play`, `quit`, `help`, etc.), y nunca busca `bindings['enter']` porque no existe un handler con esa clave.
-
-### 3. Al darle a 'r' en un capítulo sin metadatos, no pasa nada
+### 2. Al darle a 'r' en un capítulo sin metadatos, no pasa nada
 
 Hay dos causas independientes:
 
-**Causa 3a — Desajuste de keybinding:** En `src/ui/App.tsx` línea 366, el handler se registra como `refreshMetadata: handleRefreshMetadata`, pero el keybinding por defecto en `src/core/config/defaults.ts` línea 46 define `refresh: 'r'` (clave `refresh`, no `refreshMetadata`). En `useKeymap` se busca `bindings['refreshMetadata']` que es `undefined`, así que presionar 'r' nunca dispara `handleRefreshMetadata`.
+**Causa 2a — Desajuste de keybinding:** En `src/ui/App.tsx` línea 366, el handler se registra como `refreshMetadata: handleRefreshMetadata`, pero el keybinding por defecto en `src/core/config/defaults.ts` línea 46 define `refresh: 'r'` (clave `refresh`, no `refreshMetadata`). En `useKeymap` se busca `bindings['refreshMetadata']` que es `undefined`, así que presionar 'r' nunca dispara `handleRefreshMetadata`.
 
-**Causa 3b — `getOrFetchMetadata` no obtiene metadatos desde cero:** En `src/core/library/service.ts` (líneas 288-343), cuando un título **no tiene metadatos previos** (`existing === undefined`):
+**Causa 2b — `getOrFetchMetadata` no obtiene metadatos desde cero:** En `src/core/library/service.ts` (líneas 288-343), cuando un título **no tiene metadatos previos** (`existing === undefined`):
 
 1. Se salta el bloque de TTL porque `if (existing)` es falso.
 2. Entra al bloque del proveedor configurado, pero `if (existing?.externalId)` es falso.
@@ -41,9 +33,9 @@ La UI en `src/ui/components/MediaDetails.tsx` línea 55 le dice al usuario "Puls
 | Archivo                              | Rol                                                                                          |
 | ------------------------------------ | -------------------------------------------------------------------------------------------- |
 | `src/core/indexer/classifier.ts`     | `classifyFile()` — determina tipo de contenido desde `root.type` sin inspeccionar el archivo |
-| `src/ui/App.tsx`                     | Handlers de `useKeymap` (falta `enter`, desajuste `refreshMetadata`) y `handlePlay`          |
+| `src/ui/App.tsx`                     | Handlers de `useKeymap` (desajuste `refreshMetadata`)                                        |
 | `src/ui/hooks/useKeymap.ts`          | Dispatch de teclas a handlers; busca `bindings[action]` por cada clave de handlers           |
-| `src/core/config/defaults.ts`        | Keybindings por defecto (`enter`, `refresh`, `play`)                                         |
+| `src/core/config/defaults.ts`        | Keybindings por defecto (`refresh`, `play`)                                                  |
 | `src/core/library/service.ts`        | `getOrFetchMetadata()` — no busca metadatos si no hay `existing?.externalId`                 |
 | `src/ui/components/MediaDetails.tsx` | UI que anuncia "Pulsa «r» para obtener metadatos externos"                                   |
 
@@ -63,17 +55,7 @@ Cambiar `classifyFile()` para que determine el tipo de contenido inspeccionando 
 
 ---
 
-### Hito 2: Hacer que Enter inicie la reproducción del video seleccionado
-
-**Archivos:** `src/ui/App.tsx`, `src/ui/hooks/useKeymap.ts`
-
-Añadir un handler para la acción `enter` en el objeto de handlers de `useKeymap` en `App.tsx` que llame a `handlePlay()` para el elemento seleccionado actualmente en la biblioteca.
-
-**Criterio de aceptación:** Presionar Enter sobre un video en la biblioteca lanza el reproductor con ese archivo, igual que presionar 'p'.
-
----
-
-### Hito 3: Que la tecla 'r' obtenga metadatos desde cero en títulos sin metadatos
+### Hito 2: Que la tecla 'r' obtenga metadatos desde cero en títulos sin metadatos
 
 **Archivos:** `src/ui/App.tsx`, `src/core/config/defaults.ts`, `src/core/library/service.ts`
 
@@ -84,12 +66,11 @@ Añadir un handler para la acción `enter` en el objeto de handlers de `useKeyma
 
 ---
 
-### Hito 4: Pruebas y verificación
+### Hito 3: Pruebas y verificación
 
 **Archivos:** `tests/unit/`, `tests/integration/`
 
 - Test unitario para `classifyFile` con archivos en raíces de tipo equivocado.
-- Test de integración para reproducción con Enter desde la TUI.
 - Test unitario para `getOrFetchMetadata` cuando no hay metadatos previos.
 - Ejecutar `npm run verify` (lint, format, typecheck, test) y que pase en verde.
 
