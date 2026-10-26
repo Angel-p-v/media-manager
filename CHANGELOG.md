@@ -6,6 +6,24 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.2.0](https://github.com/Angel-p-v/media-manager/compare/v3.1.0...v3.2.0) (2026-10-26)
+
+
+### Features
+
+* **cli:** comando mm playlist para reproducir varios títulos en secuencia (plan-9 R3) ([#178](https://github.com/Angel-p-v/media-manager/issues/178)) ([3a732b7](https://github.com/Angel-p-v/media-manager/commit/3a732b7e5a3ec4217c728f6580a418b7eec81e9a))
+* **config:** proveedor AniList para metadatos de anime (plan-9 M2) ([#175](https://github.com/Angel-p-v/media-manager/issues/175)) ([d4b692a](https://github.com/Angel-p-v/media-manager/commit/d4b692a71ebd5f233d3ee9f428020b46059c120a))
+* **plan-9:** Docker Compose con BD y config persistentes (D1) ([#171](https://github.com/Angel-p-v/media-manager/issues/171)) ([5df4437](https://github.com/Angel-p-v/media-manager/commit/5df4437e28215514278be5430a74c184383db457))
+* **plan-9:** temas de color personalizables desde YAML (T1) ([#176](https://github.com/Angel-p-v/media-manager/issues/176)) ([fe2e764](https://github.com/Angel-p-v/media-manager/commit/fe2e764787a6064a443fc7d1dc8ec24177a22c1e))
+* **player:** soporte para subtítulos (.srt) en mm play ([#174](https://github.com/Angel-p-v/media-manager/issues/174)) ([04a8ace](https://github.com/Angel-p-v/media-manager/commit/04a8ace17274c5ef2081161aac5d40db4682234e))
+* **ui:** ajustes navegables y editables desde la TUI ([#189](https://github.com/Angel-p-v/media-manager/issues/189)) ([b79e0d3](https://github.com/Angel-p-v/media-manager/commit/b79e0d34b7ca75ddce41faef4b902e909579976c))
+* **ui:** atajos de teclado configurables desde la TUI (plan-9 T2) ([#179](https://github.com/Angel-p-v/media-manager/issues/179)) ([88e2965](https://github.com/Angel-p-v/media-manager/commit/88e2965b7da9ad5f516200802cb5d43c94a29548))
+
+
+### Bug Fixes
+
+* **ui:** permite volver a biblioteca desde ajustes con Tab ([#188](https://github.com/Angel-p-v/media-manager/issues/188)) ([884301a](https://github.com/Angel-p-v/media-manager/commit/884301acb038dd58ead3dd000c4c41f07ad556a0))
+
 ## [3.1.0](https://github.com/Angel-p-v/media-manager/compare/v3.0.7...v3.1.0) (2026-10-25)
 
 
