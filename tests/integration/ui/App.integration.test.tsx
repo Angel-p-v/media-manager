@@ -592,15 +592,109 @@ describe('App (TUI)', () => {
     unmount();
   });
 
-  it('muestra el nombre corto del fichero sin la ruta absoluta', async () => {
-    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+  it('muestra máximo 12 episodios por página con paginación', async () => {
+    const libraryManyEpisodes = {
+      ...fakeLibrary(),
+      find: (query: string) => {
+        const rows = fakeLibrary().list();
+        const media = /^\d+$/.test(query)
+          ? rows.find((row) => row.id === Number(query))
+          : rows.find((row) => row.title.toLocaleLowerCase() === query.toLocaleLowerCase());
+        if (media === undefined) throw new NotFoundError(`No existe «${query}».`);
+        // Crear 20 episodios para probar paginación
+        const files: MediaFileRow[] = Array.from({ length: 20 }, (_, i) => ({
+          id: i + 1,
+          mediaId: media.id,
+          season: 1,
+          episode: i + 1,
+          title: null,
+          filePath: `/media/series/${media.title}/S01E${String(i + 1).padStart(2, '0')}.mkv`,
+          sizeBytes: 100,
+          mtimeMs: 1,
+          indexedAt: '2026-01-01 00:00:00',
+        }));
+        return { media, files };
+      },
+    };
+
+    const { lastFrame, stdin, unmount } = render(
+      <App config={config} library={libraryManyEpisodes} />,
+    );
 
     await press(stdin, '\r');
-    const frame = frameOf(lastFrame);
+    let frame = frameOf(lastFrame);
 
-    // Debería mostrar el nombre del fichero, no la ruta absoluta
+    // Primera página: debe mostrar episodios 1-12
+    expect(frame).toContain('pág 1/2');
     expect(frame).toContain('S01E01.mkv');
-    expect(frame).not.toContain('/media/series/Severance/S01E01.mkv');
+    expect(frame).toContain('S01E12.mkv');
+    expect(frame).not.toContain('S01E13.mkv');
+
+    // Navegar al episodio 13 con flecha abajo 12 veces
+    for (let i = 0; i < 12; i++) {
+      await press(stdin, '\u001b[B');
+    }
+    frame = frameOf(lastFrame);
+
+    // Ahora debería mostrar la página 2 (episodios 2-13)
+    expect(frame).toContain('pág 2/2');
+    expect(frame).toContain('S01E13.mkv');
+    // El episodio 1 ya no debería estar visible
+    const episodeLines = frame.split('\n').filter((line) => line.includes('S01E01.mkv'));
+    expect(episodeLines.length).toBe(0);
+
+    unmount();
+  });
+
+  it('el scrolling de paginación mueve la ventana al llegar al límite', async () => {
+    const libraryManyEpisodes = {
+      ...fakeLibrary(),
+      find: (query: string) => {
+        const rows = fakeLibrary().list();
+        const media = /^\d+$/.test(query)
+          ? rows.find((row) => row.id === Number(query))
+          : rows.find((row) => row.title.toLocaleLowerCase() === query.toLocaleLowerCase());
+        if (media === undefined) throw new NotFoundError(`No existe «${query}».`);
+        const files: MediaFileRow[] = Array.from({ length: 15 }, (_, i) => ({
+          id: i + 1,
+          mediaId: media.id,
+          season: 1,
+          episode: i + 1,
+          title: null,
+          filePath: `/media/series/${media.title}/S01E${String(i + 1).padStart(2, '0')}.mkv`,
+          sizeBytes: 100,
+          mtimeMs: 1,
+          indexedAt: '2026-01-01 00:00:00',
+        }));
+        return { media, files };
+      },
+    };
+
+    const { lastFrame, stdin, unmount } = render(
+      <App config={config} library={libraryManyEpisodes} />,
+    );
+
+    await press(stdin, '\r');
+    let frame = frameOf(lastFrame);
+    expect(frame).toContain('pág 1/2');
+    expect(frame).toContain('S01E12.mkv');
+    expect(frame).not.toContain('S01E13.mkv');
+
+    // Ir al episodio 13 (índice 12)
+    for (let i = 0; i < 12; i++) {
+      await press(stdin, '\u001b[B');
+    }
+    frame = frameOf(lastFrame);
+    expect(frame).toContain('pág 2/2');
+    expect(frame).toContain('S01E13.mkv');
+
+    // Volver al episodio 1
+    for (let i = 0; i < 12; i++) {
+      await press(stdin, '\u001b[A');
+    }
+    frame = frameOf(lastFrame);
+    expect(frame).toContain('pág 1/2');
+    expect(frame).toContain('S01E01.mkv');
 
     unmount();
   });

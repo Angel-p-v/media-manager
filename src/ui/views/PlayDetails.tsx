@@ -6,6 +6,9 @@ import { theme } from '../theme.js';
 
 import type { MediaDetails as Details } from '../../core/library/service.js';
 
+/** Número máximo de episodios visibles por página en la lista. */
+const EPISODES_PER_PAGE = 12;
+
 /** Pista de audio disponible (extraída de los nombres de fichero). */
 export type AudioTrack = {
   index: number;
@@ -144,14 +147,15 @@ function languageName(code: string): string {
  *
  * Diseño:
  * - Izquierda: póster (placeholder) y metadatos principales del título.
- * - Derecha: sinopsis, listado de episodios (máx. 8 visibles + resumen),
- *   selección de pista de audio (←→) y subtítulos (Mayús+←→).
+ * - Derecha: sinopsis, listado de episodios con paginación (máx. 12 por página,
+ *   scroll al navegar más allá), selección de pista de audio (←→) y subtítulos
+ *   (Mayús+←→).
  *
  * Los idiomas de audio y subtítulos se extraen de los nombres de fichero
- * de los episodios mostrados, no son estáticos.
+ * de los episodios, no son estáticos.
  *
  * Navegación:
- * - ↑ / ↓ : navega por los episodios/ficheros
+ * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 12)
  * - ← / → : navega por las pistas de audio
  * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos
  * - p : reproduce el fichero seleccionado
@@ -204,6 +208,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   }, [files]);
 
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
+  const [visibleStart, setVisibleStart] = useState(0);
   const [selectedAudioIndex, setSelectedAudioIndex] = useState(0);
   const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(0);
 
@@ -220,12 +225,26 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     onBack();
   }, [onBack]);
 
+  /** Ajusta la ventana visible para que el índice seleccionado siempre esté visible. */
+  const ensureVisible = useCallback(
+    (nextIndex: number): void => {
+      setSelectedFileIndex(nextIndex);
+      const pageEnd = visibleStart + EPISODES_PER_PAGE;
+      if (nextIndex < visibleStart) {
+        setVisibleStart(Math.max(0, nextIndex));
+      } else if (nextIndex >= pageEnd) {
+        setVisibleStart(nextIndex - EPISODES_PER_PAGE + 1);
+      }
+    },
+    [visibleStart],
+  );
+
   // Navegación por teclado dentro de esta vista.
   useKeymap(
     { up: 'up', down: 'down', left: 'left', right: 'right' },
     {
-      up: () => setSelectedFileIndex((prev) => Math.max(0, prev - 1)),
-      down: () => setSelectedFileIndex((prev) => Math.min(Math.max(0, files.length - 1), prev + 1)),
+      up: () => ensureVisible(Math.max(0, selectedFileIndex - 1)),
+      down: () => ensureVisible(Math.min(files.length - 1, selectedFileIndex + 1)),
       left: () => setSelectedAudioIndex((prev) => Math.max(0, prev - 1)),
       right: () => setSelectedAudioIndex((prev) => Math.min(audioTracks.length - 1, prev + 1)),
     },
@@ -264,9 +283,10 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   // Nombre corto del fichero (sin ruta absoluta).
   const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
 
-  // Solo mostrar los primeros 8 archivos; el resto se resume.
-  const visibleFiles = files.slice(0, 8);
-  const hiddenCount = files.length - 8;
+  // Ventana visible de episodios (paginación de 12).
+  const visibleFiles = files.slice(visibleStart, visibleStart + EPISODES_PER_PAGE);
+  const totalPages = Math.ceil(files.length / EPISODES_PER_PAGE);
+  const currentPage = Math.floor(selectedFileIndex / EPISODES_PER_PAGE) + 1;
 
   return (
     <Box flexGrow={1} flexDirection="row">
@@ -317,13 +337,15 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
             <Text> </Text>
 
             <Text>
-              {theme.label('Episodios / ficheros')} {theme.muted(`(↑↓ navegan)`)}
+              {theme.label('Episodios / ficheros')}{' '}
+              {theme.muted(`(↑↓ navegan · pág ${currentPage}/${totalPages})`)}
             </Text>
             {files.length === 0 ? (
               <Text>{theme.muted('  sin ficheros indexados')}</Text>
             ) : (
-              visibleFiles.map((file, index) => {
-                const active = index === selectedFileIndex;
+              visibleFiles.map((file, relativeIndex) => {
+                const absoluteIndex = visibleStart + relativeIndex;
+                const active = absoluteIndex === selectedFileIndex;
                 const season =
                   file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
                 const episode =
@@ -337,7 +359,13 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
                 );
               })
             )}
-            {hiddenCount > 0 && <Text>{theme.muted(`  … y ${hiddenCount} más`)}</Text>}
+            {files.length > EPISODES_PER_PAGE && (
+              <Text>
+                {theme.muted(
+                  `  ${files.length - visibleFiles.length} más (pág ${currentPage}/${totalPages})`,
+                )}
+              </Text>
+            )}
             <Text> </Text>
           </Box>
 
