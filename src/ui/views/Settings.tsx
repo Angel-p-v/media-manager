@@ -53,6 +53,16 @@ function buildItems(config: AppConfig): SettingsItem[] {
     });
   });
 
+  // Opción para añadir una nueva raíz de biblioteca.
+  items.push({
+    id: 'library-root-add',
+    label: '+ Añadir raíz',
+    kind: 'text',
+    value: '',
+    originalValue: '',
+    editing: false,
+  });
+
   // Ruta de la base de datos (texto).
   items.push({
     id: 'database-path',
@@ -182,7 +192,7 @@ export function SettingsView({
     if (selectedIndex >= merged.length) {
       setSelectedIndex(Math.max(0, merged.length - 1));
     }
-  }, [config, items, selectedIndex]);
+  }, [config, selectedIndex]);
 
   const itemCount = items.length;
   const hasItems = itemCount > 0;
@@ -244,7 +254,16 @@ export function SettingsView({
 
       const nextConfig: AppConfig = { ...config };
 
-      if (item.id.startsWith('library-root-')) {
+      if (item.id === 'library-root-add') {
+        if (!newValue.trim()) {
+          setStatus('La ruta no puede estar vacía.');
+          return;
+        }
+        nextConfig.library = {
+          ...nextConfig.library,
+          roots: [...nextConfig.library.roots, { path: newValue.trim(), type: 'movie' }],
+        };
+      } else if (item.id.startsWith('library-root-')) {
         const index = Number(item.id.split('-').pop());
         nextConfig.library = {
           ...nextConfig.library,
