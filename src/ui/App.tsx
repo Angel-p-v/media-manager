@@ -115,9 +115,10 @@ function AppImpl({
         series: stats.media.series,
         anime: stats.media.anime,
         movie: stats.media.movie,
+        unknown: stats.media.unknown,
       };
     } catch {
-      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, anime: 0, movie: 0 };
+      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, anime: 0, movie: 0, unknown: 0 };
     }
   }, [library]);
 

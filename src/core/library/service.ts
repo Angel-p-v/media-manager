@@ -200,6 +200,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
           series: mediaRepo.count('series'),
           anime: mediaRepo.count('anime'),
           movie: mediaRepo.count('movie'),
+          unknown: mediaRepo.count('unknown'),
         },
         files: fileRepo.count(),
         lastRun: indexRunRepo.latest() ?? null,

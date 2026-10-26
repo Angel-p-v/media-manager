@@ -25,6 +25,7 @@ const TYPE_LABEL: Record<MediaType, string> = {
   series: 'serie',
   anime: 'anime',
   movie: 'película',
+  unknown: 'desconocido',
 };
 
 /** Etiqueta legible del tipo de contenido. */

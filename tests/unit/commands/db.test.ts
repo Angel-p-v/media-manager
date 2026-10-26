@@ -113,7 +113,7 @@ describe('runDbStatsCommand', () => {
     vi.spyOn(console, 'log').mockImplementation(logSpy);
     const ctx = mockCommandContext();
     const stats = {
-      media: { total: 3, series: 1, anime: 1, movie: 1 },
+      media: { total: 3, series: 1, anime: 1, movie: 1, unknown: 0 },
       files: 10,
       inProgress: 0,
       lastRun: null,
@@ -132,7 +132,7 @@ describe('runDbStatsCommand', () => {
     vi.spyOn(console, 'log').mockImplementation(logSpy);
     const ctx = mockCommandContext();
     const stats = {
-      media: { total: 0, series: 0, anime: 0, movie: 0 },
+      media: { total: 0, series: 0, anime: 0, movie: 0, unknown: 0 },
       files: 0,
       inProgress: 0,
       lastRun: null,
@@ -149,7 +149,7 @@ describe('runDbStatsCommand', () => {
     vi.spyOn(console, 'log').mockImplementation(logSpy);
     const ctx = mockCommandContext();
     const stats = {
-      media: { total: 5, series: 2, anime: 1, movie: 2 },
+      media: { total: 5, series: 2, anime: 1, movie: 2, unknown: 0 },
       files: 20,
       inProgress: 0,
       lastRun: {
