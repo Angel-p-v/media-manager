@@ -97,6 +97,11 @@ export type LibraryService = {
    * Devuelve cuántos se refrescaron y cuántos fallaron.
    */
   refreshExpiredMetadata(): Promise<{ refreshed: number; failed: number }>;
+  /**
+   * Obtiene metadatos para todos los títulos que no los tienen aún.
+   * Respeta el rate limiting de cada proveedor.
+   */
+  fetchMissingMetadata(): Promise<{ fetched: number; failed: number }>;
   /** Devuelve la cantidad de metadatos expirados según el TTL configurado. */
   getExpiredMetadataCount(): number;
   /** Devuelve true si hay algún proveedor de metadatos configurado. */
@@ -446,6 +451,46 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       }
 
       return { refreshed, failed };
+    },
+
+    /**
+     * Obtiene metadatos para todos los títulos que no los tienen aún.
+     * Útil para comportamiento tipo Sonarr/Radarr: al indexar, se buscan
+     * automáticamente los metadatos externos de los títulos nuevos.
+     * Respeta el rate limiting de cada proveedor.
+     */
+    async fetchMissingMetadata(): Promise<{ fetched: number; failed: number }> {
+      if (!metadataService.hasProviderConfigured()) {
+        return { fetched: 0, failed: 0 };
+      }
+
+      let fetched = 0;
+      let failed = 0;
+      let offset = 0;
+      const limit = 50;
+
+      // Procesar en lotes para no cargar todos los títulos en memoria de una vez
+      while (true) {
+        const media = mediaRepo.list({ limit, offset });
+        if (media.length === 0) break;
+
+        for (const row of media) {
+          const alreadyHas = metadataRepo.get(row.id);
+          if (alreadyHas) continue;
+
+          try {
+            const result = await this.getOrFetchMetadata(row.id);
+            if (result) fetched++;
+          } catch {
+            failed++;
+          }
+        }
+
+        offset += limit;
+        if (media.length < limit) break;
+      }
+
+      return { fetched, failed };
     },
 
     /** Devuelve la cantidad de metadatos expirados según el TTL configurado. */

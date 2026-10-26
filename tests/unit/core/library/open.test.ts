@@ -64,7 +64,7 @@ describe('openLibrary', () => {
     expect(opened.repositories).toBeDefined();
     expect(opened.library).toBeDefined();
     expect(opened.metadataService).toBeDefined();
-    expect(opened.metadataConfig).toEqual({ cacheTtlHours: 24 });
+    expect(opened.metadataConfig).toEqual({ cacheTtlHours: 24, autoFetch: false });
     expect(typeof opened.close).toBe('function');
 
     opened.close();

@@ -151,6 +151,35 @@ function AppImpl({
     }
   }, [library, config.metadata?.cacheTtlHours, view]);
 
+  // Obtención automática de metadatos para títulos sin metadatos (tipo Sonarr/Radarr).
+  // Solo se activa si metadata.autoFetch está habilitado y hay un proveedor configurado.
+  useEffect(() => {
+    if (view !== 'library') return;
+    if (!config.metadata?.autoFetch) return;
+    if (!library.hasMetadataProviderConfigured()) return;
+
+    setRefreshingMetadata(true);
+    setStatus('Buscando metadatos para títulos sin ellos…');
+
+    void library
+      .fetchMissingMetadata()
+      .then(({ fetched, failed }) => {
+        if (fetched === 0 && failed === 0) {
+          setStatus('Todos los títulos ya tienen metadatos.');
+        } else if (failed === 0) {
+          setStatus(`Metadatos obtenidos: ${fetched}.`);
+        } else {
+          setStatus(`Metadatos obtenidos: ${fetched} correctos, ${failed} fallidos.`);
+        }
+      })
+      .catch(() => {
+        setStatus('No se pudieron obtener los metadatos automáticos.');
+      })
+      .finally(() => {
+        setRefreshingMetadata(false);
+      });
+  }, [library, config.metadata?.autoFetch, view]);
+
   const exitApp = (): void => {
     if (onQuit !== undefined) {
       onQuit();
