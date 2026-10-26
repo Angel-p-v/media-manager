@@ -533,14 +533,53 @@ describe('App (TUI)', () => {
   });
 
   it('muestra pistas de audio sin duplicar por cada episodio', async () => {
-    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+    const libraryWithLangFiles = {
+      ...fakeLibrary(),
+      find: (query: string) => {
+        const rows = fakeLibrary().list();
+        const media = /^\d+$/.test(query)
+          ? rows.find((row) => row.id === Number(query))
+          : rows.find((row) => row.title.toLocaleLowerCase() === query.toLocaleLowerCase());
+        if (media === undefined) throw new NotFoundError(`No existe «${query}».`);
+        return {
+          media,
+          files: [
+            {
+              id: 1,
+              mediaId: media.id,
+              season: 1,
+              episode: 1,
+              title: null,
+              filePath: `/media/series/${media.title}/S01E01.es.mkv`,
+              sizeBytes: 100,
+              mtimeMs: 1,
+              indexedAt: '2026-01-01 00:00:00',
+            },
+            {
+              id: 2,
+              mediaId: media.id,
+              season: 1,
+              episode: 2,
+              title: null,
+              filePath: `/media/series/${media.title}/S01E02.en.mkv`,
+              sizeBytes: 100,
+              mtimeMs: 1,
+              indexedAt: '2026-01-01 00:00:00',
+            },
+          ],
+        };
+      },
+    };
+
+    const { lastFrame, stdin, unmount } = render(
+      <App config={config} library={libraryWithLangFiles} />,
+    );
 
     await press(stdin, '\r');
     const frame = frameOf(lastFrame);
 
-    // En la sección "Pista de audio" debe haber una fila por idioma (Español, Inglés)
-    // y no una fila por episodio. Verificamos que aparece exactamente una vez
-    // "▸ Español" y una vez "   Inglés" en la columna de audio.
+    // En la sección "Pista de audio" debe haber una fila por idioma
+    // (Español, Inglés) y no una fila por episodio.
     const audioSection = frame.slice(
       frame.indexOf('Pista de audio'),
       frame.indexOf('Pista de subtítulos'),

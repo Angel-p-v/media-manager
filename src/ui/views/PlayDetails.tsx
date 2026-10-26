@@ -6,13 +6,13 @@ import { theme } from '../theme.js';
 
 import type { MediaDetails as Details } from '../../core/library/service.js';
 
-/** Pista de audio disponible (placeholder: la BD aún no almacena pistas reales). */
+/** Pista de audio disponible (extraída de los nombres de fichero). */
 export type AudioTrack = {
   index: number;
   language: string;
 };
 
-/** Pista de subtítulo disponible (placeholder: la BD aún no almacena pistas reales). */
+/** Pista de subtítulo disponible (extraída de los nombres de fichero). */
 export type SubtitleTrack = {
   index: number;
   language: string;
@@ -28,13 +28,127 @@ export type PlayDetailsProps = {
   onBack: () => void;
 };
 
+/** Patrón de código de idioma (2 o 3 letras) en el nombre de un fichero. */
+const LANGUAGE_PATTERN =
+  /(?:^|[._-])(es|spa|en|eng|fr|fra|de|ger|it|ita|pt|por|ca|cat|nl|nld|ja|jpn|ko|kor|zh|zh-cn|zh-tw|ru|rus|ar|ara|hi|hin|tr|tur|pl|pol|sv|swe|da|dan|no|nor|fi|fin|el|ell|he|heb|uk|ukr|cs|ces|sk|slk|hu|ro|ron|bg|bul|hr|hrv|sr|srp|lt|lit|lv|lav|et|sl|slv|mk|sq|alb|is|isl|ga|gle|cy|cym|eo|vi|vie|th|tha|ms|msa|id|ind|tl|af|afr)(?:[._-]|$)/i;
+
+/** Mapa de códigos de idioma a nombres legibles. */
+const LANGUAGE_NAMES: Record<string, string> = {
+  es: 'Español',
+  spa: 'Español',
+  en: 'Inglés',
+  eng: 'Inglés',
+  fr: 'Francés',
+  fra: 'Francés',
+  de: 'Alemán',
+  ger: 'Alemán',
+  it: 'Italiano',
+  ita: 'Italiano',
+  pt: 'Portugués',
+  por: 'Portugués',
+  ca: 'Catalán',
+  cat: 'Catalán',
+  nl: 'Neerlandés',
+  nld: 'Neerlandés',
+  ja: 'Japonés',
+  jpn: 'Japonés',
+  ko: 'Coreano',
+  kor: 'Coreano',
+  zh: 'Chino',
+  'zh-cn': 'Chino (simplificado)',
+  'zh-tw': 'Chino (tradicional)',
+  ru: 'Ruso',
+  rus: 'Ruso',
+  ar: 'Árabe',
+  ara: 'Árabe',
+  hi: 'Hindi',
+  hin: 'Hindi',
+  tr: 'Turco',
+  tur: 'Turco',
+  pl: 'Polaco',
+  pol: 'Polaco',
+  sv: 'Sueco',
+  swe: 'Sueco',
+  da: 'Danés',
+  dan: 'Danés',
+  no: 'Noruego',
+  nor: 'Noruego',
+  fi: 'Finlandés',
+  fin: 'Finlandés',
+  el: 'Griego',
+  ell: 'Griego',
+  he: 'Hebreo',
+  heb: 'Hebreo',
+  uk: 'Ucraniano',
+  ukr: 'Ucraniano',
+  cs: 'Checo',
+  ces: 'Checo',
+  sk: 'Eslovaco',
+  slk: 'Eslovaco',
+  hu: 'Húngaro',
+  ro: 'Rumano',
+  ron: 'Rumano',
+  bg: 'Búlgaro',
+  bul: 'Búlgaro',
+  hr: 'Croata',
+  hrv: 'Croata',
+  sr: 'Serbio',
+  srp: 'Serbio',
+  lt: 'Lituano',
+  lit: 'Lituano',
+  lv: 'Letón',
+  lav: 'Letón',
+  et: 'Estonio',
+  sl: 'Esloveno',
+  slv: 'Esloveno',
+  mk: 'Macedonio',
+  sq: 'Albanés',
+  alb: 'Albanés',
+  is: 'Islandés',
+  isl: 'Islandés',
+  ga: 'Irlandés',
+  gle: 'Irlandés',
+  cy: 'Galés',
+  cym: 'Galés',
+  eo: 'Esperanto',
+  vi: 'Vietnamita',
+  vie: 'Vietnamita',
+  th: 'Tailandés',
+  tha: 'Tailandés',
+  ms: 'Malaio',
+  msa: 'Malaio',
+  id: 'Indonesio',
+  ind: 'Indonesio',
+  tl: 'Tagalo',
+  af: 'Afrikáans',
+  afr: 'Afrikáans',
+};
+
+/** Extrae el código de idioma de un nombre de fichero, si lo trae. */
+function extractLanguageCode(filePath: string): string | null {
+  const baseName = filePath.split('/').pop() ?? '';
+  const match = LANGUAGE_PATTERN.exec(baseName);
+  if (match === null) return null;
+  const code = match[1];
+  if (code === undefined) return null;
+  return code.toLowerCase();
+}
+
+/** Resuelve el nombre legible de un código de idioma. */
+function languageName(code: string): string {
+  return LANGUAGE_NAMES[code.toLowerCase()] ?? code.toUpperCase();
+}
+
 /**
  * Vista de detalles de reproducción tipo Jellyfin.
  *
  * Diseño:
  * - Izquierda: póster (placeholder) y metadatos principales del título.
- * - Derecha: sinopsis, listado de episodios con selección (↑↓),
+ * - Derecha: sinopsis, listado de episodios (máx. 8 visibles + resumen),
  *   selección de pista de audio (←→) y subtítulos (Mayús+←→).
+ *
+ * Los idiomas de audio y subtítulos se extraen de los nombres de fichero
+ * de los episodios mostrados, no son estáticos.
  *
  * Navegación:
  * - ↑ / ↓ : navega por los episodios/ficheros
@@ -60,23 +174,34 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   const typeLabel =
     media.type === 'series' ? 'serie' : media.type === 'anime' ? 'anime' : 'película';
 
-  // Pistas de audio únicas (una por idioma, sin duplicar por cada episodio).
+  // Idiomas únicos extraídos de los nombres de fichero de los episodios.
   const audioTracks: readonly AudioTrack[] = useMemo(() => {
-    const tracks: AudioTrack[] = [
-      { index: 0, language: 'Español' },
-      { index: 1, language: 'Inglés' },
-    ];
-    return tracks;
-  }, []);
+    const codes = new Set<string>();
+    for (const file of files) {
+      const code = extractLanguageCode(file.filePath);
+      if (code !== null) codes.add(code);
+    }
+    // Siempre añadir "Detectado automáticamente" si no hay ninguno.
+    if (codes.size === 0) codes.add('auto');
+    return Array.from(codes).map((code, index) => ({
+      index,
+      language: code === 'auto' ? 'Detectado automáticamente' : languageName(code),
+    }));
+  }, [files]);
 
   const subtitleTracks: readonly SubtitleTrack[] = useMemo(() => {
-    const tracks: SubtitleTrack[] = [
-      { index: 0, language: 'Ninguna' },
-      { index: 1, language: 'Español' },
-      { index: 2, language: 'Inglés' },
-    ];
-    return tracks;
-  }, []);
+    const codes = new Set<string>();
+    for (const file of files) {
+      const code = extractLanguageCode(file.filePath);
+      if (code !== null) codes.add(code);
+    }
+    // Siempre incluir "Ninguna" como primera opción.
+    codes.add('none');
+    return Array.from(codes).map((code, index) => ({
+      index,
+      language: code === 'none' ? 'Ninguna' : languageName(code),
+    }));
+  }, [files]);
 
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [selectedAudioIndex, setSelectedAudioIndex] = useState(0);
@@ -95,8 +220,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     onBack();
   }, [onBack]);
 
-  // Navegación por teclado dentro de esta vista. useKeymap es más fiable que
-  // useInput para las flechas direccionales en el entorno de terminal.
+  // Navegación por teclado dentro de esta vista.
   useKeymap(
     { up: 'up', down: 'down', left: 'left', right: 'right' },
     {
@@ -126,11 +250,12 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     }
 
     // Navegación de pistas de subtítulos con Mayús+flechas izquierda/derecha.
-    if (key.shift && input === '\u001b[D') {
+    // La secuencia de escape de Mayús+flecha es \u001b[1;2D / \u001b[1;2C.
+    if (key.shift && input === '\u001b[1;2D') {
       setSelectedSubtitleIndex((prev) => Math.max(0, prev - 1));
       return;
     }
-    if (key.shift && input === '\u001b[C') {
+    if (key.shift && input === '\u001b[1;2C') {
       setSelectedSubtitleIndex((prev) => Math.min(subtitleTracks.length - 1, prev + 1));
       return;
     }
@@ -138,6 +263,10 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
 
   // Nombre corto del fichero (sin ruta absoluta).
   const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
+
+  // Solo mostrar los primeros 8 archivos; el resto se resume.
+  const visibleFiles = files.slice(0, 8);
+  const hiddenCount = files.length - 8;
 
   return (
     <Box flexGrow={1} flexDirection="row">
@@ -193,7 +322,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
             {files.length === 0 ? (
               <Text>{theme.muted('  sin ficheros indexados')}</Text>
             ) : (
-              files.map((file, index) => {
+              visibleFiles.map((file, index) => {
                 const active = index === selectedFileIndex;
                 const season =
                   file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
@@ -208,7 +337,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
                 );
               })
             )}
-            {files.length > 8 && <Text>{theme.muted(`  … y ${files.length - 8} más`)}</Text>}
+            {hiddenCount > 0 && <Text>{theme.muted(`  … y ${hiddenCount} más`)}</Text>}
             <Text> </Text>
           </Box>
 
