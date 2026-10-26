@@ -27,6 +27,7 @@ import {
   parseSortOrder,
 } from './commands/options.js';
 import { runPlayCommand } from './commands/play.js';
+import { runPlaylistCommand, type PlaylistCommandOptions } from './commands/playlist.js';
 import { runSearchCommand } from './commands/search.js';
 import { runSelfUpdateCommand } from './commands/self-update.js';
 import { runShowCommand } from './commands/show.js';
@@ -127,6 +128,20 @@ program
   .option('--dry-run', 'muestra el comando sin lanzar el reproductor')
   .option('--json', 'salida en formato JSON')
   .action(runPlayCommand);
+
+program
+  .command('playlist <titulos...>')
+  .description('reproduce varios títulos en secuencia (playlist)')
+  .option('-c, --config <ruta>', 'archivo de configuración a usar')
+  .option('--dry-run', 'muestra qué se reproduciría sin lanzar nada')
+  .option('--json', 'salida en formato JSON')
+  .action((rawOptions: Record<string, unknown>, titles: string[]) => {
+    const options = {
+      ...rawOptions,
+      _: titles,
+    };
+    return runPlaylistCommand(titles, options as PlaylistCommandOptions);
+  });
 
 program
   .command('continue')
