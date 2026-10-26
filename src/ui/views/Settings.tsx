@@ -71,7 +71,7 @@ function buildItems(config: AppConfig): SettingsItem[] {
   const defaultPlayerIndex = playerOptions.findIndex((opt) => opt.value === config.player.default);
   items.push({
     id: 'player-default',
-    label: 'Jugador',
+    label: 'Reproductor',
     kind: 'select',
     value: config.player.default,
     originalValue: config.player.default,

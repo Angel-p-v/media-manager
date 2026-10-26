@@ -14,6 +14,7 @@ import { LibraryView } from './views/Library.js';
 import { SearchView } from './views/Search.js';
 import { SettingsView } from './views/Settings.js';
 import { saveConfig } from '../core/config/loader.js';
+import { defaultConfigPath } from '../core/config/paths.js';
 import { createLaunchPlan, launchPlayer as spawnPlayer } from '../core/player/launcher.js';
 import { selectMediaFile } from '../core/player/selection.js';
 import { formatError } from '../shared/errors.js';
@@ -65,6 +66,10 @@ function AppImpl({
 }: AppProps): React.JSX.Element {
   const { keybindings } = useConfig(config);
   setTheme(config.ui.theme);
+  // Siempre hay una ruta de configuración válida: si no se pasa una explícita
+  // (primera ejecución sin archivo YAML), se usa la ruta por defecto. Así
+  // saveEdit / saveConfig pueden crear el archivo al guardar los ajustes.
+  const resolvedConfigPath = configPath ?? defaultConfigPath();
   const { exit } = useApp();
   const [view, setView] = useState<ViewName>('library');
   const [section, setSection] = useState<Section>('all');
@@ -305,18 +310,14 @@ function AppImpl({
   /** Guarda los atajos reasignados en el archivo de configuración. */
   const handleSaveKeybindings = useCallback(
     async (nextConfig: AppConfig): Promise<void> => {
-      if (!configPath) {
-        setStatus('No se puede guardar: no hay ruta de configuración.');
-        return;
-      }
       try {
-        await saveConfig(nextConfig, configPath);
+        await saveConfig(nextConfig, resolvedConfigPath);
         setStatus('Atajos de teclado guardados.');
       } catch {
         setStatus('No se pudo guardar la configuración.');
       }
     },
-    [configPath],
+    [resolvedConfigPath],
   );
 
   const handleFilterWatched = (): void => {
@@ -470,7 +471,7 @@ function AppImpl({
         {!helpVisible && view === 'settings' ? (
           <SettingsView
             config={config}
-            configPath={configPath}
+            configPath={resolvedConfigPath}
             onSave={() => setStatus('Configuración guardada.')}
             onBack={() => setView('library')}
           />

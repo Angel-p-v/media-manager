@@ -1,4 +1,4 @@
-import { existsSync, type FSWatcher, watch } from 'node:fs';
+import { existsSync, mkdirSync, type FSWatcher, watch } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
@@ -203,6 +203,9 @@ export async function saveConfig(config: AppConfig, configPath?: string): Promis
   const resolvedPath = configPath ?? resolveConfigPath();
   // Validar contra el esquema antes de persistir.
   validateConfig(config, resolvedPath);
+  // Asegurar que el directorio padre exista: permite guardar en la primera
+  // ejecución, cuando ni el archivo ni su carpeta están creados aún.
+  mkdirSync(path.dirname(resolvedPath), { recursive: true });
   const yaml = stringifyYaml(config);
   await writeFile(resolvedPath, yaml, 'utf8');
 }
