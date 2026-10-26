@@ -22,6 +22,8 @@ export type LaunchPlan = {
   args: string[];
   mode: LaunchMode;
   filePath: string;
+  /** Ruta opcional al archivo de subtítulo (p. ej. .srt) a cargar. */
+  subtitlePath?: string | null;
   env?: Record<string, string>;
 };
 
@@ -34,6 +36,8 @@ export type CreateLaunchPlanOptions = {
   mode?: LaunchMode;
   /** Segundos desde los que reanudar; si se omite se elimina el argumento con {start}. */
   startSeconds?: number | null;
+  /** Ruta opcional al archivo de subtítulo (p. ej. .srt) a cargar. */
+  subtitlePath?: string | null;
 };
 
 /** Opciones para el tracker IPC de mpv. */
@@ -96,12 +100,22 @@ export function createLaunchPlan(options: CreateLaunchPlanOptions): LaunchPlan {
     finalArgs = finalArgs.filter((arg) => arg.length > 0);
   }
 
+  let finalArgsResolved = finalArgs.map((arg) => arg.replaceAll('{file}', filePath));
+
+  // Añadir el archivo de subtítulo como argumento adicional del reproductor.
+  // mpv y vlc aceptan --sub-file=<ruta>; se pasa como argumento independiente
+  // para que rutas con espacios se conserven como un solo argumento.
+  if (options.subtitlePath) {
+    finalArgsResolved = [...finalArgsResolved, `--sub-file=${options.subtitlePath}`];
+  }
+
   return {
     player: playerName,
     command: definition.command,
-    args: finalArgs.map((arg) => arg.replaceAll('{file}', filePath)),
+    args: finalArgsResolved,
     mode: options.mode ?? playerConfig.onLaunch,
     filePath,
+    subtitlePath: options.subtitlePath ?? null,
     ...(definition.env === undefined ? {} : { env: { ...definition.env } }),
   };
 }
