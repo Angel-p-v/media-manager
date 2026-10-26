@@ -6,6 +6,29 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.2.0](https://github.com/Angel-p-v/media-manager/compare/v3.1.0...v3.2.0) (2026-10-26)
+
+
+### Features
+
+* **cli:** añadir opción --set al comando mm config ([#198](https://github.com/Angel-p-v/media-manager/issues/198)) ([f9453ca](https://github.com/Angel-p-v/media-manager/commit/f9453ca5785255902d289fa8b56f53b9907a2d0c))
+* **cli:** clonar repositorio en instalador y crear config.yaml por defecto ([#190](https://github.com/Angel-p-v/media-manager/issues/190)) ([0efba11](https://github.com/Angel-p-v/media-manager/commit/0efba114673f0e4b2fc61d58873780fce18d48b2))
+* **cli:** comando mm playlist para reproducir varios títulos en secuencia (plan-9 R3) ([#178](https://github.com/Angel-p-v/media-manager/issues/178)) ([3a732b7](https://github.com/Angel-p-v/media-manager/commit/3a732b7e5a3ec4217c728f6580a418b7eec81e9a))
+* **config:** proveedor AniList para metadatos de anime (plan-9 M2) ([#175](https://github.com/Angel-p-v/media-manager/issues/175)) ([d4b692a](https://github.com/Angel-p-v/media-manager/commit/d4b692a71ebd5f233d3ee9f428020b46059c120a))
+* **plan-9:** Docker Compose con BD y config persistentes (D1) ([#171](https://github.com/Angel-p-v/media-manager/issues/171)) ([5df4437](https://github.com/Angel-p-v/media-manager/commit/5df4437e28215514278be5430a74c184383db457))
+* **plan-9:** temas de color personalizables desde YAML (T1) ([#176](https://github.com/Angel-p-v/media-manager/issues/176)) ([fe2e764](https://github.com/Angel-p-v/media-manager/commit/fe2e764787a6064a443fc7d1dc8ec24177a22c1e))
+* **player:** soporte para subtítulos (.srt) en mm play ([#174](https://github.com/Angel-p-v/media-manager/issues/174)) ([04a8ace](https://github.com/Angel-p-v/media-manager/commit/04a8ace17274c5ef2081161aac5d40db4682234e))
+* **ui:** ajustes navegables y editables desde la TUI ([#189](https://github.com/Angel-p-v/media-manager/issues/189)) ([b79e0d3](https://github.com/Angel-p-v/media-manager/commit/b79e0d34b7ca75ddce41faef4b902e909579976c))
+* **ui:** atajos de teclado configurables desde la TUI (plan-9 T2) ([#179](https://github.com/Angel-p-v/media-manager/issues/179)) ([88e2965](https://github.com/Angel-p-v/media-manager/commit/88e2965b7da9ad5f516200802cb5d43c94a29548))
+* **ui:** editor de configuración desde la TUI ([#192](https://github.com/Angel-p-v/media-manager/issues/192)) ([11ce592](https://github.com/Angel-p-v/media-manager/commit/11ce592a34edd61fcff18145aaa5fbdcc7ff3257))
+
+
+### Bug Fixes
+
+* **installer:** reescribe install.sh con descarga de release precompilado y verificación de checksum ([#195](https://github.com/Angel-p-v/media-manager/issues/195)) ([d8e7f45](https://github.com/Angel-p-v/media-manager/commit/d8e7f45675238b27768758a979834d704f641534))
+* **ui,config,cli:** corregir guardado de ajustes desde la TUI ([#197](https://github.com/Angel-p-v/media-manager/issues/197)) ([6159ca9](https://github.com/Angel-p-v/media-manager/commit/6159ca9b0ca4ef2717e560083ecd3ee520c425ea))
+* **ui:** permite volver a biblioteca desde ajustes con Tab ([#188](https://github.com/Angel-p-v/media-manager/issues/188)) ([884301a](https://github.com/Angel-p-v/media-manager/commit/884301acb038dd58ead3dd000c4c41f07ad556a0))
+
 ## [3.1.0](https://github.com/Angel-p-v/media-manager/compare/v3.0.7...v3.1.0) (2026-10-25)
 
 
