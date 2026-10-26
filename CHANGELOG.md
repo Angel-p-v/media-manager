@@ -6,6 +6,15 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.2.0](https://github.com/Angel-p-v/media-manager/compare/v3.1.0...v3.2.0) (2026-10-26)
+
+
+### Features
+
+* **config:** proveedor AniList para metadatos de anime (plan-9 M2) ([#175](https://github.com/Angel-p-v/media-manager/issues/175)) ([d4b692a](https://github.com/Angel-p-v/media-manager/commit/d4b692a71ebd5f233d3ee9f428020b46059c120a))
+* **plan-9:** Docker Compose con BD y config persistentes (D1) ([#171](https://github.com/Angel-p-v/media-manager/issues/171)) ([5df4437](https://github.com/Angel-p-v/media-manager/commit/5df4437e28215514278be5430a74c184383db457))
+* **player:** soporte para subtítulos (.srt) en mm play ([#174](https://github.com/Angel-p-v/media-manager/issues/174)) ([04a8ace](https://github.com/Angel-p-v/media-manager/commit/04a8ace17274c5ef2081161aac5d40db4682234e))
+
 ## [3.1.0](https://github.com/Angel-p-v/media-manager/compare/v3.0.7...v3.1.0) (2026-10-25)
 
 
