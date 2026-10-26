@@ -1,8 +1,9 @@
 import { Box, Text, useApp, useInput } from 'ink';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Header } from './components/Header.js';
 import { HelpOverlay } from './components/HelpOverlay.js';
+import { KeybindingsView } from './components/KeybindingsView.js';
 import { StatusBar } from './components/StatusBar.js';
 import { useConfig } from './hooks/useConfig.js';
 import { matchesKey, useKeymap } from './hooks/useKeymap.js';
@@ -12,6 +13,7 @@ import { theme, setTheme } from './theme.js';
 import { LibraryView } from './views/Library.js';
 import { SearchView } from './views/Search.js';
 import { SettingsView } from './views/Settings.js';
+import { saveConfig } from '../core/config/loader.js';
 import { createLaunchPlan, launchPlayer as spawnPlayer } from '../core/player/launcher.js';
 import { selectMediaFile } from '../core/player/selection.js';
 import { formatError } from '../shared/errors.js';
@@ -25,6 +27,8 @@ import type { LaunchPlayerFn } from '../core/player/launcher.js';
 export type AppProps = {
   config: AppConfig;
   library: LibraryService;
+  /** Ruta del archivo de configuración (para guardar cambios desde la TUI). */
+  configPath?: string;
   /** Solo para tests: sustituye al cierre real de Ink. */
   onQuit?: () => void;
   /** Solo para tests: permite observar o simular el lanzamiento del reproductor. */
@@ -55,6 +59,7 @@ const VIEW_TITLE: Record<ViewName, string> = {
 function AppImpl({
   config,
   library,
+  configPath,
   onQuit,
   launchPlayer = spawnPlayer,
 }: AppProps): React.JSX.Element {
@@ -75,6 +80,8 @@ function AppImpl({
   const [compactMode, setCompactMode] = useState(config.ui.compact ?? false);
   /** Filtro adicional: 'watched' | 'unwatched' | undefined (D1). */
   const [watchFilter, setWatchFilter] = useState<'watched' | 'unwatched' | undefined>(undefined);
+  /** Vista de reasignación de atajos abierta (T2). */
+  const [keybindingsViewVisible, setKeybindingsViewVisible] = useState(false);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -283,6 +290,29 @@ function AppImpl({
     });
   };
 
+  /** Abre la vista de reasignación de atajos de teclado (T2). */
+  const handleOpenKeybindings = useCallback((): void => {
+    if (view !== 'library') return;
+    setKeybindingsViewVisible(true);
+  }, [view]);
+
+  /** Guarda los atajos reasignados en el archivo de configuración. */
+  const handleSaveKeybindings = useCallback(
+    async (nextConfig: AppConfig): Promise<void> => {
+      if (!configPath) {
+        setStatus('No se puede guardar: no hay ruta de configuración.');
+        return;
+      }
+      try {
+        await saveConfig(nextConfig, configPath);
+        setStatus('Atajos de teclado guardados.');
+      } catch {
+        setStatus('No se pudo guardar la configuración.');
+      }
+    },
+    [configPath],
+  );
+
   const handleFilterWatched = (): void => {
     if (view !== 'library') return;
     setWatchFilter((prev) => (prev === 'watched' ? undefined : 'watched'));
@@ -347,8 +377,10 @@ function AppImpl({
       filterUnwatched: handleFilterUnwatched,
       /** Limpiar selección múltiple y filtros (D3). */
       clearSelection: handleClearSelection,
+      /** Abrir vista de reasignación de atajos (T2). */
+      configureKeybindings: handleOpenKeybindings,
     },
-    !helpVisible,
+    !helpVisible && !keybindingsViewVisible,
   );
 
   // Habilitar modo ratón para soporte de clic (D4).
@@ -430,6 +462,13 @@ function AppImpl({
           />
         ) : null}
         {!helpVisible && view === 'settings' ? <SettingsView config={config} /> : null}
+        {keybindingsViewVisible ? (
+          <KeybindingsView
+            config={config}
+            onSave={handleSaveKeybindings}
+            onBack={() => setKeybindingsViewVisible(false)}
+          />
+        ) : null}
       </Box>
       {error === null ? null : (
         <Box paddingX={1}>

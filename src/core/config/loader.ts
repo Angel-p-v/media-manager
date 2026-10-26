@@ -1,8 +1,8 @@
 import { existsSync, type FSWatcher, watch } from 'node:fs';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { parse as parseYaml } from 'yaml';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { type z } from 'zod';
 
 import { defaultConfig } from './defaults.js';
@@ -188,4 +188,16 @@ export function watchConfigFile(
       watcher?.close();
     },
   };
+}
+
+/**
+ * Guarda la configuración actual en el archivo YAML.
+ *
+ * Se usa para persistir cambios realizados desde la TUI (p. ej. atajos de
+ * teclado reasignados) para que sobrevivan al reinicio.
+ */
+export async function saveConfig(config: AppConfig, configPath?: string): Promise<void> {
+  const resolvedPath = configPath ?? resolveConfigPath();
+  const yaml = stringifyYaml(config);
+  await writeFile(resolvedPath, yaml, 'utf8');
 }

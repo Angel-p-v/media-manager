@@ -9,7 +9,7 @@ import { createLogger } from '../shared/logger.js';
 import type { AppConfig } from '../core/config/schema.js';
 
 /** Arranca la interfaz de terminal y espera a que termine. */
-export async function runTui(config: AppConfig): Promise<void> {
+export async function runTui(config: AppConfig, configPath?: string): Promise<void> {
   const logger = createLogger({
     level: config.logging.level,
     format: config.logging.format,
@@ -18,9 +18,10 @@ export async function runTui(config: AppConfig): Promise<void> {
 
   enterAlternateScreen();
   try {
-    const instance = render(<App config={config} library={opened.library} />, {
-      exitOnCtrlC: false,
-    });
+    const instance = render(
+      <App config={config} library={opened.library} {...(configPath ? { configPath } : {})} />,
+      { exitOnCtrlC: false },
+    );
     await instance.waitUntilExit();
   } finally {
     leaveAlternateScreen();
