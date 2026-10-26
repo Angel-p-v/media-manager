@@ -89,4 +89,27 @@ describe('comando mm config (integración)', () => {
     const text = output.join('\n');
     expect(text).toContain('valores por defecto');
   });
+
+  it('--path advierte que el archivo no existe cuando falta', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'mm-cmd-'));
+    const file = path.join(dir, 'no-existe.yaml');
+    // No se escribe el archivo a propósito.
+
+    await runConfigCommand({ config: file, path: true });
+
+    const text = output.join('\n');
+    expect(text).toContain(file);
+    expect(text).toContain('no existe');
+    expect(text).toContain('se usará por defecto');
+  });
+
+  it('--path muestra solo la ruta cuando el archivo existe', async () => {
+    const file = await writeConfig('player:\n  default: mpv\n');
+
+    await runConfigCommand({ config: file, path: true });
+
+    const text = output.join('\n');
+    expect(text).toContain(file);
+    expect(text).not.toContain('no existe');
+  });
 });

@@ -24,7 +24,12 @@ export async function runConfigCommand(options: ConfigCommandOptions): Promise<v
       : resolveConfigPath({ configPath: options.config });
 
   if (options.path) {
-    console.log(configPath);
+    const exists = existsSync(configPath);
+    if (exists) {
+      console.log(configPath);
+    } else {
+      console.log(`${configPath} (no existe, se usará por defecto)`);
+    }
     return;
   }
 
