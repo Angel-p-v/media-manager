@@ -38,6 +38,8 @@ export function SettingsView({ config }: SettingsViewProps): React.JSX.Element {
       <Text>{`  detalles: ${config.ui.showDetails ? 'sí' : 'no'} · atajos personalizados: ${Object.keys(config.keybindings).length}`}</Text>
       <Text> </Text>
       <Text>{theme.muted('Los cambios se aplican al reiniciar la TUI.')}</Text>
+      <Text> </Text>
+      <Text>{theme.muted('Presiona «Escape» o «Tab» para volver a la biblioteca.')}</Text>
     </Box>
   );
 }

@@ -315,6 +315,30 @@ describe('App (TUI)', () => {
     unmount();
   });
 
+  it('vuelve a la biblioteca desde ajustes con Tab', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    await press(stdin, 's');
+    expect(frameOf(lastFrame)).toContain('Configuración efectiva');
+
+    await press(stdin, '\t');
+    const frame = frameOf(lastFrame);
+    expect(frame).toContain('Biblioteca');
+    expect(frame).toContain('Severance');
+    expect(frame).not.toContain('Configuración efectiva');
+    unmount();
+  });
+
+  it('muestra el hint de teclas para volver desde ajustes', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    await press(stdin, 's');
+
+    const frame = frameOf(lastFrame);
+    expect(frame).toContain('Presiona «Escape» o «Tab» para volver a la biblioteca.');
+    unmount();
+  });
+
   it('lanza la reproducción sin bloquear la TUI y sobrevive a la espera', async () => {
     let resolveLaunch: ((handle: PlayerHandle) => void) | undefined;
     const launchPlayer = vi.fn(
