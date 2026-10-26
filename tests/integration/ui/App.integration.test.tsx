@@ -532,62 +532,17 @@ describe('App (TUI)', () => {
     unmount();
   });
 
-  it('muestra pistas de audio sin duplicar por cada episodio', async () => {
-    const libraryWithLangFiles = {
-      ...fakeLibrary(),
-      find: (query: string) => {
-        const rows = fakeLibrary().list();
-        const media = /^\d+$/.test(query)
-          ? rows.find((row) => row.id === Number(query))
-          : rows.find((row) => row.title.toLocaleLowerCase() === query.toLocaleLowerCase());
-        if (media === undefined) throw new NotFoundError(`No existe «${query}».`);
-        return {
-          media,
-          files: [
-            {
-              id: 1,
-              mediaId: media.id,
-              season: 1,
-              episode: 1,
-              title: null,
-              filePath: `/media/series/${media.title}/S01E01.es.mkv`,
-              sizeBytes: 100,
-              mtimeMs: 1,
-              indexedAt: '2026-01-01 00:00:00',
-            },
-            {
-              id: 2,
-              mediaId: media.id,
-              season: 1,
-              episode: 2,
-              title: null,
-              filePath: `/media/series/${media.title}/S01E02.en.mkv`,
-              sizeBytes: 100,
-              mtimeMs: 1,
-              indexedAt: '2026-01-01 00:00:00',
-            },
-          ],
-        };
-      },
-    };
-
-    const { lastFrame, stdin, unmount } = render(
-      <App config={config} library={libraryWithLangFiles} />,
-    );
+  it('muestra "sin pistas de audio detectadas" cuando ffprobe no está disponible', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
 
     await press(stdin, '\r');
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
     const frame = frameOf(lastFrame);
 
-    // En la sección "Pista de audio" debe haber una fila por idioma
-    // (Español, Inglés) y no una fila por episodio.
-    const audioSection = frame.slice(
-      frame.indexOf('Pista de audio'),
-      frame.indexOf('Pista de subtítulos'),
-    );
-    const espanolInAudio = (audioSection.match(/Español/g) ?? []).length;
-    const inglesInAudio = (audioSection.match(/Inglés/g) ?? []).length;
-    expect(espanolInAudio).toBe(1);
-    expect(inglesInAudio).toBe(1);
+    // ffprobe no está instalado en el entorno de test, por tanto no hay pistas detectadas
+    expect(frame).toContain('sin pistas de audio detectadas');
+    expect(frame).toContain('sin pistas de subtítulos detectadas');
 
     unmount();
   });

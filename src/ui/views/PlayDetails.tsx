@@ -1,146 +1,47 @@
 import { Box, Text, useApp, useInput } from 'ink';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
+import { readVideoMediaInfo } from '../../core/video/ffprobe.js';
 import { useKeymap } from '../hooks/useKeymap.js';
 import { theme } from '../theme.js';
 
+import type { MediaFileRow } from '../../core/db/types.js';
 import type { MediaDetails as Details } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
 const EPISODES_PER_PAGE = 12;
 
-/** Pista de audio disponible (extraída de los nombres de fichero). */
-export type AudioTrack = {
+/** Pista de audio real extraída de los metadatos del fichero de vídeo. */
+export type RealAudioTrack = {
   index: number;
   language: string;
+  codec: string;
+  channels: number | null;
+  sampleRate: string | null;
+  title: string | null;
 };
 
-/** Pista de subtítulo disponible (extraída de los nombres de fichero). */
-export type SubtitleTrack = {
+/** Pista de subtítulo real extraída de los metadatos del fichero de vídeo. */
+export type RealSubtitleTrack = {
   index: number;
   language: string;
+  codec: string;
+  title: string | null;
 };
 
 /** Props de la vista de detalles de reproducción. */
 export type PlayDetailsProps = {
   /** Título seleccionado en la biblioteca. */
   details: Details | null;
-  /** Reproduce el fichero seleccionado. */
-  onPlay: (fileId: number) => void;
+  /** Reproduce el fichero seleccionado con las pistas de audio/subtítulo elegidas. */
+  onPlay: (input: {
+    fileId: number;
+    audioTrackIndex: number | null;
+    subtitleTrackIndex: number | null;
+  }) => void;
   /** Vuelve a la vista de biblioteca. */
   onBack: () => void;
 };
-
-/** Patrón de código de idioma (2 o 3 letras) en el nombre de un fichero. */
-const LANGUAGE_PATTERN =
-  /(?:^|[._-])(es|spa|en|eng|fr|fra|de|ger|it|ita|pt|por|ca|cat|nl|nld|ja|jpn|ko|kor|zh|zh-cn|zh-tw|ru|rus|ar|ara|hi|hin|tr|tur|pl|pol|sv|swe|da|dan|no|nor|fi|fin|el|ell|he|heb|uk|ukr|cs|ces|sk|slk|hu|ro|ron|bg|bul|hr|hrv|sr|srp|lt|lit|lv|lav|et|sl|slv|mk|sq|alb|is|isl|ga|gle|cy|cym|eo|vi|vie|th|tha|ms|msa|id|ind|tl|af|afr)(?:[._-]|$)/i;
-
-/** Mapa de códigos de idioma a nombres legibles. */
-const LANGUAGE_NAMES: Record<string, string> = {
-  es: 'Español',
-  spa: 'Español',
-  en: 'Inglés',
-  eng: 'Inglés',
-  fr: 'Francés',
-  fra: 'Francés',
-  de: 'Alemán',
-  ger: 'Alemán',
-  it: 'Italiano',
-  ita: 'Italiano',
-  pt: 'Portugués',
-  por: 'Portugués',
-  ca: 'Catalán',
-  cat: 'Catalán',
-  nl: 'Neerlandés',
-  nld: 'Neerlandés',
-  ja: 'Japonés',
-  jpn: 'Japonés',
-  ko: 'Coreano',
-  kor: 'Coreano',
-  zh: 'Chino',
-  'zh-cn': 'Chino (simplificado)',
-  'zh-tw': 'Chino (tradicional)',
-  ru: 'Ruso',
-  rus: 'Ruso',
-  ar: 'Árabe',
-  ara: 'Árabe',
-  hi: 'Hindi',
-  hin: 'Hindi',
-  tr: 'Turco',
-  tur: 'Turco',
-  pl: 'Polaco',
-  pol: 'Polaco',
-  sv: 'Sueco',
-  swe: 'Sueco',
-  da: 'Danés',
-  dan: 'Danés',
-  no: 'Noruego',
-  nor: 'Noruego',
-  fi: 'Finlandés',
-  fin: 'Finlandés',
-  el: 'Griego',
-  ell: 'Griego',
-  he: 'Hebreo',
-  heb: 'Hebreo',
-  uk: 'Ucraniano',
-  ukr: 'Ucraniano',
-  cs: 'Checo',
-  ces: 'Checo',
-  sk: 'Eslovaco',
-  slk: 'Eslovaco',
-  hu: 'Húngaro',
-  ro: 'Rumano',
-  ron: 'Rumano',
-  bg: 'Búlgaro',
-  bul: 'Búlgaro',
-  hr: 'Croata',
-  hrv: 'Croata',
-  sr: 'Serbio',
-  srp: 'Serbio',
-  lt: 'Lituano',
-  lit: 'Lituano',
-  lv: 'Letón',
-  lav: 'Letón',
-  et: 'Estonio',
-  sl: 'Esloveno',
-  slv: 'Esloveno',
-  mk: 'Macedonio',
-  sq: 'Albanés',
-  alb: 'Albanés',
-  is: 'Islandés',
-  isl: 'Islandés',
-  ga: 'Irlandés',
-  gle: 'Irlandés',
-  cy: 'Galés',
-  cym: 'Galés',
-  eo: 'Esperanto',
-  vi: 'Vietnamita',
-  vie: 'Vietnamita',
-  th: 'Tailandés',
-  tha: 'Tailandés',
-  ms: 'Malaio',
-  msa: 'Malaio',
-  id: 'Indonesio',
-  ind: 'Indonesio',
-  tl: 'Tagalo',
-  af: 'Afrikáans',
-  afr: 'Afrikáans',
-};
-
-/** Extrae el código de idioma de un nombre de fichero, si lo trae. */
-function extractLanguageCode(filePath: string): string | null {
-  const baseName = filePath.split('/').pop() ?? '';
-  const match = LANGUAGE_PATTERN.exec(baseName);
-  if (match === null) return null;
-  const code = match[1];
-  if (code === undefined) return null;
-  return code.toLowerCase();
-}
-
-/** Resuelve el nombre legible de un código de idioma. */
-function languageName(code: string): string {
-  return LANGUAGE_NAMES[code.toLowerCase()] ?? code.toUpperCase();
-}
 
 /**
  * Vista de detalles de reproducción tipo Jellyfin.
@@ -151,14 +52,14 @@ function languageName(code: string): string {
  *   scroll al navegar más allá), selección de pista de audio (←→) y subtítulos
  *   (Mayús+←→).
  *
- * Los idiomas de audio y subtítulos se extraen de los nombres de fichero
- * de los episodios, no son estáticos.
+ * Los idiomas de audio y subtítulos se extraen de los metadatos reales de cada
+ * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
  *
  * Navegación:
  * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 12)
- * - ← / → : navega por las pistas de audio
- * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos
- * - p : reproduce el fichero seleccionado
+ * - ← / → : navega por las pistas de audio detectadas
+ * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos detectadas
+ * - p : reproduce el fichero seleccionado con las pistas elegidas
  * - q / Esc : vuelve a la biblioteca
  */
 export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): React.JSX.Element {
@@ -178,52 +79,68 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   const typeLabel =
     media.type === 'series' ? 'serie' : media.type === 'anime' ? 'anime' : 'película';
 
-  // Idiomas únicos extraídos de los nombres de fichero de los episodios.
-  const audioTracks: readonly AudioTrack[] = useMemo(() => {
-    const codes = new Set<string>();
-    for (const file of files) {
-      const code = extractLanguageCode(file.filePath);
-      if (code !== null) codes.add(code);
-    }
-    // Siempre añadir "Detectado automáticamente" si no hay ninguno.
-    if (codes.size === 0) codes.add('auto');
-    return Array.from(codes).map((code, index) => ({
-      index,
-      language: code === 'auto' ? 'Detectado automáticamente' : languageName(code),
-    }));
-  }, [files]);
-
-  const subtitleTracks: readonly SubtitleTrack[] = useMemo(() => {
-    const codes = new Set<string>();
-    for (const file of files) {
-      const code = extractLanguageCode(file.filePath);
-      if (code !== null) codes.add(code);
-    }
-    // Siempre incluir "Ninguna" como primera opción.
-    codes.add('none');
-    return Array.from(codes).map((code, index) => ({
-      index,
-      language: code === 'none' ? 'Ninguna' : languageName(code),
-    }));
-  }, [files]);
-
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [visibleStart, setVisibleStart] = useState(0);
-  const [selectedAudioIndex, setSelectedAudioIndex] = useState(0);
-  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState(0);
+  const [selectedAudioIndex, setSelectedAudioIndex] = useState<number | null>(null);
+  const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<number | null>(null);
+  const [audioTracks, setAudioTracks] = useState<readonly RealAudioTrack[]>([]);
+  const [subtitleTracks, setSubtitleTracks] = useState<readonly RealSubtitleTrack[]>([]);
+  const [loadingMetadata, setLoadingMetadata] = useState(false);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
 
   const selectedFile = files[selectedFileIndex];
-  const selectedAudio = audioTracks[selectedAudioIndex];
-  const selectedSubtitle = subtitleTracks[selectedSubtitleIndex];
+  const selectedAudio = audioTracks[selectedAudioIndex ?? -1];
+  const selectedSubtitle = subtitleTracks[selectedSubtitleIndex ?? -1];
 
   const handlePlaySelected = useCallback((): void => {
     if (selectedFile === undefined) return;
-    onPlay(selectedFile.id);
-  }, [onPlay, selectedFile]);
+    onPlay({
+      fileId: selectedFile.id,
+      audioTrackIndex: selectedAudioIndex,
+      subtitleTrackIndex: selectedSubtitleIndex,
+    });
+  }, [onPlay, selectedFile, selectedAudioIndex, selectedSubtitleIndex]);
 
   const handleBack = useCallback((): void => {
     onBack();
   }, [onBack]);
+
+  /** Carga los metadatos reales (audio/subtítulos) del fichero seleccionado con ffprobe. */
+  const loadFileMetadata = useCallback(async (file: MediaFileRow | undefined): Promise<void> => {
+    if (file === undefined) {
+      setAudioTracks([]);
+      setSubtitleTracks([]);
+      setSelectedAudioIndex(null);
+      setSelectedSubtitleIndex(null);
+      return;
+    }
+
+    setLoadingMetadata(true);
+    setMetadataError(null);
+    try {
+      const info = await readVideoMediaInfo(file.filePath);
+      setAudioTracks(info.audioTracks);
+      setSubtitleTracks(info.subtitleTracks);
+      // Seleccionar la primera pista de audio y "Ninguna" para subtítulos por defecto
+      setSelectedAudioIndex(info.audioTracks.length > 0 ? 0 : null);
+      setSelectedSubtitleIndex(null);
+    } catch (error) {
+      setMetadataError(
+        error instanceof Error ? error.message : 'No se pudieron leer los metadatos.',
+      );
+      setAudioTracks([]);
+      setSubtitleTracks([]);
+      setSelectedAudioIndex(null);
+      setSelectedSubtitleIndex(null);
+    } finally {
+      setLoadingMetadata(false);
+    }
+  }, []);
+
+  // Cargar metadatos del fichero seleccionado cuando cambia.
+  useEffect(() => {
+    void loadFileMetadata(selectedFile);
+  }, [selectedFile, loadFileMetadata]);
 
   /** Ajusta la ventana visible para que el índice seleccionado siempre esté visible. */
   const ensureVisible = useCallback(
@@ -245,8 +162,18 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     {
       up: () => ensureVisible(Math.max(0, selectedFileIndex - 1)),
       down: () => ensureVisible(Math.min(files.length - 1, selectedFileIndex + 1)),
-      left: () => setSelectedAudioIndex((prev) => Math.max(0, prev - 1)),
-      right: () => setSelectedAudioIndex((prev) => Math.min(audioTracks.length - 1, prev + 1)),
+      left: () =>
+        setSelectedAudioIndex((prev) =>
+          prev === null || prev <= 0 ? null : Math.max(0, prev - 1),
+        ),
+      right: () =>
+        setSelectedAudioIndex((prev) =>
+          prev === null
+            ? audioTracks.length > 0
+              ? 0
+              : null
+            : Math.min(audioTracks.length - 1, prev + 1),
+        ),
     },
     true,
   );
@@ -271,11 +198,19 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     // Navegación de pistas de subtítulos con Mayús+flechas izquierda/derecha.
     // La secuencia de escape de Mayús+flecha es \u001b[1;2D / \u001b[1;2C.
     if (key.shift && input === '\u001b[1;2D') {
-      setSelectedSubtitleIndex((prev) => Math.max(0, prev - 1));
+      setSelectedSubtitleIndex((prev) =>
+        prev === null || prev <= 0 ? null : Math.max(0, prev - 1),
+      );
       return;
     }
     if (key.shift && input === '\u001b[1;2C') {
-      setSelectedSubtitleIndex((prev) => Math.min(subtitleTracks.length - 1, prev + 1));
+      setSelectedSubtitleIndex((prev) =>
+        prev === null
+          ? subtitleTracks.length > 0
+            ? 0
+            : null
+          : Math.min(subtitleTracks.length - 1, prev + 1),
+      );
       return;
     }
   });
@@ -371,39 +306,83 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
 
           {/* Columna secundaria: selección de pistas */}
           <Box flexDirection="column" flexShrink={0} paddingX={1}>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted(`(←→)`)}
-            </Text>
-            {audioTracks.map((track) => {
-              const active = track.index === selectedAudioIndex;
-              return (
-                <Text
-                  key={`audio-${track.index}`}
-                  bold={active}
-                  {...(active ? { color: 'cyan' as const } : {})}
-                >
-                  {`  ${active ? '▸ ' : '   '}${track.language}`}
+            {loadingMetadata ? (
+              <>
+                <Text>
+                  {theme.label('Pista de audio')} {theme.muted('(←→)')}
                 </Text>
-              );
-            })}
-            <Text> </Text>
+                <Text>{theme.muted('  cargando metadatos…')}</Text>
+                <Text> </Text>
+                <Text>
+                  {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+                </Text>
+                <Text>{theme.muted('  cargando metadatos…')}</Text>
+                <Text> </Text>
+              </>
+            ) : metadataError !== null ? (
+              <>
+                <Text>
+                  {theme.label('Pista de audio')} {theme.muted('(←→)')}
+                </Text>
+                <Text>{theme.error(`  error: ${metadataError}`)}</Text>
+                <Text> </Text>
+                <Text>
+                  {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+                </Text>
+                <Text>{theme.error(`  error: ${metadataError}`)}</Text>
+                <Text> </Text>
+              </>
+            ) : (
+              <>
+                <Text>
+                  {theme.label('Pista de audio')} {theme.muted(`(←→)`)}
+                </Text>
+                {audioTracks.length === 0 ? (
+                  <Text>{theme.muted('  sin pistas de audio detectadas')}</Text>
+                ) : (
+                  audioTracks.map((track) => {
+                    const active = track.index === selectedAudioIndex;
+                    return (
+                      <Text
+                        key={`audio-${track.index}`}
+                        bold={active}
+                        {...(active ? { color: 'cyan' as const } : {})}
+                      >
+                        {`  ${active ? '▸ ' : '   '}${track.language} (${track.codec}${
+                          track.channels !== null ? ` ${track.channels}ch` : ''
+                        }${track.sampleRate ? ` ${track.sampleRate}Hz` : ''}${
+                          track.title ? ` - ${track.title}` : ''
+                        })`}
+                      </Text>
+                    );
+                  })
+                )}
+                <Text> </Text>
 
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted(`(Mayús+←→)`)}
-            </Text>
-            {subtitleTracks.map((track) => {
-              const active = track.index === selectedSubtitleIndex;
-              return (
-                <Text
-                  key={`subtitle-${track.index}`}
-                  bold={active}
-                  {...(active ? { color: 'cyan' as const } : {})}
-                >
-                  {`  ${active ? '▸ ' : '   '}${track.language}`}
+                <Text>
+                  {theme.label('Pista de subtítulos')} {theme.muted(`(Mayús+←→)`)}
                 </Text>
-              );
-            })}
-            <Text> </Text>
+                {subtitleTracks.length === 0 ? (
+                  <Text>{theme.muted('  sin pistas de subtítulos detectadas')}</Text>
+                ) : (
+                  subtitleTracks.map((track) => {
+                    const active = track.index === selectedSubtitleIndex;
+                    return (
+                      <Text
+                        key={`subtitle-${track.index}`}
+                        bold={active}
+                        {...(active ? { color: 'cyan' as const } : {})}
+                      >
+                        {`  ${active ? '▸ ' : '   '}${track.language} (${track.codec}${
+                          track.title ? ` - ${track.title}` : ''
+                        })`}
+                      </Text>
+                    );
+                  })
+                )}
+                <Text> </Text>
+              </>
+            )}
           </Box>
         </Box>
 
