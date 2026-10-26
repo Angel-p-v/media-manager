@@ -130,4 +130,33 @@ describe('comando mm playlist (integración)', () => {
     expect(process.exitCode).toBe(2);
     process.exitCode = originalExit;
   });
+
+  it('muestra éxito y resumen por consola en modo no-json', async () => {
+    await runPlaylistCommand(['severance', 'frieren'], {
+      config: configPath,
+    });
+
+    const resumen = output.join('\n');
+    expect(resumen).toContain('✔ Severance');
+    expect(resumen).toContain('✔ Frieren');
+    expect(resumen).toContain('Playlist completada: 2 exitosos, 0 fallidos de 2');
+  });
+
+  it('cubre fallo de lanzamiento de un título y sigue con el siguiente', async () => {
+    const launchFailsFor = async (plan: { filePath: string }) => {
+      await Promise.resolve();
+      if (String(plan.filePath).includes('Frieren')) {
+        throw new Error('player crashed');
+      }
+      return { wait: async () => Promise.resolve(), pid: 123 };
+    };
+
+    await runPlaylistCommand(['severance', 'frieren'], { config: configPath }, launchFailsFor);
+
+    const resumen = output.join('\n');
+    expect(resumen).toContain('✔ Severance');
+    expect(resumen).toContain('✖ Frieren');
+    expect(resumen).toContain('player crashed');
+    expect(resumen).toContain('Playlist completada: 1 exitosos, 1 fallidos de 2');
+  });
 });
