@@ -18,29 +18,52 @@ installers/
 
 ## Uso rápido
 
-### Linux
+### Linux (x64, arm64)
+
+#### Opción A: desde repositorio clonado (recomendado para desarrolladores)
 
 ```bash
-# Descargar y ejecutar
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
+npm ci
+sh installers/linux/install.sh
+```
+
+Requiere `node` y `npm` instalados. El instalador usa `dist/` y `node_modules/` del repositorio clonado.
+
+#### Opción B: script suelto (release precompilado)
+
+```bash
 curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
 sh /tmp/mm-install.sh
 ```
 
-### Windows
+Descarga un release precompilado de GitHub Releases, verifica el checksum SHA-256 y no requiere `git`, `npm` ni herramientas de compilación.
+
+### Windows (x64)
 
 ```powershell
-# Descargar y ejecutar
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/windows/install.ps1 -o /tmp/mm-install.ps1
-.\install.ps1
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
+.\installers\windows\install.ps1
 ```
 
 ### macOS
 
 **No hay assets oficiales de macOS en v3.1.0.** Consulta [`installers/macos/README.md`](./macos/README.md) para más información.
 
+## Desinstalar
+
+```bash
+# Linux
+sh installers/linux/uninstall.sh            # conserva configuración y base de datos
+sh installers/linux/uninstall.sh --purge    # las elimina también
+```
+
 ## Notas
 
-- Los instaladores descargan un release precompilado de GitHub Releases y verifican el checksum SHA-256 antes de instalar.
-- No requieren `sudo`, `git`, `npm` ni herramientas de compilación.
+- Los instaladores no requieren `sudo`; instalan en `~/.local` por defecto.
+- Añade `~/.local/bin` a tu PATH para usar `mm` sin ruta absoluta.
 - La desinstalación conserva configuración y base de datos salvo que se use `--purge`.
-- Se instalan en `~/.local` por defecto; añade `~/.local/bin` a tu PATH para usar `mm`.
+- La biblioteca multimedia nunca se toca.
+- En modo repositorio clonado, el repo debe permanecer en su lugar (el instalador crea un symlink a `node_modules/`).

@@ -127,17 +127,27 @@ Clona el repositorio y ejecuta el instalador correspondiente para tu sistema.
 git clone https://github.com/Angel-p-v/media-manager.git
 cd media-manager
 
-# 2. Ejecuta el instalador (sin sudo, instala en ~/.local)
+# 2. Instala dependencias de Node (requerido para modo repositorio)
+npm ci
+
+# 3. Ejecuta el instalador (sin sudo, instala en ~/.local)
 sh installers/linux/install.sh
 
 # Si ya está instalado, usa --force para reinstalar:
 # sh installers/linux/install.sh --force
 
-# 3. Verifica
+# 4. Verifica
 mm --version
 ```
 
 > 💡 Asegúrate de que `~/.local/bin` esté en tu PATH **antes** de otros gestores de versión (como `mise`, `nvm`, etc.) para que `mm` se resuelva correctamente.
+
+> 📦 Alternativa: si no quieres clonar el repositorio, descarga el instalador directamente y obtendrá un release precompilado de GitHub Releases (no requiere node ni npm):
+>
+> ```bash
+> curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
+> sh /tmp/mm-install.sh
+> ```
 
 #### Windows (x64)
 
