@@ -35,6 +35,8 @@ export type AppProps = {
   onQuit?: () => void;
   /** Solo para tests: permite observar o simular el lanzamiento del reproductor. */
   launchPlayer?: LaunchPlayerFn;
+  /** Indexa la biblioteca (se llama tras guardar cambios en ajustes). */
+  onIndex?: () => Promise<void>;
 };
 
 const SECTION_ORDER: readonly Section[] = [
@@ -65,6 +67,7 @@ function AppImpl({
   configPath,
   onQuit,
   launchPlayer = spawnPlayer,
+  onIndex,
 }: AppProps): React.JSX.Element {
   const [config, setConfig] = useState<AppConfig>(initialConfig);
   const { keybindings } = useConfig(config);
@@ -391,10 +394,14 @@ function AppImpl({
   };
 
   /** Reproduce desde la vista de detalles de reproducción usando el fichero seleccionado allí. */
-  const handlePlayFromDetails = (fileId: number): void => {
+  const handlePlayFromDetails = (input: {
+    fileId: number;
+    audioTrackIndex: number | null;
+    subtitleTrackIndex: number | null;
+  }): void => {
     if (view !== 'play-details') return;
     const media = library.find(String(playDetailsMediaId ?? 0));
-    const file = media.files.find((f) => f.id === fileId);
+    const file = media.files.find((f) => f.id === input.fileId);
     if (file === undefined) {
       setStatus('No se pudo encontrar el fichero seleccionado.');
       return;
@@ -404,6 +411,8 @@ function AppImpl({
         playerConfig: config.player,
         filePath: file.filePath,
         mode: 'detach',
+        audioTrackIndex: input.audioTrackIndex,
+        subtitleTrackIndex: input.subtitleTrackIndex,
       });
       const label = playbackLabel(media.media.title, file);
       setStatus(`Abriendo ${label} en ${plan.player}…`);
@@ -562,6 +571,15 @@ function AppImpl({
                   configPath: resolvedConfigPath,
                 });
                 setConfig(updated);
+                if (onIndex) {
+                  setStatus('Indexando biblioteca…');
+                  try {
+                    await onIndex();
+                    setStatus('Indexación completada.');
+                  } catch {
+                    setStatus('No se pudo indexar la biblioteca.');
+                  }
+                }
               } catch {
                 setStatus('No se pudo recargar la configuración.');
               }

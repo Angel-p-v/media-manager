@@ -21,6 +21,9 @@ export type RealSubtitleTrack = {
 /** Resultado del parseo de metadatos de un fichero de vídeo. */
 export type VideoMediaInfo = {
   durationSeconds: number | null;
+  videoCodec: string | null;
+  videoWidth: number | null;
+  videoHeight: number | null;
   audioTracks: readonly RealAudioTrack[];
   subtitleTracks: readonly RealSubtitleTrack[];
 };
@@ -35,7 +38,8 @@ export type FfprobeOptions = {
 
 /**
  * Ejecuta ffprobe sobre un fichero de vídeo y extrae las pistas de audio y
- * subtítulos con sus idiomas, códecs y demás metadatos reales.
+ * subtítulos con sus idiomas, códecs y demás metadatos reales, además del
+ * códec y resolución del flujo de vídeo.
  *
  * Requiere que ffprobe esté instalado en el sistema (paquete ffmpeg).
  * Si ffprobe no está disponible o el fichero no tiene pistas reconocibles,
@@ -58,6 +62,9 @@ export async function readVideoMediaInfo(
           // ffprobe no está instalado o el fichero no es legible: no bloquear la TUI.
           resolve({
             durationSeconds: null,
+            videoCodec: null,
+            videoWidth: null,
+            videoHeight: null,
             audioTracks: [],
             subtitleTracks: [],
           });
@@ -70,6 +77,9 @@ export async function readVideoMediaInfo(
         } catch {
           resolve({
             durationSeconds: null,
+            videoCodec: null,
+            videoWidth: null,
+            videoHeight: null,
             audioTracks: [],
             subtitleTracks: [],
           });
@@ -84,6 +94,9 @@ export async function readVideoMediaInfo(
 
         const audioTracks: RealAudioTrack[] = [];
         const subtitleTracks: RealSubtitleTrack[] = [];
+        let videoCodec: string | null = null;
+        let videoWidth: number | null = null;
+        let videoHeight: number | null = null;
 
         let audioIndex = 0;
         let subtitleIndex = 0;
@@ -93,7 +106,16 @@ export async function readVideoMediaInfo(
 
           const codecType = (stream as { codec_type?: string }).codec_type;
 
-          if (codecType === 'audio') {
+          if (codecType === 'video' && videoCodec === null) {
+            const s = stream as {
+              codec_name?: string;
+              width?: number;
+              height?: number;
+            };
+            videoCodec = s.codec_name ?? null;
+            videoWidth = s.width ?? null;
+            videoHeight = s.height ?? null;
+          } else if (codecType === 'audio') {
             const s = stream as {
               index?: number;
               language?: string;
@@ -134,6 +156,9 @@ export async function readVideoMediaInfo(
 
         resolve({
           durationSeconds,
+          videoCodec,
+          videoWidth,
+          videoHeight,
           audioTracks,
           subtitleTracks,
         });
