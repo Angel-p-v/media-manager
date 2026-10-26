@@ -207,6 +207,12 @@ function AppImpl({
   };
 
   const handleNextSection = (): void => {
+    // Desde la vista de ajustes, Tab vuelve a la biblioteca principal.
+    if (view === 'settings') {
+      setView('library');
+      setStatus(null);
+      return;
+    }
     if (view !== 'library') return;
     const current = SECTION_ORDER.indexOf(section);
     const next = SECTION_ORDER[(current + 1) % SECTION_ORDER.length] ?? 'all';
