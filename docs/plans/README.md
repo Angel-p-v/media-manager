@@ -4,27 +4,22 @@ Este directorio contiene los planes de ejecución del proyecto `media-manager`. 
 
 ## Planes activos
 
-| Plan                                                                         | Estado        | Descripción                                                                                                         |
-| ---------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| [`plan-01-mejoras-continuas-fase2.md`](./plan-01-mejoras-continuas-fase2.md) | ✅ Completado | Mejoras continuas post-M22 (Fase 2): pruebas, indexador, metadatos, TUI, CLI, doctor, empaquetado, i18n, seguridad. |
-| [`plan-09-nuevas-mejoras-futuras.md`](./plan-09-nuevas-mejoras-futuras.md)   | 🟡 Activo     | Nuevas mejoras futuras: TUI, indexador, metadatos, reproductor, distribución, testing, documentación y comunidad.   |
-
-## Planes pendientes de ejecución
-
-| Plan                                                             | Estado        | Descripción                                                                                                                           |
-| ---------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| [`plan-02-fixes-code-review.md`](./plan-02-fixes-code-review.md) | ✅ Completado | Corrección de errores del code review: bug `find` en install.sh, `countFavorites`, SQL injection en mediaRepo, tests de filtros, etc. |
+| Plan | Estado | Descripción |
+| ---- | ------ | ----------- |
 
 ## Planes completados
 
-| Plan                                                                                             | Estado        | Descripción                                                                                             | PR de cierre |
-| ------------------------------------------------------------------------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------- | ------------ |
-| [`plan-03-fixes-seguridad-COMPLETADO.md`](./plan-03-fixes-seguridad-COMPLETADO.md)               | ✅ Completado | Corrección de errores y vulnerabilidades (bugs B1-B4, vulnerabilidades V1-V4).                          | #142         |
-| [`plan-04-hitos-m18-m22-COMPLETADO.md`](./plan-04-hitos-m18-m22-COMPLETADO.md)                   | ✅ Completado | Hitos M18–M22: TUI metadatos visuales, sync en segundo plano, autocompletado shell, E2E TTY, cobertura. | —            |
-| [`plan-05-mejoras-post-m22-COMPLETADO.md`](./plan-05-mejoras-post-m22-COMPLETADO.md)             | ✅ Completado | 10 ítems post-M22 todos completados y mergeados.                                                        | #114–#121    |
-| [`plan-06-version-2-0-COMPLETADO.md`](./plan-06-version-2-0-COMPLETADO.md)                       | ✅ Completado | Plan v2.0: estado de reproducción, continuar viendo, biblioteca sana, soporte macOS.                    | —            |
-| [`plan-07-instaladores-seguridad-COMPLETADO.md`](./plan-07-instaladores-seguridad-COMPLETADO.md) | ✅ Completado | Instaladores POSIX, distribución por GitHub Releases, checksums, SBOM, atestaciones.                    | —            |
-| [`plan-08-distribucion-sin-npm-SUSTITUIDO.md`](./plan-08-distribucion-sin-npm-SUSTITUIDO.md)     | 🔄 Sustituido | Sustituido por `plan-07-instaladores-seguridad-COMPLETADO.md`.                                          | —            |
+| Plan                                                                                               | Estado        | Descripción                                                                                                                           | PR de cierre |
+| -------------------------------------------------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| [`plan-01-mejoras-continuas-fase2-COMPLETADO.md`](./plan-01-mejoras-continuas-fase2-COMPLETADO.md) | ✅ Completado | Mejoras continuas post-M22 (Fase 2): pruebas, indexador, metadatos, TUI, CLI, doctor, empaquetado, i18n, seguridad.                   | —            |
+| [`plan-02-fixes-code-review-COMPLETADO.md`](./plan-02-fixes-code-review-COMPLETADO.md)             | ✅ Completado | Corrección de errores del code review: bug `find` en install.sh, `countFavorites`, SQL injection en mediaRepo, tests de filtros, etc. | —            |
+| [`plan-03-fixes-seguridad-COMPLETADO.md`](./plan-03-fixes-seguridad-COMPLETADO.md)                 | ✅ Completado | Corrección de errores y vulnerabilidades (bugs B1-B4, vulnerabilidades V1-V4).                                                        | #142         |
+| [`plan-04-hitos-m18-m22-COMPLETADO.md`](./plan-04-hitos-m18-m22-COMPLETADO.md)                     | ✅ Completado | Hitos M18–M22: TUI metadatos visuales, sync en segundo plano, autocompletado shell, E2E TTY, cobertura.                               | —            |
+| [`plan-05-mejoras-post-m22-COMPLETADO.md`](./plan-05-mejoras-post-m22-COMPLETADO.md)               | ✅ Completado | 10 ítems post-M22 todos completados y mergeados.                                                                                      | #114–#121    |
+| [`plan-06-version-2-0-COMPLETADO.md`](./plan-06-version-2-0-COMPLETADO.md)                         | ✅ Completado | Plan v2.0: estado de reproducción, continuar viendo, biblioteca sana, soporte macOS.                                                  | —            |
+| [`plan-07-instaladores-seguridad-COMPLETADO.md`](./plan-07-instaladores-seguridad-COMPLETADO.md)   | ✅ Completado | Instaladores POSIX, distribución por GitHub Releases, checksums, SBOM, atestaciones.                                                  | —            |
+| [`plan-08-distribucion-sin-npm-SUSTITUIDO.md`](./plan-08-distribucion-sin-npm-SUSTITUIDO.md)       | 🔄 Sustituido | Sustituido por `plan-07-instaladores-seguridad-COMPLETADO.md`.                                                                        | —            |
+| [`plan-09-nuevas-mejoras-futuras-COMPLETADO.md`](./plan-09-nuevas-mejoras-futuras-COMPLETADO.md)   | ✅ Completado | Nuevas mejoras futuras: TUI, indexador, metadatos, reproductor, distribución, testing, documentación y comunidad.                     | #171–#180    |
 
 ## Leyenda de estado
 
