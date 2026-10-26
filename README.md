@@ -133,6 +133,11 @@ Detalle en [`docs/plans/`](./docs/plans).
 
 ### 📦 Instalador oficial (recomendado — Linux, Windows, macOS)
 
+El instalador descarga un release precompilado de GitHub Releases, verifica el
+checksum SHA-256 y deja el comando `mm` disponible sin `sudo`.
+
+#### Linux (x64, arm64)
+
 ```bash
 # 1. Descarga el instalador y revísalo
 curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
@@ -171,10 +176,8 @@ npm run standalone -- --node-source official
 > **Opciones útiles:**
 >
 > ```bash
-> sh /tmp/mm-install.sh --version v1.2.0     # versión concreta
 > sh /tmp/mm-install.sh --prefix "$HOME/.local"
 > sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
-> sh /tmp/mm-install.sh --verify-attestation # verifica atestación de procedencia (requiere gh)
 > ```
 
 > ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: sin assets oficiales (compila localmente)**
@@ -209,7 +212,7 @@ Si al ejecutar `mm` ves un error de "app no verificada" o "no se puede abrir por
 
 ```bash
 # Quita el atributo de cuarentena de los binarios instalados
-xattr -d com.apple.quarantine ~/.local/share/media-manager/current/node ~/.local/bin/mm
+xattr -d com.apple.quarantine ~/.local/share/media-manager/dist/cli.js ~/.local/bin/mm
 ```
 
 El instalador intenta hacerlo automáticamente, pero en algunos casos macOS lo reaplica.
