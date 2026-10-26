@@ -503,4 +503,66 @@ describe('App (TUI)', () => {
 
     unmount();
   });
+
+  it('navega entre episodios con flechas arriba/abajo y cambia el fichero seleccionado', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    // Abrir vista de detalles de reproducción (Enter sobre Severance)
+    await press(stdin, '\r');
+    expect(frameOf(lastFrame)).toContain('Reproducir');
+
+    // Severance tiene 2 episodios: S01E01 y S01E02
+    // Por defecto está seleccionado el primero (S01E01) marcado con ▸
+    let frame = frameOf(lastFrame);
+    expect(frame).toContain('▸ T01E01');
+    expect(frame).toContain('   T01E02');
+
+    // Moverse al segundo episodio con flecha abajo: el ▸ se mueve a T01E02
+    await press(stdin, '\u001b[B');
+    frame = frameOf(lastFrame);
+    expect(frame).toContain('▸ T01E02');
+    expect(frame).toContain('   T01E01');
+
+    // Volver al primero con flecha arriba
+    await press(stdin, '\u001b[A');
+    frame = frameOf(lastFrame);
+    expect(frame).toContain('▸ T01E01');
+    expect(frame).toContain('   T01E02');
+
+    unmount();
+  });
+
+  it('muestra pistas de audio sin duplicar por cada episodio', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    await press(stdin, '\r');
+    const frame = frameOf(lastFrame);
+
+    // En la sección "Pista de audio" debe haber una fila por idioma (Español, Inglés)
+    // y no una fila por episodio. Verificamos que aparece exactamente una vez
+    // "▸ Español" y una vez "   Inglés" en la columna de audio.
+    const audioSection = frame.slice(
+      frame.indexOf('Pista de audio'),
+      frame.indexOf('Pista de subtítulos'),
+    );
+    const espanolInAudio = (audioSection.match(/Español/g) ?? []).length;
+    const inglesInAudio = (audioSection.match(/Inglés/g) ?? []).length;
+    expect(espanolInAudio).toBe(1);
+    expect(inglesInAudio).toBe(1);
+
+    unmount();
+  });
+
+  it('muestra el nombre corto del fichero sin la ruta absoluta', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    await press(stdin, '\r');
+    const frame = frameOf(lastFrame);
+
+    // Debería mostrar el nombre del fichero, no la ruta absoluta
+    expect(frame).toContain('S01E01.mkv');
+    expect(frame).not.toContain('/media/series/Severance/S01E01.mkv');
+
+    unmount();
+  });
 });
