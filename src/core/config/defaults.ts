@@ -54,5 +54,7 @@ export const defaultConfig: AppConfig = {
     right: 'right',
     enter: 'return',
     escape: 'escape',
+    /** Abre la vista de reasignación de atajos de teclado desde la TUI. */
+    configureKeybindings: 'k',
   },
 };

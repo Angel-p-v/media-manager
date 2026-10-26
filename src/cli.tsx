@@ -33,7 +33,7 @@ import { runSelfUpdateCommand } from './commands/self-update.js';
 import { runShowCommand } from './commands/show.js';
 import { runTagCommand, parseTagOptions } from './commands/tag.js';
 import { runWatchCommand } from './commands/watch.js';
-import { loadConfig } from './core/config/loader.js';
+import { loadConfig, resolveConfigPath } from './core/config/loader.js';
 import { getVersion } from './shared/version.js';
 import { runTui } from './ui/run.js';
 
@@ -282,8 +282,9 @@ async function main(): Promise<void> {
   // Sin subcomando se abre la interfaz interactiva; con subcomando, la CLI headless.
   const args = process.argv.slice(2).filter((arg) => arg !== '--verbose' && arg !== '-v');
   if (args.length === 0) {
-    const config = await loadConfig();
-    await runTui(config);
+    const configPath = resolveConfigPath();
+    const config = await loadConfig({ configPath });
+    await runTui(config, configPath);
     return;
   }
 
