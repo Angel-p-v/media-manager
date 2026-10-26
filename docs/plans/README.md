@@ -20,6 +20,8 @@ Este directorio contiene los planes de ejecución del proyecto `media-manager`. 
 | [`plan-07-instaladores-seguridad-COMPLETADO.md`](./plan-07-instaladores-seguridad-COMPLETADO.md)   | ✅ Completado | Instaladores POSIX, distribución por GitHub Releases, checksums, SBOM, atestaciones.                                                  | —            |
 | [`plan-08-distribucion-sin-npm-SUSTITUIDO.md`](./plan-08-distribucion-sin-npm-SUSTITUIDO.md)       | 🔄 Sustituido | Sustituido por `plan-07-instaladores-seguridad-COMPLETADO.md`.                                                                        | —            |
 | [`plan-09-nuevas-mejoras-futuras-COMPLETADO.md`](./plan-09-nuevas-mejoras-futuras-COMPLETADO.md)   | ✅ Completado | Nuevas mejoras futuras: TUI, indexador, metadatos, reproductor, distribución, testing, documentación y comunidad.                     | #171–#180    |
+| [`plan-10-configuracion-desde-COMPLETADO.md`](./plan-10-configuracion-desde-COMPLETADO.md)         | ✅ Completado | Edición de configuración desde la TUI: opción `--set` en `mm config` para modificar claves anidadas sin editar el YAML a mano.        | #198         |
+| [`plan-11-ajustes-settings-COMPLETADO.md`](./plan-11-ajustes-settings-COMPLETADO.md)               | ✅ Completado | Corrección de errores de ajustes (settings): etiqueta reproductor, guardar sin archivo YAML previo, `mm config --path` advierte.      | #197         |
 
 ## Leyenda de estado
 

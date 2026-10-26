@@ -491,7 +491,7 @@ npm run standalone   # distribución portable con Node incluido
 
 ## 🗺️ Próximos pasos
 
-Todos los planes de desarrollo (M0–M22, Plan 01, Plan 02, Plan 09) están implementados y mergeados en `main`. El proyecto está estable y cada commit pasa `npm run verify`.
+Todos los planes de desarrollo (M0–M22, Plan 01, Plan 02, Plan 09, Plan 10, Plan 11) están implementados y mergeados en `main`. El proyecto está estable y cada commit pasa `npm run verify`.
 
 Si tienes ideas para nuevas funcionalidades, puedes:
 
