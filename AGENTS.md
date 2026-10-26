@@ -296,6 +296,13 @@ Todos los hitos M0–M17 están completados.
     `### Bug Fixes`, `### Documentation`). Evitar notas genéricas como "v2.0.0" sin
     contenido; release-please genera el CHANGELOG pero el agente debe revisar y
     completar las notas de la GitHub Release antes de publicarla.
+- **Scripts de instalación en la misma PR:** al modificar la aplicación, si es
+  necesario modificar los scripts de instalación (`install.sh`, `install.ps1` u otros
+  instaladores), esos cambios se incluirán en la misma PR que los cambios de la
+  aplicación, no en una PR separada.
+- **README actualizado en la misma PR:** si los cambios requieren actualizar el README
+  (nuevas funcionalidades, cambios de instalación, pasos adicionales, información que el
+  usuario deba ver), se incluirá en la misma PR los cambios del README correspondientes.
 
 ## Reglas de tipado estricto y modelado de dominio
 
