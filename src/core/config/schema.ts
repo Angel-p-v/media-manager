@@ -53,9 +53,22 @@ export const playerConfigSchema = z.object({
 
 export type PlayerConfig = z.infer<typeof playerConfigSchema>;
 
+/** Colores de un tema personalizado definido por el usuario en el YAML. */
+export const themeColorsSchema = z.object({
+  primary: z.string().default('cyan'),
+  accent: z.string().default('magenta'),
+  success: z.string().default('green'),
+  warning: z.string().default('yellow'),
+  error: z.string().default('red'),
+  muted: z.string().default('gray'),
+  border: z.string().default('gray'),
+});
+
+export type ThemeColors = z.infer<typeof themeColorsSchema>;
+
 /** Preferencias de la interfaz de terminal. */
 export const uiConfigSchema = z.object({
-  theme: z.enum(['default', 'dark', 'light']).default('default'),
+  theme: z.union([z.enum(['default', 'dark', 'light']), themeColorsSchema]).default('default'),
   layout: z.enum(['split', 'list']).default('split'),
   sort: z.enum(['title', 'recent', 'added']).default('title'),
   showDetails: z.boolean().default(true),

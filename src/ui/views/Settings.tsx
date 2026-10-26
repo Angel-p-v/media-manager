@@ -34,7 +34,7 @@ export function SettingsView({ config }: SettingsViewProps): React.JSX.Element {
       <Text>{`  ${config.player.default} · ${config.player.onLaunch}`}</Text>
       <Text> </Text>
       <Text>{theme.label('Interfaz')}</Text>
-      <Text>{`  tema: ${config.ui.theme} · layout: ${config.ui.layout} · orden: ${config.ui.sort}`}</Text>
+      <Text>{`  tema: ${typeof config.ui.theme === 'string' ? config.ui.theme : 'personalizado'} · layout: ${config.ui.layout} · orden: ${config.ui.sort}`}</Text>
       <Text>{`  detalles: ${config.ui.showDetails ? 'sí' : 'no'} · atajos personalizados: ${Object.keys(config.keybindings).length}`}</Text>
       <Text> </Text>
       <Text>{theme.muted('Los cambios se aplican al reiniciar la TUI.')}</Text>
