@@ -63,16 +63,27 @@ describe('classifyFile', () => {
     expect(first?.folderPath).not.toBe(second?.folderPath);
   });
 
-  it('descarta un fichero suelto en la raíz de series', () => {
-    expect(classify(seriesRoot, '/media/series/Severance.S01E02.mkv')).toBeNull();
+  it('clasifica un fichero suelto con patrón de episodio en raíz de series', () => {
+    expect(classify(seriesRoot, '/media/series/Severance.S01E02.mkv')).toMatchObject({
+      type: 'series',
+      title: 'Severance',
+      season: 1,
+      episode: 2,
+    });
   });
 
-  it('descarta un fichero sin patrón de episodio', () => {
-    expect(classify(seriesRoot, '/media/series/Severance/extra.mkv')).toBeNull();
+  it('clasifica un fichero sin patrón de episodio como unknown', () => {
+    expect(classify(seriesRoot, '/media/series/Severance/extra.mkv')).toMatchObject({
+      type: 'unknown',
+      title: 'Severance',
+    });
   });
 
-  it('descarta una película sin título utilizable', () => {
-    expect(classify(movieRoot, '/media/movies/1080p.mkv')).toBeNull();
+  it('clasifica un fichero sin título utilizable como unknown', () => {
+    expect(classify(movieRoot, '/media/movies/1080p.mkv')).toMatchObject({
+      type: 'unknown',
+      title: '1080p',
+    });
   });
 
   it('descarta rutas fuera de la raíz', () => {
