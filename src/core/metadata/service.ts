@@ -108,11 +108,55 @@ type OmdbDetails = {
   Response: string;
 };
 
+/** Respuesta GraphQL de AniList para búsqueda y detalles. */
+type AnilistGraphQLResponse = {
+  data?: {
+    Media?: AnilistMedia | null;
+  };
+  errors?: unknown[];
+};
+
+/** Medio de AniList (anime) devuelto por GraphQL. */
+type AnilistMedia = {
+  id: number;
+  title: {
+    romaji: string | null;
+    english: string | null;
+    native: string | null;
+    userPreferred: string | null;
+  };
+  description: string | null;
+  coverImage: {
+    large: string | null;
+    medium: string | null;
+  } | null;
+  bannerImage: string | null;
+  averageScore: number | null;
+  startDate: {
+    year: number | null;
+    month: number | null;
+    day: number | null;
+  } | null;
+  endDate: {
+    year: number | null;
+    month: number | null;
+    day: number | null;
+  } | null;
+  language: string | null;
+  format: string | null;
+  status: string | null;
+  episodes: number | null;
+  duration: number | null;
+  genres: string[];
+  synonyms: string[];
+};
+
 /** Configuración del servicio de metadatos. */
 export type MetadataServiceConfig = {
   tmdbApiKey?: string;
   tvdbApiKey?: string;
   omdbApiKey?: string;
+  anilistApiKey?: string;
   logger: {
     debug(msg: string, bindings?: Record<string, unknown>): void;
     warn(msg: string, bindings?: Record<string, unknown>): void;
@@ -122,7 +166,7 @@ export type MetadataServiceConfig = {
 
 /** Resultado de búsqueda de metadatos. */
 export type MetadataSearchResult = {
-  provider: 'tmdb' | 'tvdb' | 'omdb';
+  provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist';
   externalId: number;
   title: string;
   overview: string | null;
@@ -492,7 +536,160 @@ export class MetadataService {
   }
 
   /**
-   * Busca en todos los proveedores configurados (TMDB primero, luego TVDB y OMDB como fallback).
+   * Ejecuta una consulta GraphQL contra la API de AniList.
+   * AniList no requiere clave de autenticación para consultas públicas, pero
+   * aplica rate-limiting por IP.
+   */
+  private async anilistGraphQL(
+    query: string,
+    variables: Record<string, unknown>,
+  ): Promise<AnilistGraphQLResponse> {
+    await rateLimiters.anilist.waitForSlot();
+
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+
+    if (!response.ok) {
+      throw new MetadataError(`AniList API respondió ${response.status}`);
+    }
+
+    const data = (await response.json()) as AnilistGraphQLResponse;
+
+    if (data.errors?.length) {
+      throw new MetadataError(`AniList API devolvió errores: ${JSON.stringify(data.errors)}`);
+    }
+
+    return data;
+  }
+
+  /**
+   * Busca anime en AniList por consulta de texto.
+   * Devuelve resultados mapeados a un formato común.
+   */
+  async searchAnilist(query: string): Promise<MetadataSearchResult[]> {
+    if (!this.config.anilistApiKey) {
+      throw new MetadataError(
+        'AniList no configurada. Añade metadata.anilist_api_key a tu config.yaml.',
+      );
+    }
+
+    const graphqlQuery = `
+      query ($search: String) {
+        Media(search: $search, type: ANIME) {
+          id
+          title { romaji english native userPreferred }
+          description
+          coverImage { large medium }
+          averageScore
+          startDate { year month day }
+          language
+          genres
+        }
+      }
+    `;
+
+    const data = await this.anilistGraphQL(graphqlQuery, { search: query });
+    const rawMedia = data.data?.Media;
+
+    // AniList devuelve un solo medio cuando se busca por título exacto, o una lista
+    // cuando la consulta es ambigua. Normalizamos a array de AnilistMedia.
+    const medias: AnilistMedia[] = Array.isArray(rawMedia) ? rawMedia : rawMedia ? [rawMedia] : [];
+
+    return medias.map((m) => {
+      const releaseDate = m.startDate?.year
+        ? `${m.startDate.year}-${String(m.startDate.month ?? 1).padStart(2, '0')}-${String(
+            m.startDate.day ?? 1,
+          ).padStart(2, '0')}`
+        : null;
+      return {
+        provider: 'anilist' as const,
+        externalId: m.id,
+        title: m.title.userPreferred ?? m.title.english ?? m.title.romaji ?? m.title.native ?? '',
+        overview: m.description,
+        posterPath: m.coverImage?.large ?? null,
+        backdropPath: m.coverImage?.medium ?? null,
+        voteAverage: m.averageScore ?? null,
+        releaseDate,
+        originalLanguage: m.language,
+        localPosterPath: null,
+      };
+    });
+  }
+
+  /**
+   * Obtiene detalles de un anime de AniList por ID externo.
+   */
+  async getAnilistDetails(
+    externalId: number,
+    _mediaType: 'movie' | 'tv' = 'tv',
+  ): Promise<MetadataSearchResult> {
+    if (!this.config.anilistApiKey) {
+      throw new MetadataError(
+        'AniList no configurada. Añade metadata.anilist_api_key a tu config.yaml.',
+      );
+    }
+
+    const graphqlQuery = `
+      query ($id: Int) {
+        Media(id: $id, type: ANIME) {
+          id
+          title { romaji english native userPreferred }
+          description
+          coverImage { large medium }
+          averageScore
+          startDate { year month day }
+          endDate { year month day }
+          language
+          format
+          status
+          episodes
+          duration
+          genres
+          synonyms
+        }
+      }
+    `;
+
+    const data = await this.anilistGraphQL(graphqlQuery, { id: externalId });
+    const media = data.data?.Media;
+
+    if (!media) {
+      throw new MetadataError(`AniList no encontró el anime ${externalId}`);
+    }
+
+    const releaseDate = media.startDate?.year
+      ? `${media.startDate.year}-${String(media.startDate.month ?? 1).padStart(2, '0')}-${String(
+          media.startDate.day ?? 1,
+        ).padStart(2, '0')}`
+      : null;
+
+    return {
+      provider: 'anilist',
+      externalId: media.id,
+      title:
+        media.title.userPreferred ??
+        media.title.english ??
+        media.title.romaji ??
+        media.title.native ??
+        '',
+      overview: media.description,
+      posterPath: media.coverImage?.large ?? null,
+      backdropPath: media.coverImage?.medium ?? null,
+      voteAverage: media.averageScore ?? null,
+      releaseDate,
+      originalLanguage: media.language,
+      localPosterPath: null,
+    };
+  }
+
+  /**
+   * Busca en todos los proveedores configurados (TMDB primero, luego TVDB, OMDB y AniList como fallback).
    */
   async search(query: string): Promise<MetadataSearchResult[]> {
     const results: MetadataSearchResult[] = [];
@@ -530,6 +727,17 @@ export class MetadataService {
       }
     }
 
+    if (this.config.anilistApiKey) {
+      try {
+        const anilistResults = await this.searchAnilist(query);
+        results.push(...anilistResults);
+      } catch (error) {
+        this.config.logger.warn('AniList búsqueda falló', {
+          error: formatError(error),
+        });
+      }
+    }
+
     return results;
   }
 
@@ -539,7 +747,7 @@ export class MetadataService {
    */
   async getDetails(
     externalId: number,
-    provider: 'tmdb' | 'tvdb' | 'omdb',
+    provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist',
     mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
     if (provider === 'tmdb') {
@@ -548,22 +756,31 @@ export class MetadataService {
     if (provider === 'tvdb') {
       return this.getTvdbDetails(externalId, mediaType === 'tv' ? 'tv' : 'movie');
     }
-    return this.getOmdbDetails(externalId, mediaType);
+    if (provider === 'omdb') {
+      return this.getOmdbDetails(externalId, mediaType);
+    }
+    return this.getAnilistDetails(externalId, mediaType);
   }
 
   /**
    * Verifica si hay al menos un proveedor configurado.
    */
   hasProviderConfigured(): boolean {
-    return !!this.config.tmdbApiKey || !!this.config.tvdbApiKey || !!this.config.omdbApiKey;
+    return (
+      !!this.config.tmdbApiKey ||
+      !!this.config.tvdbApiKey ||
+      !!this.config.omdbApiKey ||
+      !!this.config.anilistApiKey
+    );
   }
 
   /**
    * Verifica si un proveedor específico está configurado.
    */
-  isProviderConfigured(provider: 'tmdb' | 'tvdb' | 'omdb'): boolean {
+  isProviderConfigured(provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist'): boolean {
     if (provider === 'tmdb') return !!this.config.tmdbApiKey;
     if (provider === 'tvdb') return !!this.config.tvdbApiKey;
-    return !!this.config.omdbApiKey;
+    if (provider === 'omdb') return !!this.config.omdbApiKey;
+    return !!this.config.anilistApiKey;
   }
 }
