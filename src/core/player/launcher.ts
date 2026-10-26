@@ -38,6 +38,10 @@ export type CreateLaunchPlanOptions = {
   startSeconds?: number | null;
   /** Ruta opcional al archivo de subtítulo (p. ej. .srt) a cargar. */
   subtitlePath?: string | null;
+  /** Índice 0-based de la pista de audio seleccionada (según ffprobe). */
+  audioTrackIndex?: number | null;
+  /** Índice 0-based de la pista de subtítulos seleccionada (según ffprobe). */
+  subtitleTrackIndex?: number | null;
 };
 
 /** Opciones para el tracker IPC de mpv. */
@@ -107,6 +111,28 @@ export function createLaunchPlan(options: CreateLaunchPlanOptions): LaunchPlan {
   // para que rutas con espacios se conserven como un solo argumento.
   if (options.subtitlePath) {
     finalArgsResolved = [...finalArgsResolved, `--sub-file=${options.subtitlePath}`];
+  }
+
+  // Seleccionar la pista de audio por índice (ffprobe es 0-based, reproductores son 1-based).
+  // mpv usa --aid, vlc usa --audio-track.
+  if (options.audioTrackIndex !== null && options.audioTrackIndex !== undefined) {
+    const aid = options.audioTrackIndex + 1;
+    if (playerName === 'mpv') {
+      finalArgsResolved = [...finalArgsResolved, `--aid=${aid}`];
+    } else if (playerName === 'vlc') {
+      finalArgsResolved = [...finalArgsResolved, `--audio-track=${aid}`];
+    }
+  }
+
+  // Seleccionar la pista de subtítulos por índice (ffprobe es 0-based, reproductores son 1-based).
+  // mpv usa --sid, vlc usa --sub-track.
+  if (options.subtitleTrackIndex !== null && options.subtitleTrackIndex !== undefined) {
+    const sid = options.subtitleTrackIndex + 1;
+    if (playerName === 'mpv') {
+      finalArgsResolved = [...finalArgsResolved, `--sid=${sid}`];
+    } else if (playerName === 'vlc') {
+      finalArgsResolved = [...finalArgsResolved, `--sub-track=${sid}`];
+    }
   }
 
   return {
