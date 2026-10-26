@@ -2,7 +2,6 @@ import { Box, Text, useApp, useInput } from 'ink';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { readVideoMediaInfo } from '../../core/video/ffprobe.js';
-import { useKeymap } from '../hooks/useKeymap.js';
 import { theme } from '../theme.js';
 
 import type { MediaFileRow } from '../../core/db/types.js';
@@ -85,6 +84,9 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   const [selectedSubtitleIndex, setSelectedSubtitleIndex] = useState<number | null>(null);
   const [audioTracks, setAudioTracks] = useState<readonly RealAudioTrack[]>([]);
   const [subtitleTracks, setSubtitleTracks] = useState<readonly RealSubtitleTrack[]>([]);
+  const [videoCodec, setVideoCodec] = useState<string | null>(null);
+  const [videoWidth, setVideoWidth] = useState<number | null>(null);
+  const [videoHeight, setVideoHeight] = useState<number | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
@@ -105,11 +107,14 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     onBack();
   }, [onBack]);
 
-  /** Carga los metadatos reales (audio/subtítulos) del fichero seleccionado con ffprobe. */
+  /** Carga los metadatos reales (audio/subtítulos/vídeo) del fichero seleccionado con ffprobe. */
   const loadFileMetadata = useCallback(async (file: MediaFileRow | undefined): Promise<void> => {
     if (file === undefined) {
       setAudioTracks([]);
       setSubtitleTracks([]);
+      setVideoCodec(null);
+      setVideoWidth(null);
+      setVideoHeight(null);
       setSelectedAudioIndex(null);
       setSelectedSubtitleIndex(null);
       return;
@@ -121,6 +126,9 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
       const info = await readVideoMediaInfo(file.filePath);
       setAudioTracks(info.audioTracks);
       setSubtitleTracks(info.subtitleTracks);
+      setVideoCodec(info.videoCodec);
+      setVideoWidth(info.videoWidth);
+      setVideoHeight(info.videoHeight);
       // Seleccionar la primera pista de audio y "Ninguna" para subtítulos por defecto
       setSelectedAudioIndex(info.audioTracks.length > 0 ? 0 : null);
       setSelectedSubtitleIndex(null);
@@ -130,6 +138,9 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
       );
       setAudioTracks([]);
       setSubtitleTracks([]);
+      setVideoCodec(null);
+      setVideoWidth(null);
+      setVideoHeight(null);
       setSelectedAudioIndex(null);
       setSelectedSubtitleIndex(null);
     } finally {
@@ -157,63 +168,83 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   );
 
   // Navegación por teclado dentro de esta vista.
-  useKeymap(
-    { up: 'up', down: 'down', left: 'left', right: 'right' },
-    {
-      up: () => ensureVisible(Math.max(0, selectedFileIndex - 1)),
-      down: () => ensureVisible(Math.min(files.length - 1, selectedFileIndex + 1)),
-      left: () =>
+  // Se usa useInput en lugar de useKeymap para poder distinguir
+  // Mayús+flecha (subtítulos) de flecha simple (audio).
+  useInput(
+    (
+      input: string,
+      key: {
+        escape?: boolean;
+        ctrl?: boolean;
+        shift?: boolean;
+        leftArrow?: boolean;
+        rightArrow?: boolean;
+        upArrow?: boolean;
+        downArrow?: boolean;
+      },
+    ): void => {
+      if (key.ctrl && input === 'c') {
+        exit();
+        return;
+      }
+
+      if (key.escape || input === 'q') {
+        handleBack();
+        return;
+      }
+
+      if (input === 'p') {
+        handlePlaySelected();
+        return;
+      }
+
+      // Navegación de episodios con flechas arriba/abajo.
+      if (key.upArrow || input === '\u001b[A') {
+        ensureVisible(Math.max(0, selectedFileIndex - 1));
+        return;
+      }
+      if (key.downArrow || input === '\u001b[B') {
+        ensureVisible(Math.min(files.length - 1, selectedFileIndex + 1));
+        return;
+      }
+
+      // Navegación de pistas de audio con flechas izquierda/derecha (sin shift).
+      if (!key.shift && (key.leftArrow || input === '\u001b[D')) {
         setSelectedAudioIndex((prev) =>
           prev === null || prev <= 0 ? null : Math.max(0, prev - 1),
-        ),
-      right: () =>
+        );
+        return;
+      }
+      if (!key.shift && (key.rightArrow || input === '\u001b[C')) {
         setSelectedAudioIndex((prev) =>
           prev === null
             ? audioTracks.length > 0
               ? 0
               : null
             : Math.min(audioTracks.length - 1, prev + 1),
-        ),
+        );
+        return;
+      }
+
+      // Navegación de pistas de subtítulos con Mayús+flechas izquierda/derecha.
+      if (key.shift && (key.leftArrow || input === '\u001b[D')) {
+        setSelectedSubtitleIndex((prev) =>
+          prev === null || prev <= 0 ? null : Math.max(0, prev - 1),
+        );
+        return;
+      }
+      if (key.shift && (key.rightArrow || input === '\u001b[C')) {
+        setSelectedSubtitleIndex((prev) =>
+          prev === null
+            ? subtitleTracks.length > 0
+              ? 0
+              : null
+            : Math.min(subtitleTracks.length - 1, prev + 1),
+        );
+        return;
+      }
     },
-    true,
   );
-
-  // Teclas simples y combinaciones con Mayús que no encajan en useKeymap.
-  useInput((input: string, key: { escape?: boolean; ctrl?: boolean; shift?: boolean }): void => {
-    if (key.ctrl && input === 'c') {
-      exit();
-      return;
-    }
-
-    if (key.escape || input === 'q') {
-      handleBack();
-      return;
-    }
-
-    if (input === 'p') {
-      handlePlaySelected();
-      return;
-    }
-
-    // Navegación de pistas de subtítulos con Mayús+flechas izquierda/derecha.
-    // La secuencia de escape de Mayús+flecha es \u001b[1;2D / \u001b[1;2C.
-    if (key.shift && input === '\u001b[1;2D') {
-      setSelectedSubtitleIndex((prev) =>
-        prev === null || prev <= 0 ? null : Math.max(0, prev - 1),
-      );
-      return;
-    }
-    if (key.shift && input === '\u001b[1;2C') {
-      setSelectedSubtitleIndex((prev) =>
-        prev === null
-          ? subtitleTracks.length > 0
-            ? 0
-            : null
-          : Math.min(subtitleTracks.length - 1, prev + 1),
-      );
-      return;
-    }
-  });
 
   // Nombre corto del fichero (sin ruta absoluta).
   const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
@@ -253,6 +284,20 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
 
             <Text>{theme.label('Tipo')}</Text>
             <Text>{theme.value(typeLabel)}</Text>
+            {videoCodec !== null && (
+              <>
+                <Text>{theme.label('Códec vídeo')}</Text>
+                <Text>
+                  {theme.value(
+                    videoCodec +
+                      (videoWidth !== null && videoHeight !== null
+                        ? ` ${videoWidth}x${videoHeight}`
+                        : ''),
+                  )}
+                </Text>
+                <Text> </Text>
+              </>
+            )}
             <Text> </Text>
 
             {media.year !== null && (
@@ -335,7 +380,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
             ) : (
               <>
                 <Text>
-                  {theme.label('Pista de audio')} {theme.muted(`(←→)`)}
+                  {theme.label('Pista de audio')} {theme.muted('(←→)')}
                 </Text>
                 {audioTracks.length === 0 ? (
                   <Text>{theme.muted('  sin pistas de audio detectadas')}</Text>
@@ -360,7 +405,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
                 <Text> </Text>
 
                 <Text>
-                  {theme.label('Pista de subtítulos')} {theme.muted(`(Mayús+←→)`)}
+                  {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
                 </Text>
                 {subtitleTracks.length === 0 ? (
                   <Text>{theme.muted('  sin pistas de subtítulos detectadas')}</Text>

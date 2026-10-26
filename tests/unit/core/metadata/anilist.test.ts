@@ -72,10 +72,10 @@ describe('MetadataService (AniList)', () => {
     expect(service.hasProviderConfigured()).toBe(true);
   });
 
-  it('hasProviderConfigured es false sin ninguna clave', () => {
+  it('hasProviderConfigured es true (proveedor local siempre disponible)', () => {
     const service = new MetadataService(noKeyConfig);
 
-    expect(service.hasProviderConfigured()).toBe(false);
+    expect(service.hasProviderConfigured()).toBe(true);
   });
 
   it('searchAnilist lanza MetadataError sin anilistApiKey', async () => {
