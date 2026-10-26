@@ -194,6 +194,10 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       await Promise.resolve();
       return { refreshed: 0, failed: 0 };
     },
+    fetchMissingMetadata: async () => {
+      await Promise.resolve();
+      return { fetched: 0, failed: 0 };
+    },
     getExpiredMetadataCount: () => 0,
     hasMetadataProviderConfigured: () => false,
   };

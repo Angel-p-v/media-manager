@@ -76,7 +76,7 @@ export function openLibrary(
 
   // Crear MetadataService si se proporcionó config con claves API
   let metadataService: MetadataService;
-  let metadataConfig: MetadataConfig = { cacheTtlHours: 24 };
+  let metadataConfig: MetadataConfig = { cacheTtlHours: 24, autoFetch: false };
 
   if (config && logger) {
     const tmdbApiKey = config.metadata?.tmdbApiKey;
