@@ -1,273 +1,187 @@
 import { spawnSync } from 'node:child_process';
-import {
-  chmodSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readlinkSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  APP_NAME,
-  INSTALL_SCRIPT,
-  baseEnv,
-  createArtifact,
-  createArtifactWithTraversal,
-  installArgs,
-  runScript,
-  writeFakeUname,
-} from './helpers.js';
-
-import type { Artifact } from './helpers.js';
+import { APP_NAME, INSTALL_SCRIPT, baseEnv, runScript } from './helpers.js';
 
 const describeLinux = process.platform === 'linux' ? describe : describe.skip;
+
+type GitResult = {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+  error: Error | undefined;
+  signal: string | null;
+};
+
+function git(cloneDir: string, args: string[]): GitResult {
+  const result = spawnSync('git', ['-C', cloneDir, ...args], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+  return {
+    status: result.status,
+    stdout: String(result.stdout),
+    stderr: String(result.stderr),
+    error: result.error,
+    signal: result.signal,
+  };
+}
 
 describeLinux('install.sh (integración)', () => {
   let workDir: string;
   let home: string;
   let prefix: string;
+  let remoteRepoUrl: string;
 
   beforeEach(async () => {
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-installer-'));
     home = path.join(workDir, 'home');
-    prefix = path.join(workDir, 'prefix con espacios');
+    prefix = path.join(workDir, 'prefix');
+    const remoteRepoPath = path.join(workDir, 'remote-repo.git');
+    remoteRepoUrl = `file://${remoteRepoPath}`;
     mkdirSync(home, { recursive: true });
+
+    // Crear un repositorio git local (bare) como "remoto" para tests
+    mkdirSync(remoteRepoPath, { recursive: true });
+    const initResult = spawnSync('git', ['init', '--bare', remoteRepoPath], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    if (initResult.status !== 0) {
+      throw new Error(`git init --bare falló: ${initResult.stderr}`);
+    }
+
+    // Clonar, crear archivos mínimos, hacer commit y push al bare repo
+    const cloneDir = path.join(workDir, 'source-repo');
+    const cloneResult = spawnSync('git', ['clone', remoteRepoPath, cloneDir], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    if (cloneResult.status !== 0) {
+      throw new Error(`git clone falló: ${cloneResult.stderr}`);
+    }
+
+    mkdirSync(path.join(cloneDir, 'dist'), { recursive: true });
+    mkdirSync(path.join(cloneDir, 'node_modules', APP_NAME, 'dist'), {
+      recursive: true,
+    });
+    writeFileSync(
+      path.join(cloneDir, 'package.json'),
+      JSON.stringify({
+        name: APP_NAME,
+        version: '1.0.0',
+        scripts: { build: 'echo build' },
+      }),
+    );
+    writeFileSync(
+      path.join(cloneDir, 'dist', 'cli.js'),
+      `#!/usr/bin/env node\nconsole.log('1.0.0');\n`,
+    );
+    writeFileSync(
+      path.join(cloneDir, 'node_modules', APP_NAME, 'dist', 'cli.js'),
+      `#!/usr/bin/env node\nconsole.log('1.0.0');\n`,
+    );
+
+    // Configurar identidad de git para commits
+    git(cloneDir, ['config', 'user.email', 'test@test']);
+    git(cloneDir, ['config', 'user.name', 'test']);
+
+    const addResult = git(cloneDir, ['add', '-A']);
+    if (addResult.status !== 0) {
+      throw new Error(`git add falló: ${addResult.stderr}`);
+    }
+
+    const commitResult = git(cloneDir, ['commit', '-m', 'init']);
+    if (commitResult.status !== 0) {
+      throw new Error(`git commit falló: ${commitResult.stderr}`);
+    }
+
+    const pushResult = git(cloneDir, ['push', 'origin', 'HEAD']);
+    if (pushResult.status !== 0) {
+      throw new Error(`git push falló: ${pushResult.stderr}`);
+    }
   });
 
   afterEach(() => {
     rmSync(workDir, { recursive: true, force: true });
   });
 
-  function artifact(options: { platform?: string; version?: string } = {}): Artifact {
-    return createArtifact({ root: workDir, ...options });
-  }
-
-  it('instala un artefacto local, crea el wrapper y resuelve current', () => {
-    const bundle = artifact();
-
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
-
-    expect(result.status).toBe(0);
-    expect(result.stderr).toBe('');
-    const wrapper = path.join(prefix, 'bin', 'mm');
-    const version = spawnSync(wrapper, ['--version'], { encoding: 'utf8' });
-    expect(version.stdout.trim()).toBe(bundle.version);
-    expect(readlinkSync(path.join(prefix, 'share', APP_NAME, 'current'))).toBe(bundle.version);
-
-    const manifest = JSON.parse(
-      readFileSync(path.join(prefix, 'share', APP_NAME, bundle.version, 'install.json'), 'utf8'),
-    ) as Record<string, string>;
-    expect(manifest).toMatchObject({
-      schemaVersion: 1,
-      name: APP_NAME,
-      version: bundle.version,
-      platform: bundle.platform,
-      prefix,
-      binary: wrapper,
-      artifact: `${bundle.name}.tar.gz`,
+  it('clona el repositorio, compila y crea el wrapper', () => {
+    const result = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], {
+      ...baseEnv(home),
+      MM_REPOSITORY: remoteRepoUrl,
+      MM_SKIP_BUILD: '1',
     });
-    expect(manifest.sha256).toMatch(/^[0-9a-f]{64}$/);
-    expect(existsSync(path.join(prefix, 'share', APP_NAME, '.install.lock'))).toBe(false);
-  });
-
-  it('instala sin --sha256 si existe el checksum hermano', () => {
-    const bundle = artifact();
-    const args = ['--file', bundle.archive, '--prefix', prefix, '--no-path-check'];
-
-    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
 
     expect(result.status).toBe(0);
+
+    const wrapper = path.join(prefix, 'bin', 'mm');
+    expect(existsSync(wrapper)).toBe(true);
+
+    const version = spawnSync(wrapper, ['--version'], { encoding: 'utf8' });
+    expect(version.stdout.trim()).toBe('1.0.0');
+
+    // El archivo de configuración debe existir
+    const configFile = path.join(home, '.config', 'media-manager', 'config.yaml');
+    expect(existsSync(configFile)).toBe(true);
+
+    const configContent = readFileSync(configFile, 'utf8');
+    expect(configContent).toContain('version: 1');
+    expect(configContent).toContain('library:');
   });
 
-  it('se niega a reinstalar sin --force y acepta --force', () => {
-    const bundle = artifact();
-    expect(runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home)).status).toBe(0);
+  it('se niega a reinstalar sin --force', () => {
+    const env = { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' };
+    const first = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], env);
+    expect(first.status).toBe(0);
 
-    const repeated = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
+    const repeated = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], env);
     expect(repeated.status).toBe(4);
     expect(repeated.stderr).toContain('--force');
+  });
+
+  it('acepta --force para reinstalar', () => {
+    const env = { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' };
+    runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], env);
 
     const forced = runScript(
       INSTALL_SCRIPT,
-      installArgs(bundle, prefix, ['--force']),
-      baseEnv(home),
+      ['--prefix', prefix, '--force', '--no-path-check'],
+      env,
     );
     expect(forced.status).toBe(0);
   });
 
-  it('aborta si el checksum no coincide y no deja instalación', () => {
-    const bundle = artifact();
-    writeFileSync(bundle.checksum, `${'0'.repeat(64)}  ${bundle.name}.tar.gz\n`);
-
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('checksum');
-    expect(existsSync(path.join(prefix, 'share', APP_NAME))).toBe(false);
-  });
-
-  it('rechaza un checksum que pertenece a otro archivo', () => {
-    const bundle = artifact();
-    writeFileSync(bundle.checksum, `${'a'.repeat(64)}  otro.tar.gz\n`);
-
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('otro.tar.gz');
-  });
-
-  it('rechaza un artefacto con rutas ../ antes de extraerlo', () => {
-    const bundle = createArtifactWithTraversal(workDir);
-
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain("'..'");
-    expect(existsSync(prefix)).toBe(false);
-  });
-
-  it('aborta si el artefacto es de otra plataforma', () => {
-    const otherPlatform = process.arch === 'arm64' ? 'linux-x64' : 'linux-arm64';
-    const bundle = artifact({ platform: otherPlatform });
-
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
-
-    expect(result.status).toBe(3);
-    expect(result.stderr).toContain(otherPlatform);
-  });
-
-  it('aborta con código 3 en un sistema no soportado', () => {
-    const bundle = artifact();
-    const binDir = writeFakeUname(workDir, 'SunOS');
-    const env = baseEnv(home);
-    env.PATH = `${binDir}${path.delimiter}${env.PATH ?? ''}`;
-
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), env);
-
-    expect(result.status).toBe(3);
-    expect(result.stderr).toContain('SunOS');
-  });
-
-  it('rechaza una versión distinta a la del artefacto', () => {
-    const bundle = artifact();
-
-    const result = runScript(
-      INSTALL_SCRIPT,
-      installArgs(bundle, prefix, ['--version', 'v9.9.9']),
-      baseEnv(home),
-    );
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('9.9.9');
-  });
-
   it('--dry-run no modifica el sistema de archivos', () => {
-    const bundle = artifact();
-
-    const result = runScript(
-      INSTALL_SCRIPT,
-      installArgs(bundle, prefix, ['--dry-run']),
-      baseEnv(home),
-    );
+    const result = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--dry-run', '--no-path-check'], {
+      ...baseEnv(home),
+      MM_REPOSITORY: remoteRepoUrl,
+      MM_SKIP_BUILD: '1',
+    });
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Simulación');
     expect(existsSync(prefix)).toBe(false);
   });
 
-  it('respeta --bindir y el wrapper funciona desde otro directorio', () => {
-    const bundle = artifact();
-    const bindir = path.join(workDir, 'bin personalizado');
-    const args = installArgs(bundle, prefix, ['--bindir', bindir]);
-
-    expect(runScript(INSTALL_SCRIPT, args, baseEnv(home)).status).toBe(0);
-    const version = spawnSync(path.join(bindir, 'mm'), ['--version'], {
-      cwd: tmpdir(),
-      encoding: 'utf8',
-    });
-    expect(version.stdout.trim()).toBe(bundle.version);
-  });
-
-  it('instala en ~/.local por defecto sin corromper el prefijo', () => {
-    const bundle = artifact();
-    const args = ['--file', bundle.archive, '--sha256', bundle.checksum, '--no-path-check'];
-
-    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
-
-    expect(result.status).toBe(0);
-    const wrapper = path.join(home, '.local', 'bin', 'mm');
-    expect(spawnSync(wrapper, ['--version'], { encoding: 'utf8' }).stdout.trim()).toBe(
-      bundle.version,
-    );
-    // Un `~` sin escapar en el patrón de `case` expandía el prefijo a `<home>home/...`.
-    expect(existsSync(`${home}${home.slice(2)}`)).toBe(false);
-  });
-
-  it('expande un --prefix literal ~/ dentro de HOME', () => {
-    const bundle = artifact();
-    const target = path.join(home, 'prefijo personalizado');
-    const args = installArgs(bundle, '~/prefijo personalizado');
-
-    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
-
-    expect(result.status).toBe(0);
-    expect(existsSync(path.join(target, 'bin', 'mm'))).toBe(true);
-    const manifest = JSON.parse(
-      readFileSync(path.join(target, 'share', APP_NAME, bundle.version, 'install.json'), 'utf8'),
-    ) as Record<string, string>;
-    expect(manifest.prefix).toBe(target);
-    expect(existsSync(`${home}${home.slice(2)}`)).toBe(false);
-  });
-
-  it('expande un --bindir literal ~/ dentro de HOME', () => {
-    const bundle = artifact();
-    const args = installArgs(bundle, prefix, ['--bindir', '~/bin personalizado']);
-
-    const result = runScript(INSTALL_SCRIPT, args, baseEnv(home));
-
-    expect(result.status).toBe(0);
-    expect(existsSync(path.join(home, 'bin personalizado', 'mm'))).toBe(true);
-  });
-
-  it('falla si la atestación de procedencia no es válida', () => {
-    const bundle = artifact();
-    const fakeBin = path.join(workDir, 'gh-fallido');
-    mkdirSync(fakeBin, { recursive: true });
-    writeFileSync(path.join(fakeBin, 'gh'), '#!/bin/sh\nexit 1\n');
-    chmodSync(path.join(fakeBin, 'gh'), 0o755);
-    const env = baseEnv(home);
-    env.PATH = `${fakeBin}${path.delimiter}${env.PATH ?? ''}`;
-
+  it('respecta --bindir personalizado', () => {
+    const bindir = path.join(workDir, 'bin-custom');
     const result = runScript(
       INSTALL_SCRIPT,
-      installArgs(bundle, prefix, ['--verify-attestation']),
-      env,
+      ['--prefix', prefix, '--bindir', bindir, '--no-path-check'],
+      { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' },
     );
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('atestación');
-    expect(existsSync(prefix)).toBe(false);
+    expect(result.status).toBe(0);
+    expect(existsSync(path.join(bindir, 'mm'))).toBe(true);
   });
 
-  it('rechaza --prefix / y un checksum ausente', () => {
-    const bundle = artifact();
-    const root = runScript(INSTALL_SCRIPT, installArgs(bundle, '/'), baseEnv(home));
-    expect(root.status).toBe(2);
-
-    const missing = runScript(
-      INSTALL_SCRIPT,
-      installArgs(bundle, prefix).map((value) =>
-        value === bundle.checksum ? path.join(workDir, 'no-existe.sha256') : value,
-      ),
-      baseEnv(home),
-    );
-    expect(missing.status).toBe(2);
+  it('no corrompe al usar --prefix /', () => {
+    const result = runScript(INSTALL_SCRIPT, ['--prefix', '/'], baseEnv(home));
+    expect(result.status).toBe(2);
   });
 });

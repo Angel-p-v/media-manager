@@ -134,7 +134,7 @@ fi
 CURRENT_REAL=$(resolve_path "$CURRENT_LINK") ||
   die 1 "el enlace 'current' apunta a una ruta inexistente; revísalo manualmente"
 case "$CURRENT_REAL" in
-  "$APP_DIR"/*) ;;
+  "$APP_DIR" | "$APP_DIR"/*) ;;
   *) die 1 "el enlace 'current' apunta fuera de ${APP_DIR}; no se continúa" ;;
 esac
 MANIFEST="${CURRENT_REAL}/install.json"

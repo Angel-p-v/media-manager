@@ -1,13 +1,18 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import pc from 'picocolors';
+import { stringify as stringifyYaml } from 'yaml';
 
+import { defaultConfig } from '../core/config/defaults.js';
 import { loadConfig, resolveConfigPath } from '../core/config/loader.js';
 
 export type ConfigCommandOptions = {
   path?: boolean;
   validate?: boolean;
   json?: boolean;
+  init?: boolean;
   config?: string;
 };
 
@@ -20,6 +25,15 @@ export async function runConfigCommand(options: ConfigCommandOptions): Promise<v
 
   if (options.path) {
     console.log(configPath);
+    return;
+  }
+
+  if (options.init) {
+    const configDir = path.dirname(configPath);
+    mkdirSync(configDir, { recursive: true });
+    const yaml = stringifyYaml(defaultConfig);
+    await writeFile(configPath, yaml, 'utf8');
+    console.log(pc.green('✔') + ` Configuración creada en ${configPath}`);
     return;
   }
 

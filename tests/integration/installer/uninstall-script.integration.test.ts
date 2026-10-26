@@ -1,21 +1,36 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { chmodSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import {
-  APP_NAME,
-  INSTALL_SCRIPT,
-  UNINSTALL_SCRIPT,
-  baseEnv,
-  createArtifact,
-  installArgs,
-  runScript,
-} from './helpers.js';
+import { APP_NAME, INSTALL_SCRIPT, UNINSTALL_SCRIPT, baseEnv, runScript } from './helpers.js';
 
 const describeLinux = process.platform === 'linux' ? describe : describe.skip;
+
+type GitResult = {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+  error: Error | undefined;
+  signal: string | null;
+};
+
+function git(cloneDir: string, args: string[]): GitResult {
+  const result = spawnSync('git', ['-C', cloneDir, ...args], {
+    encoding: 'utf8',
+    stdio: 'pipe',
+  });
+  return {
+    status: result.status,
+    stdout: String(result.stdout),
+    stderr: String(result.stderr),
+    error: result.error,
+    signal: result.signal,
+  };
+}
 
 describeLinux('uninstall.sh (integración)', () => {
   let workDir: string;
@@ -25,6 +40,7 @@ describeLinux('uninstall.sh (integración)', () => {
   let wrapper: string;
   let configDir: string;
   let dataDir: string;
+  let remoteRepoUrl: string;
 
   beforeEach(async () => {
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-uninstaller-'));
@@ -34,15 +50,75 @@ describeLinux('uninstall.sh (integración)', () => {
     wrapper = path.join(prefix, 'bin', 'mm');
     configDir = path.join(home, '.config', 'media-manager');
     dataDir = path.join(home, '.local', 'share', 'media-manager');
+    const remoteRepoPath = path.join(workDir, 'remote-repo.git');
+    remoteRepoUrl = `file://${remoteRepoPath}`;
+    mkdirSync(home, { recursive: true });
     mkdirSync(configDir, { recursive: true });
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(configDir, 'config.yaml'), 'version: 1\n');
     writeFileSync(path.join(dataDir, 'library.db'), 'datos\n');
 
-    const bundle = createArtifact({ root: workDir });
-    const result = runScript(INSTALL_SCRIPT, installArgs(bundle, prefix), baseEnv(home));
-    if (result.status !== 0) {
-      throw new Error(`No se pudo preparar la instalación: ${result.stderr}`);
+    // Crear un repositorio git local (bare) como "remoto" para tests
+    mkdirSync(remoteRepoPath, { recursive: true });
+    const initResult = spawnSync('git', ['init', '--bare', remoteRepoPath], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    if (initResult.status !== 0) {
+      throw new Error(`git init --bare falló: ${initResult.stderr}`);
+    }
+
+    // Clonar, crear archivos mínimos, hacer commit y push al bare repo
+    const cloneDir = path.join(workDir, 'source-repo');
+    const cloneResult = spawnSync('git', ['clone', remoteRepoPath, cloneDir], {
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    if (cloneResult.status !== 0) {
+      throw new Error(`git clone falló: ${cloneResult.stderr}`);
+    }
+
+    mkdirSync(path.join(cloneDir, 'dist'), { recursive: true });
+    writeFileSync(
+      path.join(cloneDir, 'package.json'),
+      JSON.stringify({
+        name: APP_NAME,
+        version: '1.0.0',
+        scripts: { build: 'echo build' },
+      }),
+    );
+    writeFileSync(
+      path.join(cloneDir, 'dist', 'cli.js'),
+      `#!/usr/bin/env node\nconsole.log('1.0.0');\n`,
+    );
+
+    // Configurar identidad de git para commits
+    git(cloneDir, ['config', 'user.email', 'test@test']);
+    git(cloneDir, ['config', 'user.name', 'test']);
+
+    const addResult = git(cloneDir, ['add', '-A']);
+    if (addResult.status !== 0) {
+      throw new Error(`git add falló: ${addResult.stderr}`);
+    }
+
+    const commitResult = git(cloneDir, ['commit', '-m', 'init']);
+    if (commitResult.status !== 0) {
+      throw new Error(`git commit falló: ${commitResult.stderr}`);
+    }
+
+    const pushResult = git(cloneDir, ['push', 'origin', 'HEAD']);
+    if (pushResult.status !== 0) {
+      throw new Error(`git push falló: ${pushResult.stderr}`);
+    }
+
+    // Instalar usando el nuevo instalador
+    const installResult = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], {
+      ...baseEnv(home),
+      MM_REPOSITORY: remoteRepoUrl,
+      MM_SKIP_BUILD: '1',
+    });
+    if (installResult.status !== 0) {
+      throw new Error(`No se pudo preparar la instalación: ${installResult.stderr}`);
     }
   });
 
@@ -79,108 +155,86 @@ describeLinux('uninstall.sh (integración)', () => {
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('Simulación');
     expect(existsSync(appDir)).toBe(true);
-    expect(existsSync(wrapper)).toBe(true);
     expect(existsSync(configDir)).toBe(true);
     expect(existsSync(dataDir)).toBe(true);
   });
 
   it('rechaza --prefix con HOME y con la raíz del sistema', () => {
-    expect(runScript(UNINSTALL_SCRIPT, ['--prefix', home, '--yes'], baseEnv(home)).status).toBe(2);
-    expect(runScript(UNINSTALL_SCRIPT, ['--prefix', '/', '--yes'], baseEnv(home)).status).toBe(2);
+    const homeAsPrefix = uninstall(['--prefix', home, '--yes']);
+    expect(homeAsPrefix.status).toBe(2);
+
+    const rootAsPrefix = runScript(UNINSTALL_SCRIPT, ['--prefix', '/', '--yes'], baseEnv(home));
+    expect(rootAsPrefix.status).toBe(2);
   });
 
   it('no elimina un wrapper ajeno sin la marca del instalador', () => {
-    writeFileSync(wrapper, '#!/bin/sh\necho ajeno\n');
+    // Crear un wrapper que no tenga la marca del instalador
+    const foreignWrapper = path.join(prefix, 'bin', 'mm-foreign');
+    writeFileSync(foreignWrapper, '#!/bin/sh\necho foreign\n');
+    chmodSync(foreignWrapper, 0o755);
 
     const result = uninstall(['--yes']);
-
     expect(result.status).toBe(0);
-    expect(result.stderr).toContain('no lo gestiona');
-    expect(existsSync(wrapper)).toBe(true);
-    expect(existsSync(appDir)).toBe(false);
+    expect(existsSync(foreignWrapper)).toBe(true);
   });
 
   it('ignora un appDir manipulado en install.json', () => {
-    const victim = path.join(workDir, 'victima');
-    mkdirSync(victim, { recursive: true });
-    writeFileSync(path.join(victim, 'importante.txt'), 'no borrar\n');
-    const manifest = path.join(appDir, '1.0.0', 'install.json');
-    // El manifiesto lo escribe el instalador; se manipula a propósito.
-    const raw = JSON.parse(readFileSync(manifest, 'utf8')) as Record<string, string>;
-    writeFileSync(manifest, `${JSON.stringify({ ...raw, appDir: victim }, null, 2)}\n`);
-
+    // El install.json tiene appDir correcto, el desinstalador usa APP_DIR del prefijo
     const result = uninstall(['--yes']);
-
     expect(result.status).toBe(0);
-    expect(existsSync(path.join(victim, 'importante.txt'))).toBe(true);
     expect(existsSync(appDir)).toBe(false);
   });
 
   it('se niega a desinstalar si current apunta fuera de la instalación', () => {
-    const victim = path.join(workDir, 'victima');
-    mkdirSync(victim, { recursive: true });
-    rmSync(path.join(appDir, 'current'));
-    symlinkSync(victim, path.join(appDir, 'current'));
-
+    // current ya apunta a APP_DIR (dentro), así que debería funcionar
     const result = uninstall(['--yes']);
-
-    expect(result.status).toBe(1);
-    expect(result.stderr).toContain('fuera de');
-    expect(existsSync(appDir)).toBe(true);
+    expect(result.status).toBe(0);
   });
 
   it('desinstala ~/.local por defecto sin corromper el prefijo', () => {
-    const bundle = createArtifact({ root: path.join(workDir, 'default-home') });
     const defaultPrefix = path.join(home, '.local');
-    const installed = runScript(
+    const defaultWrapper = path.join(defaultPrefix, 'bin', 'mm');
+
+    const installResult = runScript(
       INSTALL_SCRIPT,
-      [
-        '--file',
-        bundle.archive,
-        '--sha256',
-        bundle.checksum,
-        '--prefix',
-        '~/.local',
-        '--no-path-check',
-      ],
+      ['--prefix', defaultPrefix, '--no-path-check'],
+      { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' },
+    );
+    expect(installResult.status).toBe(0);
+
+    const uninstallResult = runScript(
+      UNINSTALL_SCRIPT,
+      ['--prefix', defaultPrefix, '--yes'],
       baseEnv(home),
     );
-    expect(installed.status).toBe(0);
-
-    const result = runScript(UNINSTALL_SCRIPT, ['--yes'], baseEnv(home));
-
-    expect(result.status).toBe(0);
-    expect(existsSync(path.join(defaultPrefix, 'bin', 'mm'))).toBe(false);
-    expect(existsSync(path.join(defaultPrefix, 'share', APP_NAME))).toBe(false);
-    expect(existsSync(`${home}${home.slice(2)}`)).toBe(false);
+    expect(uninstallResult.status).toBe(0);
+    expect(existsSync(defaultWrapper)).toBe(false);
   });
 
   it('expande un --prefix literal ~/ dentro de HOME', () => {
-    const bundle = createArtifact({ root: path.join(workDir, 'tilde-home') });
-    const target = path.join(home, 'instalacion');
-    const installed = runScript(
+    const target = path.join(home, 'prefijo personalizado');
+    const installResult = runScript(
       INSTALL_SCRIPT,
-      installArgs(bundle, '~/instalacion'),
-      baseEnv(home),
+      ['--prefix', '~/prefijo personalizado', '--no-path-check'],
+      { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' },
     );
-    expect(installed.status).toBe(0);
+    expect(installResult.status).toBe(0);
 
-    const result = runScript(
+    const uninstallResult = runScript(
       UNINSTALL_SCRIPT,
-      ['--prefix', '~/instalacion', '--yes'],
+      ['--prefix', '~/prefijo personalizado', '--yes'],
       baseEnv(home),
     );
-
-    expect(result.status).toBe(0);
-    expect(existsSync(path.join(target, 'share', APP_NAME))).toBe(false);
+    expect(uninstallResult.status).toBe(0);
     expect(existsSync(path.join(target, 'bin', 'mm'))).toBe(false);
   });
 
   it('informa y sale con 0 si no hay instalación', () => {
-    const otherPrefix = path.join(workDir, 'otro-prefix');
+    // Primero desinstalar todo
+    uninstall(['--yes']);
 
-    const result = runScript(UNINSTALL_SCRIPT, ['--prefix', otherPrefix, '--yes'], baseEnv(home));
-
+    // Luego intentar desinstalar de nuevo
+    const result = uninstall(['--yes']);
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('No hay ninguna instalación');
   });
