@@ -50,7 +50,7 @@ describe('mm (e2e, binario compilado)', () => {
     );
 
     const indexed = run(['index', '--json']);
-    expect(indexed.status, indexed.stderr).toBe(0);
+    expect(indexed.status).toBe(0);
   }, 60_000);
 
   afterAll(async () => {
@@ -232,7 +232,7 @@ describe('mm (e2e, binario compilado)', () => {
     const folderPath = path.join(FIXTURES, 'series', 'Dark', 'Season 2');
     const result = run(['index', '--json', '--config', folderConfigPath, '--folder', folderPath]);
 
-    expect(result.status, result.stderr).toBe(0);
+    expect(result.status).toBe(0);
     const stats = JSON.parse(result.stdout);
     expect(stats.filesSeen).toBeGreaterThan(0);
     // Los archivos ya están indexados (beforeAll indexó toda la biblioteca),
@@ -309,7 +309,7 @@ describe('mm (e2e, binario compilado)', () => {
       env: { ...process.env, MM_SURVIVOR_OUTPUT: markerPath },
     });
 
-    expect(parent.status, parent.stderr).toBe(0);
+    expect(parent.status).toBe(0);
     expect(parent.stdout).toContain('pid=');
     await expect(waitForFile(markerPath, 5_000)).resolves.toBe('done');
   });
