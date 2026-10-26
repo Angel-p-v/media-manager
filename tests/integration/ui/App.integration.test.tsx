@@ -309,7 +309,7 @@ describe('App (TUI)', () => {
     await press(stdin, 's');
 
     const frame = frameOf(lastFrame);
-    expect(frame).toContain('Configuración efectiva');
+    expect(frame).toContain('Añadir raíz');
     expect(frame).toContain('/media/series');
     expect(frame).toContain('Base de datos');
     unmount();
@@ -319,7 +319,7 @@ describe('App (TUI)', () => {
     const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
 
     await press(stdin, 's');
-    expect(frameOf(lastFrame)).toContain('Configuración efectiva');
+    expect(frameOf(lastFrame)).toContain('Añadir raíz');
 
     await press(stdin, '\t');
     const frame = frameOf(lastFrame);
