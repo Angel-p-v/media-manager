@@ -1,7 +1,7 @@
 import { Box, Text, useInput } from 'ink';
 import React, { useCallback, useEffect, useState } from 'react';
 
-import { saveConfig } from '../../core/config/loader.js';
+import { saveConfig, resolveConfigPath } from '../../core/config/loader.js';
 import { shortenPath, theme } from '../theme.js';
 
 import type { AppConfig } from '../../core/config/schema.js';
@@ -71,7 +71,7 @@ function buildItems(config: AppConfig): SettingsItem[] {
   const defaultPlayerIndex = playerOptions.findIndex((opt) => opt.value === config.player.default);
   items.push({
     id: 'player-default',
-    label: 'Reproductor',
+    label: 'Reproductor predeterminado',
     kind: 'select',
     value: config.player.default,
     originalValue: config.player.default,
@@ -160,8 +160,8 @@ export function SettingsView({
   config: AppConfig;
   /** Ruta del archivo de configuración (para guardar cambios). */
   configPath: string | undefined;
-  /** Callback opcional tras guardar cambios. */
-  onSave?: () => void;
+  /** Callback opcional tras guardar cambios (puede ser async). */
+  onSave?: () => void | Promise<void>;
   /** Callback para volver a la vista anterior (biblioteca). */
   onBack?: () => void;
 }): React.JSX.Element {
@@ -223,7 +223,13 @@ export function SettingsView({
   const saveEdit = useCallback(
     (newValue: string): void => {
       const item = selectedItem;
-      if (!item || !configPath) {
+      if (!item) {
+        setStatus('No se puede guardar: no hay ítem seleccionado.');
+        return;
+      }
+      // Si no se pasó configPath, usar la ruta por defecto.
+      const effectiveConfigPath = configPath ?? resolveConfigPath();
+      if (!effectiveConfigPath) {
         setStatus('No se puede guardar: no hay ruta de configuración.');
         return;
       }
@@ -266,11 +272,11 @@ export function SettingsView({
         };
       }
 
-      void saveConfig(nextConfig, configPath)
+      void saveConfig(nextConfig, effectiveConfigPath)
         .then(() => {
           setStatus('Guardado.');
           setEditingValue('');
-          onSave?.();
+          void Promise.resolve(onSave?.());
         })
         .catch(() => {
           setStatus('No se pudo guardar la configuración.');
@@ -320,6 +326,7 @@ export function SettingsView({
   /**
    * Maneja el teclado dentro de la vista de ajustes.
    * Cuando se está editando, captura caracteres para construir el nuevo valor.
+   * Return entra en modo edición (cuando no se edita) o guarda (cuando se edita).
    */
   useInput((input, key) => {
     // Ctrl+C siempre sale sin guardar.
@@ -346,7 +353,7 @@ export function SettingsView({
       const item = selectedItem;
       if (!item) return;
       if (item.kind === 'select') {
-        // En modo select: ←→ cambia opción, Enter guarda.
+        // En modo select: ←→ cambia opción, Return guarda.
         if (key.leftArrow) {
           changeOption(-1);
           return;
@@ -362,7 +369,7 @@ export function SettingsView({
         return;
       }
 
-      // En modo texto: Enter guarda, cualquier otro caracter se añade al valor.
+      // En modo texto: Return guarda, cualquier otro caracter se añade al valor.
       if (key.return) {
         saveEdit(editingValue);
         return;
@@ -380,7 +387,7 @@ export function SettingsView({
       return;
     }
 
-    // No estamos editando: navegamos con flechas y Enter.
+    // No estamos editando: navegamos con flechas y Return entra en modo edición.
     if (key.upArrow) {
       moveSelection(-1);
       return;
