@@ -87,7 +87,7 @@ describe('comando mm config (integración)', () => {
     await runConfigCommand({});
 
     const text = output.join('\n');
-    expect(text).toContain('valores por defecto');
+    expect(text).toContain('Configuración efectiva');
   });
 
   it('--path advierte que el archivo no existe cuando falta', async () => {
