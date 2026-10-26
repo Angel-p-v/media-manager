@@ -1,121 +1,40 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { APP_NAME, INSTALL_SCRIPT, baseEnv, runScript } from './helpers.js';
+import { INSTALL_SCRIPT, baseEnv, createArtifact, runScript } from './helpers.js';
 
 const describeLinux = process.platform === 'linux' ? describe : describe.skip;
-
-type GitResult = {
-  status: number | null;
-  stdout: string;
-  stderr: string;
-  error: Error | undefined;
-  signal: string | null;
-};
-
-function git(cloneDir: string, args: string[]): GitResult {
-  const result = spawnSync('git', ['-C', cloneDir, ...args], {
-    encoding: 'utf8',
-    stdio: 'pipe',
-  });
-  return {
-    status: result.status,
-    stdout: String(result.stdout),
-    stderr: String(result.stderr),
-    error: result.error,
-    signal: result.signal,
-  };
-}
 
 describeLinux('install.sh (integración)', () => {
   let workDir: string;
   let home: string;
   let prefix: string;
-  let remoteRepoUrl: string;
+  let artifactArchive: string;
 
   beforeEach(async () => {
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-installer-'));
     home = path.join(workDir, 'home');
     prefix = path.join(workDir, 'prefix');
-    const remoteRepoPath = path.join(workDir, 'remote-repo.git');
-    remoteRepoUrl = `file://${remoteRepoPath}`;
     mkdirSync(home, { recursive: true });
 
-    // Crear un repositorio git local (bare) como "remoto" para tests
-    mkdirSync(remoteRepoPath, { recursive: true });
-    const initResult = spawnSync('git', ['init', '--bare', remoteRepoPath], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-    });
-    if (initResult.status !== 0) {
-      throw new Error(`git init --bare falló: ${initResult.stderr}`);
-    }
-
-    // Clonar, crear archivos mínimos, hacer commit y push al bare repo
-    const cloneDir = path.join(workDir, 'source-repo');
-    const cloneResult = spawnSync('git', ['clone', remoteRepoPath, cloneDir], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-    });
-    if (cloneResult.status !== 0) {
-      throw new Error(`git clone falló: ${cloneResult.stderr}`);
-    }
-
-    mkdirSync(path.join(cloneDir, 'dist'), { recursive: true });
-    mkdirSync(path.join(cloneDir, 'node_modules', APP_NAME, 'dist'), {
-      recursive: true,
-    });
-    writeFileSync(
-      path.join(cloneDir, 'package.json'),
-      JSON.stringify({
-        name: APP_NAME,
-        version: '1.0.0',
-        scripts: { build: 'echo build' },
-      }),
-    );
-    writeFileSync(
-      path.join(cloneDir, 'dist', 'cli.js'),
-      `#!/usr/bin/env node\nconsole.log('1.0.0');\n`,
-    );
-    writeFileSync(
-      path.join(cloneDir, 'node_modules', APP_NAME, 'dist', 'cli.js'),
-      `#!/usr/bin/env node\nconsole.log('1.0.0');\n`,
-    );
-
-    // Configurar identidad de git para commits
-    git(cloneDir, ['config', 'user.email', 'test@test']);
-    git(cloneDir, ['config', 'user.name', 'test']);
-
-    const addResult = git(cloneDir, ['add', '-A']);
-    if (addResult.status !== 0) {
-      throw new Error(`git add falló: ${addResult.stderr}`);
-    }
-
-    const commitResult = git(cloneDir, ['commit', '-m', 'init']);
-    if (commitResult.status !== 0) {
-      throw new Error(`git commit falló: ${commitResult.stderr}`);
-    }
-
-    const pushResult = git(cloneDir, ['push', 'origin', 'HEAD']);
-    if (pushResult.status !== 0) {
-      throw new Error(`git push falló: ${pushResult.stderr}`);
-    }
+    // Crear un artefacto local para simular un release de GitHub
+    const artifact = createArtifact({ root: workDir, version: '1.0.0' });
+    artifactArchive = artifact.archive;
   });
 
   afterEach(() => {
     rmSync(workDir, { recursive: true, force: true });
   });
 
-  it('clona el repositorio, compila y crea el wrapper', () => {
+  it('descarga el artefacto, crea el wrapper y la configuración', () => {
     const result = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], {
       ...baseEnv(home),
-      MM_REPOSITORY: remoteRepoUrl,
-      MM_SKIP_BUILD: '1',
+      MM_ASSET_URL: artifactArchive,
     });
 
     expect(result.status).toBe(0);
@@ -136,7 +55,7 @@ describeLinux('install.sh (integración)', () => {
   });
 
   it('se niega a reinstalar sin --force', () => {
-    const env = { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' };
+    const env = { ...baseEnv(home), MM_ASSET_URL: artifactArchive };
     const first = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], env);
     expect(first.status).toBe(0);
 
@@ -146,7 +65,7 @@ describeLinux('install.sh (integración)', () => {
   });
 
   it('acepta --force para reinstalar', () => {
-    const env = { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' };
+    const env = { ...baseEnv(home), MM_ASSET_URL: artifactArchive };
     runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], env);
 
     const forced = runScript(
@@ -160,8 +79,7 @@ describeLinux('install.sh (integración)', () => {
   it('--dry-run no modifica el sistema de archivos', () => {
     const result = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--dry-run', '--no-path-check'], {
       ...baseEnv(home),
-      MM_REPOSITORY: remoteRepoUrl,
-      MM_SKIP_BUILD: '1',
+      MM_ASSET_URL: artifactArchive,
     });
 
     expect(result.status).toBe(0);
@@ -169,12 +87,12 @@ describeLinux('install.sh (integración)', () => {
     expect(existsSync(prefix)).toBe(false);
   });
 
-  it('respecta --bindir personalizado', () => {
+  it('respeta --bindir personalizado', () => {
     const bindir = path.join(workDir, 'bin-custom');
     const result = runScript(
       INSTALL_SCRIPT,
       ['--prefix', prefix, '--bindir', bindir, '--no-path-check'],
-      { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' },
+      { ...baseEnv(home), MM_ASSET_URL: artifactArchive },
     );
     expect(result.status).toBe(0);
     expect(existsSync(path.join(bindir, 'mm'))).toBe(true);

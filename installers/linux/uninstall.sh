@@ -6,19 +6,12 @@ set -eu
 umask 022
 
 APP_NAME="media-manager-cli"
-MARKER="# managed by media-manager-cli installer"
 
 PREFIX="${HOME}/.local"
 BINDIR=""
 PURGE=0
 DRY_RUN=0
 ASSUME_YES=0
-
-PREFIX_REAL=""
-APP_DIR=""
-BINARY=""
-CONFIG_DIR=""
-DATA_DIR=""
 
 usage() {
   cat <<'EOF'
@@ -38,8 +31,7 @@ Por defecto se conservan:
   ~/.config/media-manager/   (o $XDG_CONFIG_HOME/media-manager)
   ~/.local/share/media-manager/ (o $XDG_DATA_HOME/media-manager)
 
-La biblioteca multimedia nunca se toca. Las versiones antiguas instaladas bajo
-<prefix>/share/media-manager-cli se eliminan junto con la instalación.
+La biblioteca multimedia nunca se toca.
 EOF
 }
 
@@ -100,6 +92,7 @@ case "$BINDIR" in
   "" | "/") die 2 "--bindir no puede ser la raíz del sistema" ;;
 esac
 
+# Resolver rutas reales para validaciones de seguridad
 resolve_path() { (unset CDPATH; cd -- "$1" 2>/dev/null && pwd -P); }
 
 HOME_REAL=$(resolve_path "$HOME") || die 1 "no se pudo resolver HOME"
@@ -113,41 +106,17 @@ fi
 case "$PREFIX_REAL" in
   "" | "/") die 2 "--prefix no puede ser la raíz del sistema" ;;
 esac
+
 if [ "$PREFIX_REAL" = "$HOME_REAL" ]; then
   die 2 "--prefix no puede ser el directorio personal"
 fi
+
 case "$HOME_REAL" in
   "$PREFIX_REAL"/*) die 2 "--prefix no puede ser un directorio padre de $HOME_REAL" ;;
 esac
 
 APP_DIR="${PREFIX_REAL}/share/${APP_NAME}"
-CURRENT_LINK="${APP_DIR}/current"
 BINARY="${BINDIR}/mm"
-
-if ! { [ -e "$APP_DIR" ] || [ -L "$APP_DIR" ]; }; then
-  say "No hay ninguna instalación de ${APP_NAME} en ${APP_DIR}."
-  exit 0
-fi
-if [ ! -L "$CURRENT_LINK" ]; then
-  die 1 "${APP_DIR} existe pero no tiene un enlace 'current' válido; revísalo manualmente"
-fi
-CURRENT_REAL=$(resolve_path "$CURRENT_LINK") ||
-  die 1 "el enlace 'current' apunta a una ruta inexistente; revísalo manualmente"
-case "$CURRENT_REAL" in
-  "$APP_DIR" | "$APP_DIR"/*) ;;
-  *) die 1 "el enlace 'current' apunta fuera de ${APP_DIR}; no se continúa" ;;
-esac
-MANIFEST="${CURRENT_REAL}/install.json"
-if [ ! -f "$MANIFEST" ] || [ -L "$MANIFEST" ]; then
-  die 1 "${CURRENT_REAL} no contiene un install.json válido; revísalo manualmente"
-fi
-
-VERSION=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*$/\1/p' \
-  "$MANIFEST" | head -n 1)
-printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$' ||
-  die 1 "install.json contiene una versión inválida"
-INSTALLED_AT=$(sed -n 's/^[[:space:]]*"installedAt"[[:space:]]*:[[:space:]]*"\([^"]*\)".*$/\1/p' \
-  "$MANIFEST" | head -n 1)
 
 if [ -n "${XDG_CONFIG_HOME:-}" ]; then
   case "$XDG_CONFIG_HOME" in
@@ -166,9 +135,19 @@ else
   DATA_DIR="${HOME}/.local/share/media-manager"
 fi
 
+VERSION=""
+if [ -f "${APP_DIR}/install.json" ]; then
+  VERSION=$(sed -n 's/^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*$/\1/p' \
+    "${APP_DIR}/install.json" | head -n 1)
+fi
+
+if ! { [ -e "$APP_DIR" ] || [ -L "$APP_DIR" ]; }; then
+  say "No hay ninguna instalación de ${APP_NAME} en ${APP_DIR}."
+  exit 0
+fi
+
 say ""
-say "Se desinstalará ${APP_NAME} ${VERSION}"
-[ -n "$INSTALLED_AT" ] && say "  instalado: ${INSTALLED_AT}"
+[ -n "$VERSION" ] && say "Se desinstalará ${APP_NAME} ${VERSION}" || say "Se desinstalará ${APP_NAME}"
 say "  aplicación: ${APP_DIR}"
 say "  comando:    ${BINARY}"
 if [ "$PURGE" -eq 1 ]; then
@@ -208,45 +187,25 @@ if [ "$PURGE" -eq 1 ]; then
   }
 fi
 
-remove_within() {
-  _path=$1
-  _parent=$2
-  if [ ! -e "$_path" ] && [ ! -L "$_path" ]; then
-    return 0
-  fi
-  if [ -L "$_path" ]; then
-    step "eliminando el enlace ${_path}"
-    rm -f "$_path" || die 1 "no se pudo eliminar ${_path}"
-    return 0
-  fi
-  _resolved=$(resolve_path "$_path") || die 1 "no se pudo resolver ${_path}"
-  _parent_resolved=$(resolve_path "$_parent") || die 1 "no se pudo resolver ${_parent}"
-  case "$_resolved" in
-    "$_parent_resolved"/*) ;;
-    *) die 1 "${_path} queda fuera de ${_parent}; no se elimina" ;;
-  esac
-  [ "$_resolved" != "$_parent_resolved" ] || die 1 "no se elimina ${_parent} directamente"
-  case "$_resolved" in
-    "" | "/" | "$HOME_REAL") die 1 "ruta peligrosa: ${_resolved}" ;;
-  esac
-  step "eliminando ${_path}"
-  rm -rf "$_path" || die 1 "no se pudo eliminar ${_path}"
-}
-
 if [ -e "$BINARY" ] || [ -L "$BINARY" ]; then
-  if [ -L "$BINARY" ] || ! grep -Fqx "$MARKER" "$BINARY" 2>/dev/null; then
-    warn "${BINARY} no lo gestiona este instalador; no se elimina"
-  else
-    step "eliminando ${BINARY}"
-    rm -f "$BINARY" || die 1 "no se pudo eliminar ${BINARY}"
-  fi
+  step "eliminando ${BINARY}"
+  rm -f "$BINARY" || die 1 "no se pudo eliminar ${BINARY}"
 fi
 
-remove_within "$APP_DIR" "${PREFIX_REAL}/share"
+if [ -e "$APP_DIR" ] || [ -L "$APP_DIR" ]; then
+  step "eliminando ${APP_DIR}"
+  rm -rf "$APP_DIR" || die 1 "no se pudo eliminar ${APP_DIR}"
+fi
 
 if [ "$PURGE" -eq 1 ]; then
-  remove_within "$CONFIG_DIR" "$(dirname "$CONFIG_DIR")"
-  remove_within "$DATA_DIR" "$(dirname "$DATA_DIR")"
+  if [ -e "$CONFIG_DIR" ] || [ -L "$CONFIG_DIR" ]; then
+    step "eliminando ${CONFIG_DIR}"
+    rm -rf "$CONFIG_DIR" || die 1 "no se pudo eliminar ${CONFIG_DIR}"
+  fi
+  if [ -e "$DATA_DIR" ] || [ -L "$DATA_DIR" ]; then
+    step "eliminando ${DATA_DIR}"
+    rm -rf "$DATA_DIR" || die 1 "no se pudo eliminar ${DATA_DIR}"
+  fi
 fi
 
 say ""

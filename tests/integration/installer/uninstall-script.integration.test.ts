@@ -1,4 +1,3 @@
-import { spawnSync } from 'node:child_process';
 import { chmodSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -6,31 +5,9 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { APP_NAME, INSTALL_SCRIPT, UNINSTALL_SCRIPT, baseEnv, runScript } from './helpers.js';
+import { INSTALL_SCRIPT, UNINSTALL_SCRIPT, baseEnv, createArtifact, runScript } from './helpers.js';
 
 const describeLinux = process.platform === 'linux' ? describe : describe.skip;
-
-type GitResult = {
-  status: number | null;
-  stdout: string;
-  stderr: string;
-  error: Error | undefined;
-  signal: string | null;
-};
-
-function git(cloneDir: string, args: string[]): GitResult {
-  const result = spawnSync('git', ['-C', cloneDir, ...args], {
-    encoding: 'utf8',
-    stdio: 'pipe',
-  });
-  return {
-    status: result.status,
-    stdout: String(result.stdout),
-    stderr: String(result.stderr),
-    error: result.error,
-    signal: result.signal,
-  };
-}
 
 describeLinux('uninstall.sh (integración)', () => {
   let workDir: string;
@@ -40,82 +17,29 @@ describeLinux('uninstall.sh (integración)', () => {
   let wrapper: string;
   let configDir: string;
   let dataDir: string;
-  let remoteRepoUrl: string;
+  let artifactArchive: string;
 
   beforeEach(async () => {
     workDir = await mkdtemp(path.join(tmpdir(), 'mm-uninstaller-'));
     home = path.join(workDir, 'home');
     prefix = path.join(workDir, 'prefix con espacios');
-    appDir = path.join(prefix, 'share', APP_NAME);
+    appDir = path.join(prefix, 'share', 'media-manager-cli');
     wrapper = path.join(prefix, 'bin', 'mm');
     configDir = path.join(home, '.config', 'media-manager');
     dataDir = path.join(home, '.local', 'share', 'media-manager');
-    const remoteRepoPath = path.join(workDir, 'remote-repo.git');
-    remoteRepoUrl = `file://${remoteRepoPath}`;
     mkdirSync(home, { recursive: true });
     mkdirSync(configDir, { recursive: true });
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(path.join(configDir, 'config.yaml'), 'version: 1\n');
     writeFileSync(path.join(dataDir, 'library.db'), 'datos\n');
 
-    // Crear un repositorio git local (bare) como "remoto" para tests
-    mkdirSync(remoteRepoPath, { recursive: true });
-    const initResult = spawnSync('git', ['init', '--bare', remoteRepoPath], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-    });
-    if (initResult.status !== 0) {
-      throw new Error(`git init --bare falló: ${initResult.stderr}`);
-    }
+    // Crear un artefacto local e instalarlo para las pruebas de desinstalación
+    const artifact = createArtifact({ root: workDir, version: '1.0.0' });
+    artifactArchive = artifact.archive;
 
-    // Clonar, crear archivos mínimos, hacer commit y push al bare repo
-    const cloneDir = path.join(workDir, 'source-repo');
-    const cloneResult = spawnSync('git', ['clone', remoteRepoPath, cloneDir], {
-      encoding: 'utf8',
-      stdio: 'pipe',
-    });
-    if (cloneResult.status !== 0) {
-      throw new Error(`git clone falló: ${cloneResult.stderr}`);
-    }
-
-    mkdirSync(path.join(cloneDir, 'dist'), { recursive: true });
-    writeFileSync(
-      path.join(cloneDir, 'package.json'),
-      JSON.stringify({
-        name: APP_NAME,
-        version: '1.0.0',
-        scripts: { build: 'echo build' },
-      }),
-    );
-    writeFileSync(
-      path.join(cloneDir, 'dist', 'cli.js'),
-      `#!/usr/bin/env node\nconsole.log('1.0.0');\n`,
-    );
-
-    // Configurar identidad de git para commits
-    git(cloneDir, ['config', 'user.email', 'test@test']);
-    git(cloneDir, ['config', 'user.name', 'test']);
-
-    const addResult = git(cloneDir, ['add', '-A']);
-    if (addResult.status !== 0) {
-      throw new Error(`git add falló: ${addResult.stderr}`);
-    }
-
-    const commitResult = git(cloneDir, ['commit', '-m', 'init']);
-    if (commitResult.status !== 0) {
-      throw new Error(`git commit falló: ${commitResult.stderr}`);
-    }
-
-    const pushResult = git(cloneDir, ['push', 'origin', 'HEAD']);
-    if (pushResult.status !== 0) {
-      throw new Error(`git push falló: ${pushResult.stderr}`);
-    }
-
-    // Instalar usando el nuevo instalador
     const installResult = runScript(INSTALL_SCRIPT, ['--prefix', prefix, '--no-path-check'], {
       ...baseEnv(home),
-      MM_REPOSITORY: remoteRepoUrl,
-      MM_SKIP_BUILD: '1',
+      MM_ASSET_URL: artifactArchive,
     });
     if (installResult.status !== 0) {
       throw new Error(`No se pudo preparar la instalación: ${installResult.stderr}`);
@@ -198,7 +122,7 @@ describeLinux('uninstall.sh (integración)', () => {
     const installResult = runScript(
       INSTALL_SCRIPT,
       ['--prefix', defaultPrefix, '--no-path-check'],
-      { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' },
+      { ...baseEnv(home), MM_ASSET_URL: artifactArchive },
     );
     expect(installResult.status).toBe(0);
 
@@ -216,7 +140,7 @@ describeLinux('uninstall.sh (integración)', () => {
     const installResult = runScript(
       INSTALL_SCRIPT,
       ['--prefix', '~/prefijo personalizado', '--no-path-check'],
-      { ...baseEnv(home), MM_REPOSITORY: remoteRepoUrl, MM_SKIP_BUILD: '1' },
+      { ...baseEnv(home), MM_ASSET_URL: artifactArchive },
     );
     expect(installResult.status).toBe(0);
 

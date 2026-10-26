@@ -40,6 +40,7 @@ curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/instal
 
 ## Notas
 
-- Los instaladores no requieren `sudo` ni `npm` instalado.
-- Verifican checksums SHA-256 antes de instalar.
+- Los instaladores descargan un release precompilado de GitHub Releases y verifican el checksum SHA-256 antes de instalar.
+- No requieren `sudo`, `git`, `npm` ni herramientas de compilación.
 - La desinstalación conserva configuración y base de datos salvo que se use `--purge`.
+- Se instalan en `~/.local` por defecto; añade `~/.local/bin` a tu PATH para usar `mm`.

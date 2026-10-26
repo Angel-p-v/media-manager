@@ -55,10 +55,18 @@ export function createArtifact(options: ArtifactOptions): Artifact {
   const bundle = path.join(options.root, name);
 
   mkdirSync(path.join(bundle, 'node_modules', APP_NAME, 'dist'), { recursive: true });
+  mkdirSync(path.join(bundle, 'dist'), { recursive: true });
   mkdirSync(path.join(bundle, 'config'), { recursive: true });
   writeFileSync(path.join(bundle, 'mm'), `#!/bin/sh\nprintf '%s\\n' '${version}'\n`);
   writeFileSync(path.join(bundle, 'node'), '#!/bin/sh\nexit 0\n');
-  writeFileSync(path.join(bundle, 'node_modules', APP_NAME, 'dist', 'cli.js'), '');
+  writeFileSync(
+    path.join(bundle, 'dist', 'cli.js'),
+    `#!/usr/bin/env node\nconsole.log('${version}');\n`,
+  );
+  writeFileSync(
+    path.join(bundle, 'node_modules', APP_NAME, 'dist', 'cli.js'),
+    `#!/usr/bin/env node\nconsole.log('${version}');\n`,
+  );
   writeFileSync(
     path.join(bundle, 'install.json'),
     `${JSON.stringify({ schemaVersion: 1, name: APP_NAME, version, platform }, null, 2)}\n`,
