@@ -1,6 +1,6 @@
 # Plan: Nuevas mejoras futuras (Plan 9)
 
-**Estado:** 🟡 Activo — propuesto, sin ítems iniciados  
+**Estado:** ✅ Completado — todos los ítems implementados y mergeados en `main` (D1 PR #171, C1 PR #173, T5 PR #174, M2 PR #175, T1 PR #176, R3 PR #178, T2 PR #179, C2 PR #180).  
 **Índice de planes:** [`docs/plans/README.md`](./README.md)
 
 ## 1. Objetivo
@@ -87,15 +87,16 @@ Recopilar mejoras de valor para el proyecto que no entraron en planes anteriores
 
 ## 3. Orden recomendado de implementación
 
-Se sugiere ejecutar los ítems en este orden para mantener el proyecto estable:
+Todos los ítems del plan 9 están implementados y mergeados en `main`:
 
 1. **D1** — Docker Compose completo ✅ completado (PR #171)
-2. **C1** — Guía de migración desde Plex/Jellyfin (Bajo esfuerzo, atrae comunidad)
-3. **T5** — Soporte para subtítulos (Media esfuerzo, muy pedido por usuarios)
-4. **M2** — Proveedor AniList (Media esfuerzo, mejora metadatos de anime)
-5. **T1** — Temas de color personalizables (Bajo esfuerzo, mejora UX)
-6. **R3** — Lista de reproducción (Media esfuerzo)
-7. **El resto** según prioridad y capacidad del mantenedor
+2. **C1** — Guía de migración desde Plex/Jellyfin ✅ completado (PR #173)
+3. **T5** — Soporte para subtítulos (.srt) en `mm play` ✅ completado (PR #174)
+4. **M2** — Proveedor AniList para metadatos de anime ✅ completado (PR #175)
+5. **T1** — Temas de color personalizables desde YAML ✅ completado (PR #176)
+6. **R3** — Lista de reproducción (`mm playlist`) ✅ completado (PR #178)
+7. **T2** — Atajos de teclado configurables desde la TUI ✅ completado (PR #179)
+8. **C2** — Ejemplos de configuración YAML ✅ completado (PR #180)
 
 ---
 

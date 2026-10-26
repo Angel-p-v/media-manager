@@ -95,6 +95,20 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ---
 
+## 🗺️ Estado de los planes de desarrollo
+
+Todos los planes de desarrollo están implementados y mergeados en `main`:
+
+| Plan                               | Estado        | PRs       |
+| ---------------------------------- | ------------- | --------- |
+| Plan 01 — Mejoras continuas fase 2 | ✅ Completado | —         |
+| Plan 02 — Fixes de code review     | ✅ Completado | —         |
+| Plan 09 — Nuevas mejoras futuras   | ✅ Completado | #171–#180 |
+
+Detalle en [`docs/plans/`](./docs/plans).
+
+---
+
 ## 🚀 Instalación rápida
 
 ### 📦 Instalador oficial (recomendado — Linux, Windows, macOS)
