@@ -263,7 +263,7 @@ function service(
     tagRepo: fakeTagRepository(),
     metadataRepo: fakeMetadataRepository(),
     metadataService: fakeMetadataService(),
-    metadataConfig: { cacheTtlHours: 24 },
+    metadataConfig: { cacheTtlHours: 24, autoFetch: false },
   });
 }
 
@@ -377,7 +377,7 @@ describe('createLibraryService', () => {
         tagRepo: fakeTagRepository(),
         metadataRepo: fakeMetadataRepository(),
         metadataService: fakeMetadataService(),
-        metadataConfig: { cacheTtlHours: 24 },
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
       });
 
       expect(library.stats()).toEqual({
@@ -457,7 +457,7 @@ describe('createLibraryService', () => {
           search: () => Promise.resolve([searchResult]),
           getDetails: () => Promise.resolve(details),
         } as unknown as MetadataService,
-        metadataConfig: { cacheTtlHours: 24 },
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
       });
 
       const result = await library.getOrFetchMetadata(1);
@@ -485,11 +485,154 @@ describe('createLibraryService', () => {
           ...fakeMetadataService(),
           hasProviderConfigured: () => false,
         } as unknown as MetadataService,
-        metadataConfig: { cacheTtlHours: 24 },
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
       });
 
       const result = await library.getOrFetchMetadata(1);
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchMissingMetadata', () => {
+    it('retorna cero cuando no hay proveedor configurado', async () => {
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          list: () => [{ ...dark, id: 1 }],
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: fakeMetadataRepository(),
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => false,
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      const result = await library.fetchMissingMetadata();
+      expect(result).toEqual({ fetched: 0, failed: 0 });
+    });
+
+    it('obtiene metadatos para títulos que no los tienen', async () => {
+      const details = {
+        mediaId: 0,
+        provider: 'tmdb' as const,
+        externalId: 123,
+        title: 'Dark',
+        overview: 'Sinopsis',
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: 8.5,
+        firstAirDate: null,
+        releaseDate: '2017-12-01',
+        originalLanguage: 'de',
+        fetchedAt: '',
+        updatedAt: '',
+        localPosterPath: null,
+      };
+
+      let fetchCalled = 0;
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          list: () => [
+            { ...dark, id: 1 },
+            { ...dark, id: 2, title: 'Other' },
+          ],
+          findById: (id) => (id === 1 ? { ...dark, id: 1, type: 'series' } : undefined),
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          get: (mediaId) => (mediaId === 2 ? details : undefined),
+          set: () => {
+            fetchCalled++;
+            return details;
+          },
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+          isProviderConfigured: () => true,
+          search: () => [
+            {
+              provider: 'tmdb' as const,
+              externalId: 123,
+              title: 'Dark',
+              overview: null,
+              posterPath: null,
+              backdropPath: null,
+              voteAverage: null,
+              releaseDate: null,
+              originalLanguage: null,
+              localPosterPath: null,
+            },
+          ],
+          getDetails: () => details,
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      const result = await library.fetchMissingMetadata();
+      // Solo el título 1 no tiene metadatos (el 2 ya los tiene via get)
+      expect(fetchCalled).toBe(1);
+      expect(result.fetched).toBe(1);
+      expect(result.failed).toBe(0);
+    });
+
+    it('no intenta obtener metadatos para títulos que ya los tienen', async () => {
+      const details = {
+        mediaId: 1,
+        provider: 'tmdb' as const,
+        externalId: 123,
+        title: 'Dark',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        fetchedAt: '',
+        updatedAt: '',
+        localPosterPath: null,
+      };
+
+      let setCalled = 0;
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          list: () => [{ ...dark, id: 1 }],
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          get: () => details, // Ya tiene metadatos
+          set: () => {
+            setCalled++;
+            return details;
+          },
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      const result = await library.fetchMissingMetadata();
+      expect(setCalled).toBe(0);
+      expect(result.fetched).toBe(0);
+      expect(result.failed).toBe(0);
     });
   });
 });

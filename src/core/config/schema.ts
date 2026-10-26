@@ -114,6 +114,8 @@ export const metadataConfigSchema = z.object({
   omdbApiKey: z.string().min(1).optional(),
   anilistApiKey: z.string().min(1).optional(),
   cacheTtlHours: z.number().int().min(1).default(24),
+  /** Obtener metadatos automáticamente para títulos nuevos al indexar. */
+  autoFetch: z.boolean().default(false),
 });
 
 export type MetadataConfig = z.infer<typeof metadataConfigSchema>;
