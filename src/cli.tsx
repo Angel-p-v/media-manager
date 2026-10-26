@@ -69,6 +69,7 @@ program
   .option('--path', 'muestra solo la ruta del archivo de configuración')
   .option('--validate', 'valida el archivo de configuración y termina')
   .option('--json', 'salida en formato JSON')
+  .option('--init', 'crea el archivo de configuración por defecto si no existe')
   .action(runConfigCommand);
 
 program
