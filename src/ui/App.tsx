@@ -115,9 +115,10 @@ function AppImpl({
         series: stats.media.series,
         anime: stats.media.anime,
         movie: stats.media.movie,
+        unknown: stats.media.unknown,
       };
     } catch {
-      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, anime: 0, movie: 0 };
+      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, anime: 0, movie: 0, unknown: 0 };
     }
   }, [library]);
 
@@ -229,7 +230,7 @@ function AppImpl({
   const handleRefreshMetadata = (): void => {
     if (view !== 'library' || selectedMedia === undefined) return;
     setRefreshingMetadata(true);
-    setStatus('Obteniendo metadatos…');
+    setStatus('Buscando metadatos…');
     void library.getOrFetchMetadata(selectedMedia.id).then(
       () => {
         setStatus('Metadatos actualizados.');
@@ -363,7 +364,7 @@ function AppImpl({
       settings: handleSettings,
       play: handlePlay,
       nextSection: handleNextSection,
-      refreshMetadata: handleRefreshMetadata,
+      refresh: handleRefreshMetadata,
       refreshAll: handleRefreshAllMetadata,
       goToDetails: handleGoToDetails,
       gotoTaggedMedia: handleGotoTaggedMedia,

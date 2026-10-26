@@ -200,6 +200,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
           series: mediaRepo.count('series'),
           anime: mediaRepo.count('anime'),
           movie: mediaRepo.count('movie'),
+          unknown: mediaRepo.count('unknown'),
         },
         files: fileRepo.count(),
         lastRun: indexRunRepo.latest() ?? null,
@@ -300,17 +301,14 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         }
       }
 
-      // Si hay API key configurada, intentar refrescar desde la API externa
+      // Si hay API key configurada, intentar obtener metadatos desde la API externa
       if (metadataService.hasProviderConfigured()) {
-        // Intentar TMDB primero, luego TVDB
-        for (const provider of ['tmdb', 'tvdb'] as const) {
-          if (!metadataService.isProviderConfigured(provider)) continue;
+        // Si ya tenemos metadatos previos (expirados) con externalId, refrescar por ID
+        if (existing?.externalId) {
+          for (const provider of ['tmdb', 'tvdb'] as const) {
+            if (!metadataService.isProviderConfigured(provider)) continue;
 
-          try {
-            // Buscar por título para obtener el externalId (simplificado: usamos el existing o buscamos)
-            // Nota: en una implementación completa necesitaríamos buscar por título del media
-            // Aquí solo refrescamos si ya tenemos externalId guardado
-            if (existing?.externalId) {
+            try {
               const mediaType = existing.provider === 'tvdb' ? 'tv' : 'movie';
               const details = await metadataService.getDetails(
                 existing.externalId,
@@ -331,10 +329,59 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 localPosterPath: details.localPosterPath ?? null,
                 updatedAt: now.toISOString(),
               });
+            } catch {
+              // Si falla un proveedor, probar el siguiente
+              continue;
+            }
+          }
+        }
+
+        // Si no hay metadatos previos (o no tienen externalId), buscar por título
+        const media = mediaRepo.findById(mediaId);
+        if (media) {
+          const mediaType = media.type === 'movie' ? 'movie' : 'tv';
+
+          try {
+            const searchResults = await metadataService.search(media.title);
+            const result = searchResults.find(
+              (
+                r,
+              ): r is {
+                provider: 'tmdb' | 'tvdb' | 'omdb';
+                externalId: number;
+                title: string;
+                overview: string | null;
+                posterPath: string | null;
+                backdropPath: string | null;
+                voteAverage: number | null;
+                releaseDate: string | null;
+                originalLanguage: string | null;
+                localPosterPath: string | null;
+              } => r.provider === 'tmdb' || r.provider === 'tvdb' || r.provider === 'omdb',
+            );
+            if (result) {
+              const details = await metadataService.getDetails(
+                result.externalId,
+                result.provider,
+                mediaType,
+              );
+              return metadataRepo.set({
+                mediaId,
+                provider: result.provider,
+                externalId: details.externalId,
+                title: details.title,
+                overview: details.overview,
+                posterPath: details.posterPath,
+                backdropPath: details.backdropPath,
+                voteAverage: details.voteAverage,
+                releaseDate: details.releaseDate,
+                originalLanguage: details.originalLanguage,
+                localPosterPath: details.localPosterPath ?? null,
+                updatedAt: now.toISOString(),
+              });
             }
           } catch {
-            // Si falla un proveedor, probar el siguiente
-            continue;
+            // Si falla la búsqueda, continuar para retornar existing (o undefined)
           }
         }
       }

@@ -153,6 +153,7 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
         series: rows.filter((row) => row.type === 'series').length,
         anime: rows.filter((row) => row.type === 'anime').length,
         movie: rows.filter((row) => row.type === 'movie').length,
+        unknown: rows.filter((row) => row.type === 'unknown').length,
       },
       files: Object.values(files).reduce((total, list) => total + list.length, 0),
       lastRun: null,
