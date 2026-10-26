@@ -437,4 +437,70 @@ describe('App (TUI)', () => {
     expect(elapsed).toBeLessThan(300);
     unmount();
   });
+
+  it('Enter abre la vista de detalles de reproducción para el título seleccionado', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    // Severance está seleccionado por defecto (índice 0)
+    await press(stdin, '\r');
+
+    const frame = frameOf(lastFrame);
+    expect(frame).toContain('Reproducir');
+    expect(frame).toContain('Severance');
+    expect(frame).toContain('[q/Esc]');
+    unmount();
+  });
+
+  it('q vuelve a la biblioteca desde la vista de detalles de reproducción', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    await press(stdin, '\r');
+    expect(frameOf(lastFrame)).toContain('Reproducir');
+
+    await press(stdin, 'q');
+    expect(frameOf(lastFrame)).toContain('Biblioteca');
+    expect(frameOf(lastFrame)).toContain('Severance');
+    unmount();
+  });
+
+  it('Escape vuelve a la biblioteca desde la vista de detalles de reproducción', async () => {
+    const { lastFrame, stdin, unmount } = render(<App config={config} library={fakeLibrary()} />);
+
+    await press(stdin, '\r');
+    expect(frameOf(lastFrame)).toContain('Reproducir');
+
+    await press(stdin, '\u001b');
+    expect(frameOf(lastFrame)).toContain('Biblioteca');
+    expect(frameOf(lastFrame)).toContain('Severance');
+    unmount();
+  });
+
+  it('p desde la vista de detalles de reproducción lanza el reproductor con el fichero seleccionado', async () => {
+    const launchPlayer = vi.fn(
+      (_plan: LaunchPlan) =>
+        new Promise<PlayerHandle>((_resolve) => {
+          // Nunca se resuelve: el test solo verifica que se llamó.
+        }),
+    );
+    const { lastFrame, stdin, unmount } = render(
+      <App config={config} library={fakeLibrary()} launchPlayer={launchPlayer} />,
+    );
+
+    // Abrir vista de detalles de reproducción (Enter sobre Severance)
+    await press(stdin, '\r');
+    expect(frameOf(lastFrame)).toContain('Reproducir');
+
+    // 'p' reproduce el fichero seleccionado (S01E01 por defecto)
+    await press(stdin, 'p');
+
+    expect(launchPlayer).toHaveBeenCalledOnce();
+    expect(launchPlayer.mock.calls[0]?.[0]).toMatchObject({
+      player: 'mpv',
+      mode: 'detach',
+      filePath: '/media/series/Severance/S01E01.mkv',
+    });
+    expect(frameOf(lastFrame)).toContain('Abriendo Severance · T01E01 en mpv');
+
+    unmount();
+  });
 });
