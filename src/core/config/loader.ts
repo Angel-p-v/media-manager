@@ -193,11 +193,16 @@ export function watchConfigFile(
 /**
  * Guarda la configuración actual en el archivo YAML.
  *
+ * Antes de escribir, valida la configuración contra el esquema para evitar
+ * persistir un archivo inválido que rompa el siguiente arranque.
+ *
  * Se usa para persistir cambios realizados desde la TUI (p. ej. atajos de
  * teclado reasignados) para que sobrevivan al reinicio.
  */
 export async function saveConfig(config: AppConfig, configPath?: string): Promise<void> {
   const resolvedPath = configPath ?? resolveConfigPath();
+  // Validar contra el esquema antes de persistir.
+  validateConfig(config, resolvedPath);
   const yaml = stringifyYaml(config);
   await writeFile(resolvedPath, yaml, 'utf8');
 }

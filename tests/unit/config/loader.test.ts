@@ -1,5 +1,5 @@
 import { mkdtemp, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -10,10 +10,13 @@ import {
   loadConfig,
   readConfigFile,
   resolveConfigPath,
+  saveConfig,
   validateConfig,
   watchConfigFile,
 } from '../../../src/core/config/loader.js';
 import { ConfigError } from '../../../src/shared/errors.js';
+
+import type { AppConfig } from '../../../src/core/config/schema.js';
 
 async function tempConfig(content: string): Promise<string> {
   const dir = await mkdtemp(path.join(tmpdir(), 'mm-config-'));
@@ -229,5 +232,35 @@ describe('watchConfigFile', () => {
     const { close } = watchConfigFile('/tmp/no-existe-esta-cosa.yaml', () => undefined);
     expect(typeof close).toBe('function');
     close();
+  });
+});
+
+describe('saveConfig', () => {
+  it('escribe el YAML y lo puede recargar con loadConfig', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'mm-save-'));
+    const file = path.join(dir, 'config.yaml');
+
+    await saveConfig(defaultConfig, file);
+
+    const reloaded = await loadConfig({ configPath: file, env: {} });
+    expect(reloaded.player.default).toBe(defaultConfig.player.default);
+    expect(reloaded.database.path).toBe(
+      path.resolve(homedir(), '.local/share/media-manager/library.db'),
+    );
+  });
+
+  it('rechaza una configuración inválida antes de escribir', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'mm-save-'));
+    const file = path.join(dir, 'config.yaml');
+
+    const invalidConfig: AppConfig = {
+      ...defaultConfig,
+      library: { ...defaultConfig.library, scan: { ...defaultConfig.library.scan, maxDepth: 99 } },
+    };
+
+    await expect(saveConfig(invalidConfig, file)).rejects.toBeInstanceOf(ConfigError);
+
+    // El archivo no debe haberse creado
+    expect(await readConfigFile(file)).toEqual({});
   });
 });
