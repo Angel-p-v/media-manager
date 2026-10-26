@@ -167,10 +167,10 @@ have tar || die 1 "se necesita 'tar' para extraer el paquete"
 have sha256sum || die 1 "se necesita 'sha256sum' para verificar el checksum"
 
 if [ -d "$APP_DIR" ]; then
-  [ "$FORCE" -eq 1 ] || die 4 "la versión ya está instalada en ${APP_DIR}; usa --force"
+  [ "$FORCE" -eq 1 ] || die 4 "la versión ya está instalada en ${APP_DIR}; usa --force para reinstalar o ejecuta primero installers/linux/uninstall.sh"
 fi
 if [ -e "$BINARY" ] || [ -L "$BINARY" ]; then
-  [ "$FORCE" -eq 1 ] || die 4 "${BINARY} existe y no lo gestiona este instalador; usa --force para reemplazarlo"
+  [ "$FORCE" -eq 1 ] || die 4 "${BINARY} existe y no lo gestiona este instalador; usa --force para reemplazarlo o desinstálalo primero con installers/linux/uninstall.sh"
 fi
 
 if [ "$DRY_RUN" -eq 1 ]; then

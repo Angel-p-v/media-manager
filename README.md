@@ -130,9 +130,14 @@ cd media-manager
 # 2. Ejecuta el instalador (sin sudo, instala en ~/.local)
 sh installers/linux/install.sh
 
+# Si ya está instalado, usa --force para reinstalar:
+# sh installers/linux/install.sh --force
+
 # 3. Verifica
 mm --version
 ```
+
+> 💡 Asegúrate de que `~/.local/bin` esté en tu PATH **antes** de otros gestores de versión (como `mise`, `nvm`, etc.) para que `mm` se resuelva correctamente.
 
 #### Windows (x64)
 
