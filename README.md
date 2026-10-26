@@ -36,16 +36,17 @@
   <img src="https://raw.githubusercontent.com/Angel-p-v/media-manager/main/docs/assets/demo.svg" alt="Demo de media-manager: indexar, buscar, ver el detalle y preparar la reproducción" width="800"/>
 </p>
 
-> **La demo es una transcripción estática de una sesión real.** Para probarla en tu terminal, empieza por la sección de [instalación](#instalación).
+> **La demo es una transcripción estática de una sesión real.** Para probarla en tu terminal, empieza por la sección de [instalación rápida](#instalación-rápida).
 
 ---
 
 ## ⚡ Comenzando en 30 segundos
 
 ```bash
-# 1. Instalar (Linux, sin sudo)
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
-sh /tmp/mm-install.sh
+# 1. Clona e instala (Linux, sin sudo)
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
+sh installers/linux/install.sh
 
 # 2. Abrir la interfaz
 mm
@@ -113,38 +114,21 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación)   | ✅     |
 | 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
 
----
-
-## 🗺️ Estado de los planes de desarrollo
-
-Todos los planes de desarrollo están implementados y mergeados en `main`:
-
-| Plan                               | Estado        | PRs       |
-| ---------------------------------- | ------------- | --------- |
-| Plan 01 — Mejoras continuas fase 2 | ✅ Completado | —         |
-| Plan 02 — Fixes de code review     | ✅ Completado | —         |
-| Plan 09 — Nuevas mejoras futuras   | ✅ Completado | #171–#180 |
-
-Detalle en [`docs/plans/`](./docs/plans).
-
----
-
 ## 🚀 Instalación rápida
 
-### 📦 Instalador oficial (recomendado — Linux, Windows, macOS)
+### 📦 Instalador oficial (recomendado — Linux, Windows)
 
-El instalador descarga un release precompilado de GitHub Releases, verifica el
-checksum SHA-256 y deja el comando `mm` disponible sin `sudo`.
+Clona el repositorio y ejecuta el instalador correspondiente para tu sistema.
 
 #### Linux (x64, arm64)
 
 ```bash
-# 1. Descarga el instalador y revísalo
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/install.sh -o /tmp/mm-install.sh
-less /tmp/mm-install.sh
+# 1. Clona el repositorio
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
 
-# 2. Ejecútalo (sin sudo, instala en ~/.local)
-sh /tmp/mm-install.sh
+# 2. Ejecuta el instalador (sin sudo, instala en ~/.local)
+sh installers/linux/install.sh
 
 # 3. Verifica
 mm --version
@@ -153,11 +137,12 @@ mm --version
 #### Windows (x64)
 
 ```powershell
-# 1. Descarga el instalador y revísalo
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/windows/install.ps1 -o /tmp/mm-install.ps1
+# 1. Clona el repositorio
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
 
-# 2. Ejecútalo
-.\install.ps1
+# 2. Ejecuta el instalador
+.\installers\windows\install.ps1
 
 # 3. Verifica
 mm --version
@@ -176,32 +161,20 @@ npm run standalone -- --node-source official
 > **Opciones útiles:**
 >
 > ```bash
-> sh /tmp/mm-install.sh --prefix "$HOME/.local"
-> sh /tmp/mm-install.sh --dry-run            # muestra los cambios sin aplicarlos
+> sh installers/linux/install.sh --prefix "$HOME/.local"
+> sh installers/linux/install.sh --dry-run            # muestra los cambios sin aplicarlos
 > ```
-
-> ✅ **Sin sudo** • 🏠 Instala en `~/.local` • 🔐 Verifica checksum SHA-256 • 📦 Estructura verificada antes de extraer • 🍎 **macOS: sin assets oficiales (compila localmente)**
-
-> **Plataformas con assets oficiales:** Linux (x64, arm64) · Windows (x64)  
-> **macOS:** sin assets oficiales en v3.1.0 (compila localmente)
-
-### 🔐 Verificar descarga manual
-
-```bash
-# Linux/macOS: Descarga el .tar.gz y su .sha256 desde la release de GitHub
-sha256sum -c media-manager-cli-<version>-<platform>.tar.gz.sha256
-gh attestation verify media-manager-cli-<version>-<platform>.tar.gz --repo Angel-p-v/media-manager
-
-# Windows: Descarga el .zip y su .sha256 desde la release de GitHub
-certutil -hashfile media-manager-cli-<version>-windows-x64.zip SHA256
-```
 
 ### 🗑️ Desinstalar
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/installers/linux/uninstall.sh -o /tmp/mm-uninstall.sh
-sh /tmp/mm-uninstall.sh            # conserva configuración y base de datos
-sh /tmp/mm-uninstall.sh --purge    # las elimina también
+# Clona el repositorio si aún no lo tienes
+git clone https://github.com/Angel-p-v/media-manager.git
+cd media-manager
+
+# Ejecuta el desinstalador (sin sudo)
+sh installers/linux/uninstall.sh            # conserva configuración y base de datos
+sh installers/linux/uninstall.sh --purge    # las elimina también
 ```
 
 > 🛡️ La biblioteca multimedia nunca se toca.
