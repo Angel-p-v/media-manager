@@ -31,6 +31,8 @@ export type PlayCommandOptions = CommandOptions & {
   resume?: boolean;
   restart?: boolean;
   next?: boolean;
+  /** Ruta al archivo de subtítulo (.srt, .sub, .vtt, …) a cargar. */
+  subtitle?: string;
 };
 
 type PlayJson = {
@@ -41,6 +43,8 @@ type PlayJson = {
   media: ReturnType<typeof toMediaJson>;
   file: ReturnType<typeof toMediaFileJson>;
   pid: number | null;
+  /** Ruta al archivo de subtítulo cargado, si se indicó. */
+  subtitle: string | null;
   playback: {
     resumedFrom: number | null;
     position: number;
@@ -112,6 +116,7 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
       ...(options.player === undefined ? {} : { playerName: options.player }),
       mode,
       startSeconds,
+      ...(options.subtitle === undefined ? {} : { subtitlePath: options.subtitle }),
     });
 
     if (options.dryRun === true) {
@@ -125,6 +130,9 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
       console.log(pc.bold('Comando de reproducción') + pc.dim(` (${plan.mode})`));
       console.log(`  ${formatCommand(plan.command, plan.args)}`);
       console.log(pc.dim(`  ${media.title} · ${formatEpisode(file)} · ${plan.filePath}`));
+      if (plan.subtitlePath) {
+        console.log(pc.dim(`  Subtítulo: ${plan.subtitlePath}`));
+      }
       if (resumedFrom !== null) {
         console.log(pc.dim(`  Reanudando desde ${formatSeconds(resumedFrom)}`));
       }
@@ -159,6 +167,9 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
       `▶ ${pc.bold(`${media.title}${year}`)} · ${pc.cyan(formatEpisode(file))} · ${plan.player}`,
     );
     console.log(pc.dim(`  ${plan.filePath}`));
+    if (plan.subtitlePath) {
+      console.log(pc.dim(`  Subtítulo: ${plan.subtitlePath}`));
+    }
     if (resumedFrom !== null) {
       console.log(pc.dim(`  Reanudando desde ${formatSeconds(resumedFrom)}`));
     }
@@ -191,6 +202,7 @@ function toPlayJson(
     media: toMediaJson(media),
     file: toMediaFileJson(file),
     pid,
+    subtitle: plan.subtitlePath ?? null,
     playback: {
       resumedFrom,
       position: calculated.positionSeconds,

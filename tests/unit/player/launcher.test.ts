@@ -49,6 +49,7 @@ describe('createLaunchPlan', () => {
       args: ['--input=/media/Series/Show (2022)/S01E01.mkv', '--title', `${filePath}.json`],
       mode: 'detach',
       filePath,
+      subtitlePath: null,
     });
   });
 
@@ -138,6 +139,61 @@ describe('createLaunchPlan', () => {
     });
 
     expect(plan.args).toEqual(['--start=', '/media/video.mkv']);
+  });
+
+  it('añade --sub-file a los args cuando se indica subtitlePath', () => {
+    const plan = createLaunchPlan({
+      playerConfig,
+      filePath: '/media/episodio.mkv',
+      subtitlePath: '/media/episodio.srt',
+    });
+
+    expect(plan.subtitlePath).toBe('/media/episodio.srt');
+    expect(plan.args).toEqual([
+      '--input=/media/episodio.mkv',
+      '--title',
+      '/media/episodio.mkv.json',
+      '--sub-file=/media/episodio.srt',
+    ]);
+  });
+
+  it('subtituloPath null no añade --sub-file', () => {
+    const plan = createLaunchPlan({
+      playerConfig,
+      filePath: '/media/episodio.mkv',
+      subtitlePath: null,
+    });
+
+    expect(plan.subtitlePath).toBeNull();
+    expect(plan.args).toEqual([
+      '--input=/media/episodio.mkv',
+      '--title',
+      '/media/episodio.mkv.json',
+    ]);
+  });
+
+  it('combina startSeconds y subtitlePath', () => {
+    const withStart: PlayerConfig = {
+      ...playerConfig,
+      players: {
+        ...playerConfig.players,
+        startplayer: {
+          command: 'start-player',
+          args: ['--start={start}', '{file}'],
+        },
+      },
+      default: 'startplayer',
+    };
+
+    const plan = createLaunchPlan({
+      playerConfig: withStart,
+      filePath: '/media/video.mkv',
+      startSeconds: 45,
+      subtitlePath: '/media/video.srt',
+    });
+
+    expect(plan.args).toEqual(['--start=45', '/media/video.mkv', '--sub-file=/media/video.srt']);
+    expect(plan.subtitlePath).toBe('/media/video.srt');
   });
 });
 
