@@ -11,6 +11,7 @@ import { useLibrary } from './hooks/useLibrary.js';
 import { useMediaDetails } from './hooks/useMediaDetails.js';
 import { theme, setTheme } from './theme.js';
 import { LibraryView } from './views/Library.js';
+import { PlayDetails } from './views/PlayDetails.js';
 import { SearchView } from './views/Search.js';
 import { SettingsView } from './views/Settings.js';
 import { saveConfig, loadConfig } from '../core/config/loader.js';
@@ -49,6 +50,7 @@ const VIEW_TITLE: Record<ViewName, string> = {
   library: 'Biblioteca',
   search: 'Búsqueda',
   settings: 'Ajustes',
+  'play-details': 'Reproducir',
 };
 
 /**
@@ -88,6 +90,8 @@ function AppImpl({
   const [watchFilter, setWatchFilter] = useState<'watched' | 'unwatched' | undefined>(undefined);
   /** Vista de reasignación de atajos abierta (T2). */
   const [keybindingsViewVisible, setKeybindingsViewVisible] = useState(false);
+  /** ID del título abierto en la vista de detalles de reproducción (play-details). */
+  const [playDetailsMediaId, setPlayDetailsMediaId] = useState<number | null>(null);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -374,7 +378,54 @@ function AppImpl({
     }
   };
 
+  /** Abre la vista de detalles de reproducción (play-details) para el título seleccionado. */
+  const handleOpenPlayDetails = (): void => {
+    if (view !== 'library') return;
+    if (selectedMedia === undefined) {
+      setStatus('Selecciona un título para ver sus detalles de reproducción.');
+      return;
+    }
+    setPlayDetailsMediaId(selectedMedia.id);
+    setView('play-details');
+    setStatus(null);
+  };
+
+  /** Reproduce desde la vista de detalles de reproducción usando el fichero seleccionado allí. */
+  const handlePlayFromDetails = (fileId: number): void => {
+    if (view !== 'play-details') return;
+    const media = library.find(String(playDetailsMediaId ?? 0));
+    const file = media.files.find((f) => f.id === fileId);
+    if (file === undefined) {
+      setStatus('No se pudo encontrar el fichero seleccionado.');
+      return;
+    }
+    try {
+      const plan = createLaunchPlan({
+        playerConfig: config.player,
+        filePath: file.filePath,
+        mode: 'detach',
+      });
+      const label = playbackLabel(media.media.title, file);
+      setStatus(`Abriendo ${label} en ${plan.player}…`);
+      void launchPlayer(plan)
+        .then(() => {
+          setStatus(`▶ ${label} · ${plan.player}`);
+        })
+        .catch((error: unknown) => {
+          setStatus(formatError(error));
+        });
+    } catch (error) {
+      setStatus(formatError(error));
+    }
+  };
+
   const handleEscape = (): void => {
+    if (view === 'play-details') {
+      setView('library');
+      setPlayDetailsMediaId(null);
+      setStatus(null);
+      return;
+    }
     if (view !== 'library') {
       setView('library');
       setStatus(null);
@@ -392,6 +443,7 @@ function AppImpl({
       search: handleSearch,
       settings: handleSettings,
       play: handlePlay,
+      enter: handleOpenPlayDetails,
       nextSection: handleNextSection,
       refresh: handleRefreshMetadata,
       refreshAll: handleRefreshAllMetadata,
@@ -418,7 +470,7 @@ function AppImpl({
       /** Abrir vista de reasignación de atajos (T2). */
       configureKeybindings: handleOpenKeybindings,
     },
-    !helpVisible && !keybindingsViewVisible && view !== 'settings',
+    !helpVisible && !keybindingsViewVisible && view !== 'settings' && view !== 'play-details',
   );
 
   // Habilitar modo ratón para soporte de clic (D4).
@@ -515,6 +567,17 @@ function AppImpl({
               }
             }}
             onBack={() => setView('library')}
+          />
+        ) : null}
+        {!helpVisible && view === 'play-details' ? (
+          <PlayDetails
+            details={playDetailsMediaId === null ? null : library.find(String(playDetailsMediaId))}
+            onPlay={handlePlayFromDetails}
+            onBack={() => {
+              setView('library');
+              setPlayDetailsMediaId(null);
+              setStatus(null);
+            }}
           />
         ) : null}
         {keybindingsViewVisible ? (
