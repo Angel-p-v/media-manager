@@ -13,7 +13,7 @@ import { theme, setTheme } from './theme.js';
 import { LibraryView } from './views/Library.js';
 import { SearchView } from './views/Search.js';
 import { SettingsView } from './views/Settings.js';
-import { saveConfig } from '../core/config/loader.js';
+import { saveConfig, loadConfig } from '../core/config/loader.js';
 import { defaultConfigPath } from '../core/config/paths.js';
 import { createLaunchPlan, launchPlayer as spawnPlayer } from '../core/player/launcher.js';
 import { selectMediaFile } from '../core/player/selection.js';
@@ -58,12 +58,13 @@ const VIEW_TITLE: Record<ViewName, string> = {
  * delega todas las consultas en `LibraryService`. No escribe SQL ni conoce SQLite.
  */
 function AppImpl({
-  config,
+  config: initialConfig,
   library,
   configPath,
   onQuit,
   launchPlayer = spawnPlayer,
 }: AppProps): React.JSX.Element {
+  const [config, setConfig] = useState<AppConfig>(initialConfig);
   const { keybindings } = useConfig(config);
   setTheme(config.ui.theme);
   // Siempre hay una ruta de configuración válida: si no se pasa una explícita
@@ -472,7 +473,17 @@ function AppImpl({
           <SettingsView
             config={config}
             configPath={resolvedConfigPath}
-            onSave={() => setStatus('Configuración guardada.')}
+            onSave={async () => {
+              setStatus('Configuración guardada.');
+              try {
+                const updated = await loadConfig({
+                  configPath: resolvedConfigPath,
+                });
+                setConfig(updated);
+              } catch {
+                setStatus('No se pudo recargar la configuración.');
+              }
+            }}
             onBack={() => setView('library')}
           />
         ) : null}
