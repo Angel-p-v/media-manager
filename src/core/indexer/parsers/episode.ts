@@ -22,28 +22,28 @@ type EpisodePattern = {
  */
 const PATTERNS: readonly EpisodePattern[] = [
   {
-    // S01E02, S01.E02, S01 E02, S01EP02
-    pattern: /\bS(\d{1,2})[ ._-]*E(?:P)?[ ._-]*(\d{1,3})\b/i,
+    // S01E02, S01.E02, S01 E02, S01EP02, S01E01v2 (con sufijos tipo v2)
+    pattern: /\bS(\d{1,2})[ ._-]*E(?:P)?[ ._-]*(\d{1,3})(?=\D|$)/i,
     toInfo: (match) => ({ season: Number(match[1]), episode: Number(match[2]) }),
   },
   {
     // T1E2 (temporada/episodio en español)
-    pattern: /\bT(\d{1,2})[ ._-]*E(?:P)?[ ._-]*(\d{1,3})\b/i,
+    pattern: /\bT(\d{1,2})[ ._-]*E(?:P)?[ ._-]*(\d{1,3})(?=\D|$)/i,
     toInfo: (match) => ({ season: Number(match[1]), episode: Number(match[2]) }),
   },
   {
     // 1x02, 01x02 (pero no 1920x1080: el \b impide empezar en mitad de un número)
-    pattern: /\b(\d{1,2})x(\d{1,3})\b/i,
+    pattern: /\b(\d{1,2})x(\d{1,3})(?=\D|$)/i,
     toInfo: (match) => ({ season: Number(match[1]), episode: Number(match[2]) }),
   },
   {
     // Season 1 Episode 2, Season.1.Ep.2
-    pattern: /\bSeason[ ._-]*(\d{1,2})[ ._-]*(?:Episode|Ep|E)[ ._-]*(\d{1,3})\b/i,
+    pattern: /\bSeason[ ._-]*(\d{1,2})[ ._-]*(?:Episode|Ep|E)[ ._-]*(\d{1,3})(?=\D|$)/i,
     toInfo: (match) => ({ season: Number(match[1]), episode: Number(match[2]) }),
   },
   {
     // E03, Ep. 3, Episode 12 (sin temporada)
-    pattern: /\b(?:Episode|Ep|E)[ ._-]*(\d{1,3})\b/i,
+    pattern: /\b(?:Episode|Ep|E)[ ._-]*(\d{1,3})(?=\D|$)/i,
     toInfo: (match) => ({ season: null, episode: Number(match[1]) }),
   },
   {

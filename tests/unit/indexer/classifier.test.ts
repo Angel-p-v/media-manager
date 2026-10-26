@@ -72,6 +72,24 @@ describe('classifyFile', () => {
     });
   });
 
+  it('clasifica un fichero con sufijo v2 tras el episodio (S01E01v2)', () => {
+    expect(classify(seriesRoot, '/media/series/Black Torch - S01E01v2.mkv')).toMatchObject({
+      type: 'series',
+      title: 'Black Torch',
+      season: 1,
+      episode: 1,
+    });
+  });
+
+  it('clasifica un fichero con sufijo v2 en raíz de movies como serie', () => {
+    expect(classify(movieRoot, '/media/movies/Black Torch - S01E01v2.mkv')).toMatchObject({
+      type: 'series',
+      title: 'Black Torch',
+      season: 1,
+      episode: 1,
+    });
+  });
+
   it('clasifica un fichero sin patrón de episodio como unknown', () => {
     expect(classify(seriesRoot, '/media/series/Severance/extra.mkv')).toMatchObject({
       type: 'unknown',

@@ -32,17 +32,21 @@ export type ClassifyInput = {
  * para obtener el título del título/serie.
  */
 function extractCleanTitle(fileName: string): string {
-  return fileName
-    .replace(/\bS\d{1,2}[ ._-]*(?:E|EP)?[ ._-]*\d{1,3}\b/i, ' ')
-    .replace(/\bT\d{1,2}[ ._-]*(?:E|EP)?[ ._-]*\d{1,3}\b/i, ' ')
-    .replace(/\b\d{1,2}x\d{1,3}\b/i, ' ')
-    .replace(/\bSeason[ ._-]*\d{1,2}[ ._-]*(?:Episode|Ep|E)[ ._-]*\d{1,3}\b/i, ' ')
-    .replace(/\b(?:Episode|Ep|E)[ ._-]*\d{1,3}\b/i, ' ')
-    .replace(/(?:^|[\s._])-\s*\d{1,3}(?:\s*v\d+)?(?=\s*(?:-|\(|\[|$))/i, ' ')
-    .replace(/[._]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .replace(/^[\s\-–—._]+|[\s\-–—._]+$/g, '')
-    .trim();
+  return (
+    fileName
+      .replace(/\bS\d{1,2}[ ._-]*(?:E|EP)?[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
+      .replace(/\bT\d{1,2}[ ._-]*(?:E|EP)?[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
+      .replace(/\b\d{1,2}x\d{1,3}(?=\D|$)/i, ' ')
+      .replace(/\bSeason[ ._-]*\d{1,2}[ ._-]*(?:Episode|Ep|E)[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
+      .replace(/\b(?:Episode|Ep|E)[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
+      .replace(/(?:^|[\s._])-\s*\d{1,3}(?:\s*v\d+)?(?=\s*(?:-|\(|\[|$))/i, ' ')
+      // Quita sufijos tipo v2, v3 que quedan tras limpiar el episodio
+      .replace(/\s*v\d+$/i, ' ')
+      .replace(/[._]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .replace(/^[\s\-–—._]+|[\s\-–—._]+$/g, '')
+      .trim()
+  );
 }
 
 /**
