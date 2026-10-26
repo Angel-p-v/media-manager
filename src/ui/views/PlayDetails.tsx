@@ -1,6 +1,7 @@
 import { Box, Text, useApp, useInput } from 'ink';
 import React, { useCallback, useMemo, useState } from 'react';
 
+import { useKeymap } from '../hooks/useKeymap.js';
 import { theme } from '../theme.js';
 
 import type { MediaDetails as Details } from '../../core/library/service.js';
@@ -9,21 +10,19 @@ import type { MediaDetails as Details } from '../../core/library/service.js';
 export type AudioTrack = {
   index: number;
   language: string;
-  title: string | null;
 };
 
 /** Pista de subtítulo disponible (placeholder: la BD aún no almacena pistas reales). */
 export type SubtitleTrack = {
   index: number;
   language: string;
-  title: string | null;
 };
 
 /** Props de la vista de detalles de reproducción. */
 export type PlayDetailsProps = {
   /** Título seleccionado en la biblioteca. */
   details: Details | null;
-  /** Reproduce el fichero seleccionado (o el primero si no hay selección). */
+  /** Reproduce el fichero seleccionado. */
   onPlay: (fileId: number) => void;
   /** Vuelve a la vista de biblioteca. */
   onBack: () => void;
@@ -33,14 +32,16 @@ export type PlayDetailsProps = {
  * Vista de detalles de reproducción tipo Jellyfin.
  *
  * Diseño:
- * - Izquierda: póster (placeholder ASCII) y metadatos principales del título.
- * - Derecha: sinopsis, actores, selección de pista de audio y subtítulos,
- *   y listado de ficheros / episodios con selección.
+ * - Izquierda: póster (placeholder) y metadatos principales del título.
+ * - Derecha: sinopsis, listado de episodios con selección (↑↓),
+ *   selección de pista de audio (←→) y subtítulos (Mayús+←→).
  *
- * Notas:
- * - Las pistas de audio y subtítulos son estáticas por ahora porque la BD
- *   no almacena pistas por fichero (MediaFileRow no tiene esos campos).
- *   La selección se guarda en estado local y se pasa a `onPlay` por fileId.
+ * Navegación:
+ * - ↑ / ↓ : navega por los episodios/ficheros
+ * - ← / → : navega por las pistas de audio
+ * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos
+ * - p : reproduce el fichero seleccionado
+ * - q / Esc : vuelve a la biblioteca
  */
 export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): React.JSX.Element {
   const { exit } = useApp();
@@ -59,30 +60,20 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   const typeLabel =
     media.type === 'series' ? 'serie' : media.type === 'anime' ? 'anime' : 'película';
 
-  // Pistas de audio y subtítulos estáticas (placeholder hasta que la BD las almacene).
+  // Pistas de audio únicas (una por idioma, sin duplicar por cada episodio).
   const audioTracks: readonly AudioTrack[] = useMemo(() => {
-    const seen = new Set<string>();
-    return files.flatMap((_file, fileIndex) => {
-      const tracks: AudioTrack[] = [];
-      for (let i = 0; i < 2; i++) {
-        const key = `${fileIndex}-audio-${i}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        tracks.push({
-          index: tracks.length,
-          language: i === 0 ? 'Español' : 'Inglés',
-          title: i === 0 ? 'Pista principal' : 'Pista secundaria',
-        });
-      }
-      return tracks;
-    });
-  }, [files]);
+    const tracks: AudioTrack[] = [
+      { index: 0, language: 'Español' },
+      { index: 1, language: 'Inglés' },
+    ];
+    return tracks;
+  }, []);
 
   const subtitleTracks: readonly SubtitleTrack[] = useMemo(() => {
     const tracks: SubtitleTrack[] = [
-      { index: 0, language: 'Ninguna', title: null },
-      { index: 1, language: 'Español', title: null },
-      { index: 2, language: 'Inglés', title: null },
+      { index: 0, language: 'Ninguna' },
+      { index: 1, language: 'Español' },
+      { index: 2, language: 'Inglés' },
     ];
     return tracks;
   }, []);
@@ -104,9 +95,21 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     onBack();
   }, [onBack]);
 
-  // Teclas propias de esta vista: flechas para navegar ficheros/pistas, 'p' para reproducir,
-  // 'q' o Escape para volver a la biblioteca.
-  useInput((input: string, key: { escape?: boolean; ctrl?: boolean }): void => {
+  // Navegación por teclado dentro de esta vista. useKeymap es más fiable que
+  // useInput para las flechas direccionales en el entorno de terminal.
+  useKeymap(
+    { up: 'up', down: 'down', left: 'left', right: 'right' },
+    {
+      up: () => setSelectedFileIndex((prev) => Math.max(0, prev - 1)),
+      down: () => setSelectedFileIndex((prev) => Math.min(Math.max(0, files.length - 1), prev + 1)),
+      left: () => setSelectedAudioIndex((prev) => Math.max(0, prev - 1)),
+      right: () => setSelectedAudioIndex((prev) => Math.min(audioTracks.length - 1, prev + 1)),
+    },
+    true,
+  );
+
+  // Teclas simples y combinaciones con Mayús que no encajan en useKeymap.
+  useInput((input: string, key: { escape?: boolean; ctrl?: boolean; shift?: boolean }): void => {
     if (key.ctrl && input === 'c') {
       exit();
       return;
@@ -122,40 +125,19 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
       return;
     }
 
-    // Navegación de ficheros / episodios con flechas arriba/abajo.
-    if (input === '\u001b[A') {
-      // Arriba
-      setSelectedFileIndex((prev) => Math.max(0, prev - 1));
-      return;
-    }
-    if (input === '\u001b[B') {
-      // Abajo
-      setSelectedFileIndex((prev) => Math.min(Math.max(0, files.length - 1), prev + 1));
-      return;
-    }
-
-    // Cambiar pista de audio con flechas izquierda/derecha.
-    if (input === '\u001b[D') {
-      // Izquierda
-      setSelectedAudioIndex((prev) => Math.max(0, prev - 1));
-      return;
-    }
-    if (input === '\u001b[C') {
-      // Derecha
-      setSelectedAudioIndex((prev) => Math.min(audioTracks.length - 1, prev + 1));
-      return;
-    }
-
-    // Cambiar pista de subtítulos con Mayús+izquierda/derecha.
-    if (input === '\u001b[1;2D') {
+    // Navegación de pistas de subtítulos con Mayús+flechas izquierda/derecha.
+    if (key.shift && input === '\u001b[D') {
       setSelectedSubtitleIndex((prev) => Math.max(0, prev - 1));
       return;
     }
-    if (input === '\u001b[1;2C') {
+    if (key.shift && input === '\u001b[C') {
       setSelectedSubtitleIndex((prev) => Math.min(subtitleTracks.length - 1, prev + 1));
       return;
     }
   });
+
+  // Nombre corto del fichero (sin ruta absoluta).
+  const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
 
   return (
     <Box flexGrow={1} flexDirection="row">
@@ -173,14 +155,13 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
             {year}
           </Text>
           <Text>{theme.muted(`#${media.id} · ${typeLabel}`)}</Text>
-          <Text>{theme.muted(media.folderPath)}</Text>
         </Box>
       </Box>
 
       {/* ==================== Derecha: detalles ==================== */}
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <Box flexDirection="row" flexGrow={1}>
-          {/* Columna principal: sinopsis y actores */}
+          {/* Columna principal: metadatos y episodios */}
           <Box flexDirection="column" flexGrow={1} flexShrink={1}>
             <Text>{theme.label('Título')}</Text>
             <Text>{theme.value(`${media.title}${year}`)}</Text>
@@ -199,16 +180,16 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
             )}
 
             <Text>{theme.label('Sinopsis')}</Text>
-            {files.length > 0 ? (
-              <Text>{theme.value(`Serie con ${files.length} fichero(s) indexado(s).`)}</Text>
-            ) : (
-              <Text>
-                {theme.muted('Sin sinopsis disponible. Pulsa «r» para obtener metadatos.')}
-              </Text>
-            )}
+            <Text>
+              {files.length > 0
+                ? theme.value(`Serie con ${files.length} fichero(s) indexado(s).`)
+                : theme.muted('Sin sinopsis disponible. Pulsa «r» para obtener metadatos.')}
+            </Text>
             <Text> </Text>
 
-            <Text>{theme.label('Ficheros / episodios')}</Text>
+            <Text>
+              {theme.label('Episodios / ficheros')} {theme.muted(`(↑↓ navegan)`)}
+            </Text>
             {files.length === 0 ? (
               <Text>{theme.muted('  sin ficheros indexados')}</Text>
             ) : (
@@ -219,9 +200,10 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
                 const episode =
                   file.episode === null ? '' : `E${String(file.episode).padStart(2, '0')}`;
                 const label = `${season}${episode}` || '—';
+                const fileName = file.filePath.split('/').pop() ?? file.filePath;
                 return (
                   <Text key={file.id} bold={active} {...(active ? { color: 'cyan' as const } : {})}>
-                    {`  ${active ? '▸ ' : '   '}${label.padEnd(8)} ${file.filePath}`}
+                    {`  ${active ? '▸ ' : '   '}${label.padEnd(8)} ${fileName}`}
                   </Text>
                 );
               })
@@ -232,7 +214,9 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
 
           {/* Columna secundaria: selección de pistas */}
           <Box flexDirection="column" flexShrink={0} paddingX={1}>
-            <Text>{theme.label('Pista de audio')}</Text>
+            <Text>
+              {theme.label('Pista de audio')} {theme.muted(`(←→)`)}
+            </Text>
             {audioTracks.map((track) => {
               const active = track.index === selectedAudioIndex;
               return (
@@ -241,13 +225,15 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
                   bold={active}
                   {...(active ? { color: 'cyan' as const } : {})}
                 >
-                  {`  ${active ? '▸ ' : '   '}${track.language}${track.title ? ` - ${track.title}` : ''}`}
+                  {`  ${active ? '▸ ' : '   '}${track.language}`}
                 </Text>
               );
             })}
             <Text> </Text>
 
-            <Text>{theme.label('Pista de subtítulos')}</Text>
+            <Text>
+              {theme.label('Pista de subtítulos')} {theme.muted(`(Mayús+←→)`)}
+            </Text>
             {subtitleTracks.map((track) => {
               const active = track.index === selectedSubtitleIndex;
               return (
@@ -268,7 +254,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
         <Box marginTop={1} paddingX={1}>
           <Text>{theme.muted('  [p] Reproducir')}</Text>
           <Text>{theme.muted('  [q/Esc] Volver a la biblioteca')}</Text>
-          <Text>{theme.muted(`  Fichero: ${selectedFile?.filePath ?? '—'}`)}</Text>
+          <Text>{theme.muted(`  Fichero: ${fileName}`)}</Text>
           <Text>
             {theme.muted(
               `  Audio: ${selectedAudio?.language ?? '—'}  ·  Subtítulos: ${selectedSubtitle?.language ?? '—'}`,
