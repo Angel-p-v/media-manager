@@ -386,7 +386,7 @@ function AppImpl({
       /** Abrir vista de reasignación de atajos (T2). */
       configureKeybindings: handleOpenKeybindings,
     },
-    !helpVisible && !keybindingsViewVisible,
+    !helpVisible && !keybindingsViewVisible && view !== 'settings',
   );
 
   // Habilitar modo ratón para soporte de clic (D4).
@@ -467,7 +467,14 @@ function AppImpl({
             library={library}
           />
         ) : null}
-        {!helpVisible && view === 'settings' ? <SettingsView config={config} /> : null}
+        {!helpVisible && view === 'settings' ? (
+          <SettingsView
+            config={config}
+            configPath={configPath}
+            onSave={() => setStatus('Configuración guardada.')}
+            onBack={() => setView('library')}
+          />
+        ) : null}
         {keybindingsViewVisible ? (
           <KeybindingsView
             config={config}
