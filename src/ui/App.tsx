@@ -230,7 +230,7 @@ function AppImpl({
   const handleRefreshMetadata = (): void => {
     if (view !== 'library' || selectedMedia === undefined) return;
     setRefreshingMetadata(true);
-    setStatus('Obteniendo metadatos…');
+    setStatus('Buscando metadatos…');
     void library.getOrFetchMetadata(selectedMedia.id).then(
       () => {
         setStatus('Metadatos actualizados.');
@@ -364,7 +364,7 @@ function AppImpl({
       settings: handleSettings,
       play: handlePlay,
       nextSection: handleNextSection,
-      refreshMetadata: handleRefreshMetadata,
+      refresh: handleRefreshMetadata,
       refreshAll: handleRefreshAllMetadata,
       goToDetails: handleGoToDetails,
       gotoTaggedMedia: handleGotoTaggedMedia,
