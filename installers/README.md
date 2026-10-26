@@ -12,7 +12,7 @@ installers/
 ├── windows/        # Instalador PowerShell para Windows (x64)
 │   ├── install.ps1
 │   └── uninstall.ps1
-└── macos/          # macOS no tiene assets oficiales en v2.1
+└── macos/          # macOS no tiene assets oficiales en v3.1.0
     └── README.md
 ```
 
@@ -36,7 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/Angel-p-v/media-manager/main/instal
 
 ### macOS
 
-**No hay assets oficiales de macOS en v2.1.** Consulta [`installers/macos/README.md`](./macos/README.md) para más información.
+**No hay assets oficiales de macOS en v3.1.0.** Consulta [`installers/macos/README.md`](./macos/README.md) para más información.
 
 ## Notas
 
