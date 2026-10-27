@@ -400,7 +400,7 @@ describe('createLibraryService', () => {
   describe('getOrFetchMetadata', () => {
     it('busca por título y guarda metadatos cuando no hay previos', async () => {
       const searchResult = {
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis',
@@ -413,7 +413,7 @@ describe('createLibraryService', () => {
         localPosterPath: null,
       };
       const details = {
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
@@ -442,7 +442,7 @@ describe('createLibraryService', () => {
           set: (input: SetMetadataInput) => {
             setCalled = true;
             expect(input.mediaId).toBe(1);
-            expect(input.provider).toBe('tmdb');
+            expect(input.provider).toBe('tvmaze');
             expect(input.externalId).toBe(123);
             return {
               ...details,
@@ -467,7 +467,7 @@ describe('createLibraryService', () => {
       expect(setCalled).toBe(true);
       expect(result?.title).toBe('Dark');
       expect(result?.externalId).toBe(123);
-      expect(result?.provider).toBe('tmdb');
+      expect(result?.provider).toBe('tvmaze');
     });
 
     it('retorna undefined cuando no hay proveedor ni metadatos previos', async () => {
@@ -497,7 +497,7 @@ describe('createLibraryService', () => {
 
     it('usa TMDB para obtener metadatos cuando hay API key configurada y no hay previos', async () => {
       const searchResult = {
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis',
@@ -510,7 +510,7 @@ describe('createLibraryService', () => {
         localPosterPath: null,
       };
       const details = {
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
@@ -538,7 +538,7 @@ describe('createLibraryService', () => {
           get: () => undefined,
           set: (input: SetMetadataInput) => {
             setCalled = true;
-            expect(input.provider).toBe('tmdb');
+            expect(input.provider).toBe('tvmaze');
             expect(input.externalId).toBe(123);
             expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
             return {
@@ -553,8 +553,7 @@ describe('createLibraryService', () => {
         metadataService: {
           ...fakeMetadataService(),
           hasProviderConfigured: () => true,
-          isProviderConfigured: (provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist') =>
-            provider === 'tmdb',
+          isProviderConfigured: (provider: 'tvmaze' | 'jikan' | 'default') => provider === 'tvmaze',
           search: () => Promise.resolve([searchResult]),
           getDetails: () => Promise.resolve(details),
         } as unknown as MetadataService,
@@ -564,7 +563,7 @@ describe('createLibraryService', () => {
       const result = await library.getOrFetchMetadata(1);
       expect(setCalled).toBe(true);
       expect(result?.title).toBe('Dark');
-      expect(result?.provider).toBe('tmdb');
+      expect(result?.provider).toBe('tvmaze');
       expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
     });
 
@@ -587,7 +586,7 @@ describe('createLibraryService', () => {
       };
 
       const searchResult = {
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
@@ -600,7 +599,7 @@ describe('createLibraryService', () => {
         localPosterPath: null,
       };
       const details = {
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
@@ -630,7 +629,7 @@ describe('createLibraryService', () => {
           get: () => existing,
           set: (input: SetMetadataInput) => {
             setCalled = true;
-            expect(input.provider).toBe('tmdb');
+            expect(input.provider).toBe('tvmaze');
             expect(input.externalId).toBe(123);
             expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
             return { ...details, mediaId: input.mediaId, fetchedAt: '', updatedAt: '' };
@@ -639,8 +638,7 @@ describe('createLibraryService', () => {
         metadataService: {
           ...fakeMetadataService(),
           hasProviderConfigured: () => true,
-          isProviderConfigured: (provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist') =>
-            provider === 'tmdb',
+          isProviderConfigured: (provider: 'tvmaze' | 'jikan' | 'default') => provider === 'tvmaze',
           search: (query: string) => {
             searchCalled = true;
             expect(query).toBe('Dark');
@@ -659,7 +657,7 @@ describe('createLibraryService', () => {
       expect(getDetailsCalled).toBe(true);
       expect(setCalled).toBe(true);
       expect(result?.title).toBe('Dark');
-      expect(result?.provider).toBe('tmdb');
+      expect(result?.provider).toBe('tvmaze');
       expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
     });
 
@@ -856,7 +854,7 @@ describe('createLibraryService', () => {
     it('obtiene metadatos para títulos que no los tienen', async () => {
       const details = {
         mediaId: 0,
-        provider: 'tmdb' as const,
+        provider: 'tvmaze' as const,
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis',
@@ -899,7 +897,7 @@ describe('createLibraryService', () => {
           isProviderConfigured: () => true,
           search: () => [
             {
-              provider: 'tmdb' as const,
+              provider: 'tvmaze' as const,
               externalId: 123,
               title: 'Dark',
               overview: null,

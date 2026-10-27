@@ -287,10 +287,12 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
       console.log(`    mpv: ${pc.dim(playerVersion('mpv') ?? 'no encontrado')}`);
       console.log(`    vlc: ${pc.dim(playerVersion('vlc') ?? 'no encontrado')}`);
       console.log(`  Conectividad:`);
-      const tmdb = await checkConnectivity('https://api.themoviedb.org/3/configuration');
-      const tvdb = await checkConnectivity('https://api4.thetvdb.com/v4');
-      console.log(`    TMDB: ${pc.dim(tmdb ? 'ok' : 'sin respuesta')}`);
-      console.log(`    TVDB: ${pc.dim(tvdb ? 'ok' : 'sin respuesta')}`);
+      const tvmaze = await checkConnectivity(
+        'https://api.tvmaze.com/singlesearch/shows?q=severance',
+      );
+      const jikan = await checkConnectivity('https://api.jikan.moe/v4/anime?q=severance');
+      console.log(`    TVMaze: ${pc.dim(tvmaze ? 'ok' : 'sin respuesta')}`);
+      console.log(`    Jikan: ${pc.dim(jikan ? 'ok' : 'sin respuesta')}`);
     }
 
     // --prune-missing

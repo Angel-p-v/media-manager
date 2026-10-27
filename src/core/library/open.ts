@@ -74,20 +74,12 @@ export function openLibrary(
     tagRepo,
   });
 
-  // Crear MetadataService si se proporcionó config con claves API
+  // Crear MetadataService con proveedores públicos gratuitos (sin API keys).
   let metadataService: MetadataService;
   let metadataConfig: MetadataConfig = { cacheTtlHours: 24, autoFetch: false };
 
   if (config && logger) {
-    const tmdbApiKey = config.metadata?.tmdbApiKey;
-    const tvdbApiKey = config.metadata?.tvdbApiKey;
-    const omdbApiKey = config.metadata?.omdbApiKey;
-    const anilistApiKey = config.metadata?.anilistApiKey;
     metadataService = new MetadataService({
-      ...(tmdbApiKey !== undefined ? { tmdbApiKey } : {}),
-      ...(tvdbApiKey !== undefined ? { tvdbApiKey } : {}),
-      ...(omdbApiKey !== undefined ? { omdbApiKey } : {}),
-      ...(anilistApiKey !== undefined ? { anilistApiKey } : {}),
       logger,
     });
     metadataConfig = config.metadata ?? { cacheTtlHours: 24 };

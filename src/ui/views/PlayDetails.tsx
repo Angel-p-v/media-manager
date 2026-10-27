@@ -10,7 +10,7 @@ import type { MediaFileRow } from '../../core/db/types.js';
 import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
-const EPISODES_PER_PAGE = 30;
+const EPISODES_PER_PAGE = 8;
 
 /** Pista de audio real extraída de los metadatos del fichero de vídeo. */
 export type RealAudioTrack = {
@@ -59,7 +59,7 @@ export type PlayDetailsProps = {
  * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
  *
  * Navegación:
- * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 30)
+ * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 8)
  * - ← / → : navega por las pistas de audio detectadas
  * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos detectadas
  * - p : reproduce el fichero seleccionado con las pistas elegidas

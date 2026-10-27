@@ -73,7 +73,7 @@ export type LibraryService = {
   /** Establece o actualiza metadatos externos de un título. */
   setMetadata(input: {
     mediaId: number;
-    provider: 'tmdb' | 'tvdb' | 'omdb';
+    provider: 'tvmaze' | 'jikan' | 'default';
     externalId: number;
     title?: string | null;
     overview?: string | null;
@@ -257,7 +257,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     setMetadata(input: {
       mediaId: number;
-      provider: 'tmdb' | 'tvdb';
+      provider: 'tvmaze' | 'jikan' | 'default';
       externalId: number;
       title?: string | null;
       overview?: string | null;
@@ -323,11 +323,11 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       if (metadataService.hasProviderConfigured()) {
         // Si ya tenemos metadatos previos (expirados o sin póster) con externalId, refrescar por ID
         if (existing?.externalId) {
-          for (const provider of ['anilist', 'tmdb', 'tvdb'] as const) {
+          for (const provider of ['tvmaze', 'jikan'] as const) {
             if (!metadataService.isProviderConfigured(provider)) continue;
 
             try {
-              const mediaType = existing.provider === 'tvdb' ? 'tv' : 'movie';
+              const mediaType = 'tv';
               const details = await metadataService.getDetails(
                 existing.externalId,
                 provider,
@@ -365,7 +365,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
               (
                 r,
               ): r is {
-                provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist';
+                provider: 'tvmaze' | 'jikan' | 'default';
                 externalId: number;
                 title: string;
                 overview: string | null;
@@ -375,11 +375,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 releaseDate: string | null;
                 originalLanguage: string | null;
                 localPosterPath: string | null;
-              } =>
-                r.provider === 'tmdb' ||
-                r.provider === 'tvdb' ||
-                r.provider === 'omdb' ||
-                r.provider === 'anilist',
+              } => r.provider === 'tvmaze' || r.provider === 'jikan',
             );
             if (result) {
               const details = await metadataService.getDetails(
@@ -432,11 +428,11 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         }
 
         let updated = false;
-        for (const provider of ['tmdb', 'tvdb'] as const) {
+        for (const provider of ['tvmaze', 'jikan'] as const) {
           if (!metadataService.isProviderConfigured(provider)) continue;
 
           try {
-            const mediaType = existing.provider === 'tvdb' ? 'tv' : 'movie';
+            const mediaType = 'tv';
             const details = await metadataService.getDetails(
               existing.externalId,
               provider,

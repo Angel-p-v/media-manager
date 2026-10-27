@@ -107,12 +107,8 @@ export const playbackConfigSchema = z.object({
 
 export type PlaybackConfig = z.infer<typeof playbackConfigSchema>;
 
-/** Configuración de metadatos externos (TMDB/TVDB/OMDB/AniList). */
+/** Configuración de metadatos externos (proveedores públicos gratuitos). */
 export const metadataConfigSchema = z.object({
-  tmdbApiKey: z.string().min(1).optional(),
-  tvdbApiKey: z.string().min(1).optional(),
-  omdbApiKey: z.string().min(1).optional(),
-  anilistApiKey: z.string().min(1).optional(),
   cacheTtlHours: z.number().int().min(1).default(24),
   /** Obtener metadatos automáticamente para títulos nuevos al indexar. */
   autoFetch: z.boolean().default(false),

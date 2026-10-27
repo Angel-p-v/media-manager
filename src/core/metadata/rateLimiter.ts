@@ -3,8 +3,9 @@
  *
  * Registra los timestamps de las llamadas realizadas y asegura que no se
  * exceda el número máximo de peticiones dentro de una ventana de tiempo
- * deslizante. TMDB permite 40 peticiones por 10 segundos; TVDB tiene límites
- * similares pero más conservadores.
+ * deslizante. TVMaze no tiene límite oficial publicado pero usamos un
+ * límite conservador; Jikan permite 30 peticiones por segundo para IP no
+ * autenticada (usamos 2 por segundo para ser conservadores).
  *
  * Antes de cada llamada a la API, el llamante invoca `waitForSlot()` que
  * espera (si es necesario) hasta que haya cupo disponible.
@@ -43,14 +44,10 @@ export class RateLimiter {
   }
 }
 
-/** Límites de tasa por proveedor (peticiones por ventana de tiempo). */
-export const rateLimiters: Record<'tmdb' | 'tvdb' | 'omdb' | 'anilist', RateLimiter> = {
-  // TMDB: 40 peticiones por 10 segundos (límite estándar de la API gratuita)
-  tmdb: new RateLimiter(40, 10_000),
-  // TVDB: límite más conservador, 10 peticiones por 10 segundos
-  tvdb: new RateLimiter(10, 10_000),
-  // OMDB: 1 petición por segundo (límite de la API gratuita)
-  omdb: new RateLimiter(1, 1_000),
-  // AniList: 60 peticiones por minuto para consultas no autenticadas
-  anilist: new RateLimiter(60, 60_000),
+/** Límites de tasa por proveedor público (peticiones por ventana de tiempo). */
+export const rateLimiters: Record<'tvmaze' | 'jikan', RateLimiter> = {
+  // TVMaze: no hay límite oficial publicado, usamos 5 por segundo como conservador.
+  tvmaze: new RateLimiter(5, 1_000),
+  // Jikan: 30 req/sec para IP no autenticada, usamos 2 por segundo para ser conservadores.
+  jikan: new RateLimiter(2, 1_000),
 };

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { MetadataService } from '../../../../src/core/metadata/service.js';
 import { MetadataError } from '../../../../src/shared/errors.js';
@@ -9,27 +9,9 @@ const logger = {
   error: vi.fn(),
 };
 
-const tmdbConfig = {
-  tmdbApiKey: 'test-tmdb-key',
-  logger,
-};
-const tvdbConfig = {
-  tvdbApiKey: 'test-tvdb-key',
-  logger,
-};
-const omdbConfig = {
-  omdbApiKey: 'test-omdb-key',
-  logger,
-};
-
+const tvmazeConfig = { logger };
+const jikanConfig = { logger };
 const noKeyConfig = { logger };
-
-function mockFetch(response: Response | null, error: Error | null = null): void {
-  vi.stubGlobal(
-    'fetch',
-    error ? vi.fn().mockRejectedValue(error) : vi.fn().mockResolvedValue(response),
-  );
-}
 
 function okResponse(status = 200, body: unknown = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -43,63 +25,55 @@ function errorResponse(status: number): Response {
 }
 
 describe('MetadataService resiliencia', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  describe('searchTmdb', () => {
-    it('lanza MetadataError sin API key TMDB', async () => {
-      const service = new MetadataService(noKeyConfig);
-      await expect(service.searchTmdb('sever')).rejects.toBeInstanceOf(MetadataError);
+  describe('searchTvMaze', () => {
+    it('lanza MetadataError cuando TVMaze responde 429', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(errorResponse(429));
+      const service = new MetadataService(tvmazeConfig);
+      await expect(service.searchTvMaze('sever')).rejects.toBeInstanceOf(MetadataError);
     });
 
-    it('lanza MetadataError cuando TMDB responde 429', async () => {
-      mockFetch(errorResponse(429));
-      const service = new MetadataService(tmdbConfig);
-      await expect(service.searchTmdb('sever')).rejects.toBeInstanceOf(MetadataError);
+    it('lanza MetadataError cuando TVMaze responde 500', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(errorResponse(500));
+      const service = new MetadataService(tvmazeConfig);
+      await expect(service.searchTvMaze('sever')).rejects.toBeInstanceOf(MetadataError);
     });
 
-    it('lanza MetadataError cuando TMDB responde 500', async () => {
-      mockFetch(errorResponse(500));
-      const service = new MetadataService(tmdbConfig);
-      await expect(service.searchTmdb('sever')).rejects.toBeInstanceOf(MetadataError);
-    });
-
-    it('propaga error de red (fetch rechazado)', async () => {
-      mockFetch(null, new TypeError('fetch failed'));
-      const service = new MetadataService(tmdbConfig);
-      await expect(service.searchTmdb('sever')).rejects.toThrow('fetch failed');
+    it('propaga error de red', async () => {
+      globalThis.fetch = vi.fn().mockRejectedValueOnce(new TypeError('fetch failed'));
+      const service = new MetadataService(tvmazeConfig);
+      await expect(service.searchTvMaze('sever')).rejects.toThrow('fetch failed');
     });
 
     it('devuelve resultados mapeados con respuesta exitosa', async () => {
-      mockFetch(
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(
         okResponse(200, {
-          results: [
-            {
-              media_type: 'tv',
-              id: 123,
-              name: 'Severance',
-              overview: 'Una serie',
-              poster_path: '/poster.jpg',
-              backdrop_path: '/backdrop.jpg',
-              vote_average: 8.5,
-              first_air_date: '2022-02-18',
-              original_language: 'en',
-            },
-            { media_type: 'person', id: 999, name: 'Ignorado' },
-          ],
+          id: 123,
+          name: 'Severance',
+          type: 'Scripted',
+          language: 'English',
+          genres: ['Drama', 'Thriller'],
+          status: 'Ended',
+          runtime: 60,
+          premiered: '2022-02-18',
+          officialSite: null,
+          schedule: { time: '21:00', days: ['Friday'] },
+          rating: { average: 8.5 },
+          weight: 90,
+          network: { name: 'Apple TV+', country: { name: 'United States' } },
+          webChannel: null,
+          externals: { tvrage: null, thetvdb: null, imdb: 'tt1375666' },
+          image: { medium: '/poster.jpg', original: '/poster.jpg' },
+          summary: '<p>Una serie</p>',
+          updated: 1234567890,
+          _links: { self: { href: 'https://api.tvmaze.com/shows/123' } },
         }),
       );
-      const service = new MetadataService(tmdbConfig);
-      const results = await service.searchTmdb('sever');
+      const service = new MetadataService(tvmazeConfig);
+      const results = await service.searchTvMaze('sever');
 
       expect(results).toHaveLength(1);
       expect(results[0]).toMatchObject({
-        provider: 'tmdb',
+        provider: 'tvmaze',
         externalId: 123,
         title: 'Severance',
         overview: 'Una serie',
@@ -109,106 +83,150 @@ describe('MetadataService resiliencia', () => {
     });
   });
 
-  describe('getTmdbDetails con fallback de póster', () => {
+  describe('getTvMazeDetails', () => {
     it('usa póster cacheado cuando cachePoster falla', async () => {
-      // fetch de detalles: OK
-      // fetch de póster (cachePoster): fallo de red
-      let fetchCall = 0;
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() => {
-          fetchCall += 1;
-          if (fetchCall === 1) {
-            // Detalles de TMDB
-            return okResponse(200, {
-              id: 456,
-              title: 'Película',
-              overview: 'Sinopsis',
-              poster_path: '/poster.jpg',
-              backdrop_path: null,
-              vote_average: 7.0,
-              release_date: '2023-01-01',
-              original_language: 'es',
-            });
-          }
-          // Póster: error de red
-          throw new TypeError('fetch failed');
-        }),
-      );
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          okResponse(200, {
+            id: 456,
+            name: 'Película',
+            type: 'Scripted',
+            language: 'Spanish',
+            genres: ['Drama'],
+            status: 'Ended',
+            runtime: 60,
+            premiered: '2023-01-01',
+            officialSite: null,
+            schedule: { time: null, days: [] },
+            rating: { average: 7.0 },
+            weight: 0,
+            network: null,
+            webChannel: null,
+            externals: { tvrage: null, thetvdb: null, imdb: null },
+            image: { medium: null, original: '/poster.jpg' },
+            summary: '<p>Sinopsis</p>',
+            updated: 1234567890,
+            _links: { self: { href: 'https://api.tvmaze.com/shows/456' } },
+          }),
+        )
+        .mockRejectedValueOnce(new TypeError('fetch failed'));
 
-      const service = new MetadataService(tmdbConfig);
-      const result = await service.getTmdbDetails(456, 'movie');
+      const service = new MetadataService(tvmazeConfig);
+      const result = await service.getTvMazeDetails(456, 'tv');
 
       expect(result).toMatchObject({
-        provider: 'tmdb',
+        provider: 'tvmaze',
         externalId: 456,
         title: 'Película',
-        localPosterPath: null, // fallback: no hay caché previa
+        localPosterPath: null,
       });
     });
 
-    it('descarga y guarda el póster de TMDB usando URL completa', async () => {
-      // poster_path relativo de TMDB: se convierte a URL completa antes de descargar
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          okResponse(200, {
-            id: 789,
-            title: 'Película 2',
-            overview: 'Sinopsis 2',
-            poster_path: '/nuevo-poster.jpg',
-            backdrop_path: null,
-            vote_average: 8.0,
-            release_date: '2024-01-01',
-            original_language: 'en',
-          }),
-        ),
+    it('descarga y guarda el póster de TVMaze', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue(
+        okResponse(200, {
+          id: 789,
+          name: 'Película 2',
+          type: 'Scripted',
+          language: 'English',
+          genres: ['Drama'],
+          status: 'Ended',
+          runtime: 60,
+          premiered: '2024-01-01',
+          officialSite: null,
+          schedule: { time: null, days: [] },
+          rating: { average: 8.0 },
+          weight: 0,
+          network: null,
+          webChannel: null,
+          externals: { tvrage: null, thetvdb: null, imdb: null },
+          image: { medium: '/poster.jpg', original: '/nuevo-poster.jpg' },
+          summary: '<p>Sinopsis 2</p>',
+          updated: 1234567890,
+          _links: { self: { href: 'https://api.tvmaze.com/shows/789' } },
+        }),
       );
 
-      const service = new MetadataService(tmdbConfig);
-      const result = await service.getTmdbDetails(789, 'movie');
+      const service = new MetadataService(tvmazeConfig);
+      const result = await service.getTvMazeDetails(789, 'tv');
 
-      // localPosterPath no debe ser null: el póster se descargó y guardó con URL completa
       expect(result.localPosterPath).not.toBeNull();
-
-      vi.unstubAllGlobals();
     });
   });
 
-  describe('searchTvdb', () => {
-    it('lanza MetadataError cuando TVDB responde 429', async () => {
-      mockFetch(errorResponse(429));
-      const service = new MetadataService(tvdbConfig);
-      await expect(service.searchTvdb('sever')).rejects.toBeInstanceOf(MetadataError);
+  describe('searchJikan', () => {
+    it('lanza MetadataError cuando Jikan responde 429', async () => {
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(errorResponse(429));
+      const service = new MetadataService(jikanConfig);
+      await expect(service.searchJikan('sever')).rejects.toBeInstanceOf(MetadataError);
     });
 
-    it('propaga error de red (fetch rechazado)', async () => {
-      mockFetch(null, new TypeError('ECONNREFUSED'));
-      const service = new MetadataService(tvdbConfig);
-      await expect(service.searchTvdb('sever')).rejects.toThrow('ECONNREFUSED');
+    it('propaga error de red', async () => {
+      globalThis.fetch = vi.fn().mockRejectedValueOnce(new TypeError('ECONNREFUSED'));
+      const service = new MetadataService(jikanConfig);
+      await expect(service.searchJikan('sever')).rejects.toThrow('ECONNREFUSED');
     });
 
     it('devuelve resultados mapeados con respuesta exitosa', async () => {
-      mockFetch(
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(
         okResponse(200, {
-          results: [
+          data: [
             {
-              id: 789,
-              name: 'Serie TV',
-              overview: 'Una serie de TV',
-              first_aired: '2021-01-01',
-              original_language: 'en',
-              artwork: { '240': { original: '/poster.jpg' } },
+              mal_id: 789,
+              title: 'Serie TV',
+              title_english: 'Serie TV',
+              title_japanese: null,
+              title_synonyms: [],
+              type: 'TV',
+              source: 'Original',
+              episodes: 12,
+              status: 'Finished Airing',
+              airing: false,
+              aired: { from: '2021-01-01', to: null, string: 'Ene 2021' },
+              duration: '24 min',
+              rating: 'PG-13',
+              score: 8.5,
+              ranked: null,
+              popularity: null,
+              members: null,
+              favorites: null,
+              synopsis: 'Una serie de TV',
+              background: null,
+              season: 'winter',
+              year: 2021,
+              broadcast: null,
+              producers: [],
+              licensors: [],
+              studios: [],
+              genres: [{ mal_id: 1, name: 'Action' }],
+              explicit_genres: [],
+              themes: [],
+              demographic: null,
+              images: {
+                jpg: {
+                  image_url: '/poster.jpg',
+                  small_image_url: '/poster.jpg',
+                  large_image_url: '/poster.jpg',
+                },
+                webp: {
+                  image_url: '/poster.jpg',
+                  small_image_url: '/poster.jpg',
+                  large_image_url: '/poster.jpg',
+                },
+              },
+              trailer: null,
             },
           ],
+          pagination: { last_visible_page: 1 },
         }),
       );
-      const service = new MetadataService(tvdbConfig);
-      const results = await service.searchTvdb('serie');
+      const service = new MetadataService(jikanConfig);
+      const results = await service.searchJikan('serie');
 
       expect(results).toHaveLength(1);
       expect(results[0]).toMatchObject({
-        provider: 'tvdb',
+        provider: 'jikan',
         externalId: 789,
         title: 'Serie TV',
         posterPath: '/poster.jpg',
@@ -216,16 +234,63 @@ describe('MetadataService resiliencia', () => {
     });
   });
 
-  describe('searchOmdb', () => {
-    it('lanza MetadataError sin API key OMDB', async () => {
-      const service = new MetadataService(noKeyConfig);
-      await expect(service.searchOmdb('sever')).rejects.toBeInstanceOf(MetadataError);
-    });
+  describe('search con proveedores públicos', () => {
+    it('search funciona sin API keys', async () => {
+      globalThis.fetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 }),
+        )
+        .mockResolvedValueOnce(
+          okResponse(200, {
+            data: [
+              {
+                mal_id: 456,
+                title: 'Naruto',
+                title_english: 'Naruto',
+                title_japanese: null,
+                title_synonyms: [],
+                type: 'TV',
+                source: 'Manga',
+                episodes: 220,
+                status: 'Finished Airing',
+                airing: false,
+                aired: { from: '2002-10-03', to: null, string: 'Oct 3, 2002' },
+                duration: '23 min',
+                rating: 'PG-13',
+                score: 8.2,
+                ranked: null,
+                popularity: null,
+                members: null,
+                favorites: null,
+                synopsis: 'Un ninja busca ser Hokage.',
+                background: null,
+                season: 'fall',
+                year: 2002,
+                broadcast: null,
+                producers: [],
+                licensors: [],
+                studios: [],
+                genres: [],
+                explicit_genres: [],
+                themes: [],
+                demographic: null,
+                images: {
+                  jpg: { image_url: null, small_image_url: null, large_image_url: null },
+                  webp: { image_url: null, small_image_url: null, large_image_url: null },
+                },
+                trailer: null,
+              },
+            ],
+            pagination: { last_visible_page: 1 },
+          }),
+        );
 
-    it('propaga error de red (fetch rechazado)', async () => {
-      mockFetch(null, new Error('network error'));
-      const service = new MetadataService(omdbConfig);
-      await expect(service.searchOmdb('sever')).rejects.toThrow('network error');
+      const service = new MetadataService(noKeyConfig);
+      const results = await service.search('Naruto');
+
+      expect(results.length).toBe(1);
+      expect(results[0]!.provider).toBe('jikan');
     });
   });
 });

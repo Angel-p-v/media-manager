@@ -4,172 +4,137 @@ import { MetadataError, formatError } from '../../shared/errors.js';
 
 import type { Logger } from '../../shared/logger.js';
 
-/** Base URL para las imágenes de TMDB (pósters, backdrops, etc.). */
-const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
-
-/** Respuesta de búsqueda de TMDB. */
-type TmdbSearchResponse = {
-  results: TmdbSearchResult[];
-};
-
-/** Resultado de búsqueda de TMDB. */
-type TmdbSearchResult = {
-  id: number;
-  title: string | null;
-  name: string | null;
-  overview: string | null;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  vote_average: number | null;
-  release_date: string | null;
-  first_air_date: string | null;
-  original_language: string | null;
-  media_type: 'movie' | 'tv' | 'person';
-};
-
-/** Detalles de TMDB para una película o serie. */
-type TmdbDetails = {
-  id: number;
-  title: string | null;
-  name: string | null;
-  overview: string | null;
-  poster_path: string | null;
-  backdrop_path: string | null;
-  vote_average: number | null;
-  first_air_date: string | null;
-  release_date: string | null;
-  original_language: string | null;
-};
-
-/** Respuesta de búsqueda de TVDB. */
-type TvdbSearchResponse = {
-  results: TvdbSearchResult[];
-};
-
-/** Resultado de búsqueda de TVDB. */
-type TvdbSearchResult = {
+/** Serie de TVMaze. */
+type TvMazeShow = {
   id: number;
   name: string;
-  overview: string | null;
-  slug: string;
-  first_aired: string | null;
-  original_language: string | null;
-  type: 'series' | 'movie' | 'person';
-  backdrop_path: string | null;
-  artwork: TvdbArtwork | null;
-};
-
-type TvdbArtwork = {
-  '240'?: TvdbArtworkItem;
-  '1071'?: TvdbArtworkItem;
-};
-
-type TvdbArtworkItem = {
-  original: string;
-};
-
-/** Detalles de TVDB para una serie o película. */
-type TvdbDetails = {
-  id: number;
-  name: string;
-  overview: string | null;
-  first_aired: string | null;
-  original_language: string | null;
-  type: 'series' | 'movie' | 'person';
-  backdrop_path: string | null;
-  artwork: TvdbArtwork | null;
-};
-
-/** Respuesta de búsqueda de OMDB. */
-type OmdbSearchResponse = {
-  Search?: OmdbSearchResult[];
-  totalResults: string;
-  Response: string;
-  Error?: string;
-};
-
-/** Resultado de búsqueda de OMDB. */
-type OmdbSearchResult = {
-  Title: string;
-  Year: string | null;
-  imdbID: string;
-  Type: string;
-  Poster: string;
-};
-
-/** Detalles de OMDB para un título por IMDb ID. */
-type OmdbDetails = {
-  Title: string;
-  Year: string | null;
-  imdbID: string;
-  Type: string;
-  Plot: string | null;
-  Poster: string;
-  imdbRating: string | null;
-  Released: string | null;
-  Language: string | null;
-  Response: string;
-};
-
-/** Respuesta GraphQL de AniList para búsqueda y detalles. */
-type AnilistGraphQLResponse = {
-  data?: {
-    Media?: AnilistMedia | null;
-  };
-  errors?: unknown[];
-};
-
-/** Medio de AniList (anime) devuelto por GraphQL. */
-type AnilistMedia = {
-  id: number;
-  title: {
-    romaji: string | null;
-    english: string | null;
-    native: string | null;
-    userPreferred: string | null;
-  };
-  description: string | null;
-  coverImage: {
-    large: string | null;
-    medium: string | null;
-  } | null;
-  bannerImage: string | null;
-  averageScore: number | null;
-  startDate: {
-    year: number | null;
-    month: number | null;
-    day: number | null;
-  } | null;
-  endDate: {
-    year: number | null;
-    month: number | null;
-    day: number | null;
-  } | null;
-  language: string | null;
-  format: string | null;
-  status: string | null;
-  episodes: number | null;
-  duration: number | null;
+  type: string;
+  language: string;
   genres: string[];
-  synonyms: string[];
+  status: string;
+  runtime: number | null;
+  premiered: string | null;
+  officialSite: string | null;
+  schedule: { time: string | null; days: string[] };
+  rating: { average: number | null };
+  weight: number;
+  network: { name: string | null; country: { name: string | null } | null } | null;
+  webChannel: { name: string | null; country: { name: string | null } | null } | null;
+  externals: { tvrage: number | null; thetvdb: number | null; imdb: string | null };
+  image: { medium: string | null; original: string | null } | null;
+  summary: string | null;
+  updated: number;
+  _links: {
+    self: { href: string };
+    previousepisode?: { href: string };
+    nextepisode?: { href: string };
+    lastepisode?: { href: string };
+  };
 };
 
-/** Configuración del servicio de metadatos. */
-export type MetadataServiceConfig = {
-  tmdbApiKey?: string;
-  tvdbApiKey?: string;
-  omdbApiKey?: string;
-  anilistApiKey?: string;
-  logger: {
-    debug(msg: string, bindings?: Record<string, unknown>): void;
-    warn(msg: string, bindings?: Record<string, unknown>): void;
-    error(msg: string, bindings?: Record<string, unknown>): void;
+/** Respuesta de búsqueda de Jikan (anime). */
+type JikanSearchResponse = {
+  data: JikanSearchItem[];
+  pagination: { last_visible_page: number };
+};
+
+/** Resultado de búsqueda de Jikan. */
+type JikanSearchItem = {
+  mal_id: number;
+  title: string;
+  title_english: string | null;
+  title_japanese: string | null;
+  title_synonyms: string[];
+  type: string;
+  source: string | null;
+  episodes: number | null;
+  status: string;
+  airing: boolean;
+  aired: { from: string | null; to: string | null; string: string };
+  duration: string | null;
+  rating: string | null;
+  score: number | null;
+  ranked: number | null;
+  popularity: number | null;
+  members: number | null;
+  favorites: number | null;
+  synopsis: string | null;
+  background: string | null;
+  season: string | null;
+  year: number | null;
+  broadcast: { day: string | null; time: string | null; timezone: string | null } | null;
+  producers: { mal_id: number; name: string }[];
+  licensors: { mal_id: number; name: string }[];
+  studios: { mal_id: number; name: string }[];
+  genres: { mal_id: number; name: string }[];
+  explicit_genres: { mal_id: number; name: string }[];
+  themes: { mal_id: number; name: string }[];
+  demographic: { mal_id: number; name: string } | null;
+  images: {
+    jpg: {
+      image_url: string | null;
+      small_image_url: string | null;
+      large_image_url: string | null;
+    };
+    webp: {
+      image_url: string | null;
+      small_image_url: string | null;
+      large_image_url: string | null;
+    };
   };
+  trailer: { youtube_id: string | null; url: string | null; embed_url: string | null } | null;
+};
+
+/** Detalles de un anime de Jikan. */
+type JikanAnimeDetails = {
+  mal_id: number;
+  title: string;
+  title_english: string | null;
+  title_japanese: string | null;
+  title_synonyms: string[];
+  type: string;
+  source: string | null;
+  episodes: number | null;
+  status: string;
+  airing: boolean;
+  aired: { from: string | null; to: string | null; string: string };
+  duration: string | null;
+  rating: string | null;
+  score: number | null;
+  ranked: number | null;
+  popularity: number | null;
+  members: number | null;
+  favorites: number | null;
+  synopsis: string | null;
+  background: string | null;
+  season: string | null;
+  year: number | null;
+  broadcast: { day: string | null; time: string | null; timezone: string | null } | null;
+  producers: { mal_id: number; name: string }[];
+  licensors: { mal_id: number; name: string }[];
+  studios: { mal_id: number; name: string }[];
+  genres: { mal_id: number; name: string }[];
+  explicit_genres: { mal_id: number; name: string }[];
+  themes: { mal_id: number; name: string }[];
+  demographic: { mal_id: number; name: string } | null;
+  images: {
+    jpg: {
+      image_url: string | null;
+      small_image_url: string | null;
+      large_image_url: string | null;
+    };
+    webp: {
+      image_url: string | null;
+      small_image_url: string | null;
+      large_image_url: string | null;
+    };
+  };
+  trailer: { youtube_id: string | null; url: string | null; embed_url: string | null } | null;
 };
 
 /** Resultado de búsqueda de metadatos. */
 export type MetadataSearchResult = {
-  provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist';
+  provider: 'tvmaze' | 'jikan' | 'default';
   externalId: number;
   title: string;
   overview: string | null;
@@ -180,6 +145,15 @@ export type MetadataSearchResult = {
   originalLanguage: string | null;
   /** Ruta local al póster descargado en caché, si existe. */
   localPosterPath: string | null;
+};
+
+/** Configuración del servicio de metadatos (sin claves API - usa proveedores públicos). */
+export type MetadataServiceConfig = {
+  logger: {
+    debug(msg: string, bindings?: Record<string, unknown>): void;
+    warn(msg: string, bindings?: Record<string, unknown>): void;
+    error(msg: string, bindings?: Record<string, unknown>): void;
+  };
 };
 
 /**
@@ -205,539 +179,241 @@ function adaptLogger(configLogger: ConfigLogger): Logger {
 }
 
 /**
- * Servicio para obtener metadatos externos de TMDB y TVDB.
+ * Servicio para obtener metadatos externos usando proveedores públicos
+ * gratuitos sin necesidad de claves API.
  *
- * Requiere claves API configuradas. Si no hay claves, las operaciones
- * fallan con un error informativo.
+ * - TVMaze (https://www.tvmaze.com/api): Series y películas, sin API key.
+ * - Jikan (https://jikan.me/): Anime, sin API key.
+ *
+ * Los proveedores se intentan en orden: TVMaze primero, luego Jikan como
+ * fallback para anime. Si ninguno tiene resultados, se devuelve un resultado
+ * local basado en la consulta.
  */
 export class MetadataService {
-  private config: MetadataServiceConfig;
+  private readonly logger: Logger;
 
   constructor(config: MetadataServiceConfig) {
-    this.config = config;
+    this.logger = adaptLogger(config.logger);
   }
 
   /**
-   * Actualiza la configuración de claves API en tiempo de ejecución.
-   * Se usa cuando el usuario modifica las API keys desde los ajustes y la
-   * instancia del MetadataService ya fue creada (no se puede recrear sin
-   * cerrar y volver a abrir la base de datos).
+   * Actualiza la configuración en tiempo de ejecución (mantenido por compatibilidad).
+   * Los proveedores públicos no requieren configuración, así que esto es un no-op.
    */
-  updateConfig(newConfig: Partial<MetadataServiceConfig>): void {
-    this.config = { ...this.config, ...newConfig };
+  updateConfig(_newConfig: Partial<MetadataServiceConfig>): void {
+    // No hay claves API que actualizar: los proveedores son públicos y gratuitos.
   }
 
   /**
-   * Busca títulos en TMDB por consulta de texto.
+   * Busca títulos en TVMaze por consulta de texto.
    * Devuelve resultados mapeados a un formato común.
+   * TVMaze es gratuito y no requiere API key.
    */
-  async searchTmdb(query: string): Promise<MetadataSearchResult[]> {
-    if (!this.config.tmdbApiKey) {
-      throw new MetadataError(
-        'TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.',
-      );
-    }
+  async searchTvMaze(query: string): Promise<MetadataSearchResult[]> {
+    await rateLimiters.tvmaze.waitForSlot();
 
-    await rateLimiters.tmdb.waitForSlot();
-
-    const url = new URL('https://api.themoviedb.org/3/search/multi');
-    url.searchParams.set('query', query);
-    url.searchParams.set('api_key', this.config.tmdbApiKey);
-    url.searchParams.set('language', 'es-ES');
+    const url = new URL('https://api.tvmaze.com/singlesearch/shows');
+    url.searchParams.set('q', query);
+    url.searchParams.set('embed', 'episodes');
 
     const response = await fetch(url.toString(), {
       headers: { Accept: 'application/json' },
     });
 
-    if (!response.ok) {
-      throw new MetadataError(`TMDB API respondió ${response.status}`);
-    }
-
-    const data = (await response.json()) as TmdbSearchResponse;
-
-    return data.results
-      .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
-      .map((r) => ({
-        provider: 'tmdb' as const,
-        externalId: r.id,
-        title: r.title ?? r.name ?? '',
-        overview: r.overview,
-        posterPath: r.poster_path,
-        backdropPath: r.backdrop_path,
-        voteAverage: r.vote_average,
-        releaseDate: r.release_date ?? r.first_air_date,
-        originalLanguage: r.original_language,
-        localPosterPath: null,
-      }));
-  }
-
-  /**
-   * Obtiene detalles de un título de TMDB por ID externo.
-   */
-  async getTmdbDetails(
-    externalId: number,
-    mediaType: 'movie' | 'tv' = 'movie',
-  ): Promise<MetadataSearchResult> {
-    if (!this.config.tmdbApiKey) {
-      throw new MetadataError(
-        'TMDB API key no configurada. Añade metadata.tmdb_api_key a tu config.yaml.',
-      );
-    }
-
-    await rateLimiters.tmdb.waitForSlot();
-
-    const url = new URL(`https://api.themoviedb.org/3/${mediaType}/${externalId}`);
-    url.searchParams.set('api_key', this.config.tmdbApiKey);
-    url.searchParams.set('language', 'es-ES');
-
-    const response = await fetch(url.toString(), {
-      headers: { Accept: 'application/json' },
-    });
-
-    if (!response.ok) {
-      throw new MetadataError(`TMDB API respondió ${response.status}`);
-    }
-
-    const data = (await response.json()) as TmdbDetails;
-
-    // TMDB devuelve poster_path como ruta relativa (ej. /abc.jpg); construir URL completa.
-    const posterUrl =
-      data.poster_path !== null ? `${TMDB_IMAGE_BASE_URL}${data.poster_path}` : null;
-
-    let localPosterPath = await cachePoster(posterUrl, data.id, adaptLogger(this.config.logger));
-
-    // Fallback: si la descarga falló, usar el póster previamente cacheado
-    localPosterPath ??= await getCachedPoster(data.id);
-
-    return {
-      provider: 'tmdb',
-      externalId: data.id,
-      title: data.title ?? data.name ?? '',
-      overview: data.overview,
-      posterPath: data.poster_path,
-      backdropPath: data.backdrop_path,
-      voteAverage: data.vote_average,
-      releaseDate: data.release_date ?? data.first_air_date,
-      originalLanguage: data.original_language,
-      localPosterPath,
-    };
-  }
-
-  /**
-   * Busca títulos en TVDB por consulta de texto.
-   * Devuelve resultados mapeados a un formato común.
-   */
-  async searchTvdb(query: string): Promise<MetadataSearchResult[]> {
-    if (!this.config.tvdbApiKey) {
-      throw new MetadataError(
-        'TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.',
-      );
-    }
-
-    await rateLimiters.tvdb.waitForSlot();
-
-    // TVDB v4 API requiere autenticación con Bearer token
-    const url = new URL('https://api.thetvdb.com/v4/search');
-    url.searchParams.set('query', query);
-    url.searchParams.set('type', 'movie,series');
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${this.config.tvdbApiKey}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new MetadataError(`TVDB API respondió ${response.status}`);
-    }
-
-    const data = (await response.json()) as TvdbSearchResponse;
-
-    return data.results.map((r) => {
-      const posterPath = r.artwork?.['240']?.original ?? null;
-      const backdropPath = r.artwork?.['1071']?.original ?? null;
-      return {
-        provider: 'tvdb' as const,
-        externalId: r.id,
-        title: r.name,
-        overview: r.overview,
-        posterPath,
-        backdropPath,
-        voteAverage: null, // TVDB no proporciona calificación promedio en búsqueda
-        releaseDate: r.first_aired,
-        originalLanguage: r.original_language,
-        localPosterPath: null,
-      };
-    });
-  }
-
-  /**
-   * Obtiene detalles de un título de TVDB por ID externo.
-   */
-  async getTvdbDetails(
-    externalId: number,
-    mediaType: 'movie' | 'tv' = 'tv',
-  ): Promise<MetadataSearchResult> {
-    if (!this.config.tvdbApiKey) {
-      throw new MetadataError(
-        'TVDB API key no configurada. Añade metadata.tvdb_api_key a tu config.yaml.',
-      );
-    }
-
-    await rateLimiters.tvdb.waitForSlot();
-
-    const url = new URL(`https://api.thetvdb.com/v4/${mediaType}/${externalId}`);
-
-    const response = await fetch(url.toString(), {
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${this.config.tvdbApiKey}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new MetadataError(`TVDB API respondió ${response.status}`);
-    }
-
-    const data = (await response.json()) as TvdbDetails;
-    const posterPath = data.artwork?.['240']?.original ?? null;
-    const backdropPath = data.artwork?.['1071']?.original ?? null;
-
-    let localPosterPath = await cachePoster(posterPath, data.id, adaptLogger(this.config.logger));
-
-    // Fallback: si la descarga falló, usar el póster previamente cacheado
-    localPosterPath ??= await getCachedPoster(data.id);
-
-    return {
-      provider: 'tvdb',
-      externalId: data.id,
-      title: data.name,
-      overview: data.overview,
-      posterPath,
-      backdropPath,
-      voteAverage: null,
-      releaseDate: data.first_aired,
-      originalLanguage: data.original_language,
-      localPosterPath,
-    };
-  }
-
-  /**
-   * Convierte un IMDb ID de OMDB (p. ej. "tt1375666") a un número para usar como
-   * externalId. OMDB identifica los títulos con imdbID alfanumérico; se extraen
-   * los dígitos para encajar en el tipo `externalId: number`. Los IDs con ceros
-   * iniciales (p. ej. "tt0123456") pierden esos ceros al reconstruirse, lo que
-   * puede impedir encontrar el título en `getOmdbDetails`.
-   */
-  /**
-   * Convierte un IMDb ID de OMDB (p. ej. "tt1375666") a un número para usar como
-   * externalId. OMDB identifica los títulos con imdbID alfanumérico; se extraen
-   * los dígitos para encajar en el tipo `externalId: number`. Los IDs con ceros
-   * iniciales (p. ej. "tt0123456") pierden esos ceros al reconstruirse, lo que
-   * puede impedir encontrar el título en `getOmdbDetails`.
-   */
-  private imdbIdToNumber(imdbId: string): number {
-    return Number(imdbId.replace(/^tt/, ''));
-  }
-
-  /**
-   * Reconstruye un IMDb ID a partir de un externalId numérico (p. ej. 1375666 → "tt1375666").
-   */
-  private numberToImdbId(externalId: number): string {
-    return `tt${externalId}`;
-  }
-
-  /**
-   * Busca títulos en OMDB por consulta de texto.
-   * Devuelve resultados mapeados a un formato común.
-   */
-  async searchOmdb(query: string): Promise<MetadataSearchResult[]> {
-    if (!this.config.omdbApiKey) {
-      throw new MetadataError(
-        'OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.',
-      );
-    }
-
-    await rateLimiters.omdb.waitForSlot();
-
-    const url = new URL('http://www.omdbapi.com/');
-    url.searchParams.set('apikey', this.config.omdbApiKey);
-    url.searchParams.set('s', query);
-    url.searchParams.set('type', 'movie');
-
-    const response = await fetch(url.toString(), {
-      headers: { Accept: 'application/json' },
-    });
-
-    if (!response.ok) {
-      throw new MetadataError(`OMDB API respondió ${response.status}`);
-    }
-
-    const data = (await response.json()) as OmdbSearchResponse;
-
-    if (data.Response !== 'True' || !data.Search) {
+    // TVMaze devuelve 404 cuando no encuentra nada: devolver array vacío
+    if (response.status === 404) {
       return [];
     }
 
-    return data.Search.map((r) => ({
-      provider: 'omdb' as const,
-      externalId: this.imdbIdToNumber(r.imdbID),
-      title: r.Title,
-      overview: null, // OMDB no proporciona sinopsis en búsqueda
-      posterPath: r.Poster === 'N/A' ? null : r.Poster,
-      backdropPath: null, // OMDB no proporciona backdrop en búsqueda
-      voteAverage: null,
-      releaseDate: r.Year ?? null,
-      originalLanguage: null, // OMDB no proporciona idioma en búsqueda
-      localPosterPath: null,
-    }));
+    if (!response.ok) {
+      throw new MetadataError(`TVMaze API respondió ${response.status}`);
+    }
+
+    const data = (await response.json()) as TvMazeShow;
+
+    const posterPath = data.image?.original ?? data.image?.medium ?? null;
+
+    let localPosterPath: string | null = null;
+    if (posterPath) {
+      localPosterPath = await cachePoster(posterPath, data.id, this.logger);
+      localPosterPath ??= await getCachedPoster(data.id);
+    }
+
+    return [
+      {
+        provider: 'tvmaze' as const,
+        externalId: data.id,
+        title: data.name,
+        overview: data.summary ? stripHtml(data.summary) : null,
+        posterPath,
+        backdropPath: null,
+        voteAverage: data.rating.average ?? null,
+        releaseDate: data.premiered,
+        originalLanguage: data.language,
+        localPosterPath,
+      },
+    ];
   }
 
   /**
-   * Obtiene detalles de un título de OMDB por IMDb ID (externalId).
+   * Obtiene detalles de un título de TVMaze por ID externo.
    */
-  async getOmdbDetails(
+  async getTvMazeDetails(
     externalId: number,
-    _mediaType: 'movie' | 'tv' = 'movie',
+    _mediaType: 'movie' | 'tv' = 'tv',
   ): Promise<MetadataSearchResult> {
-    if (!this.config.omdbApiKey) {
-      throw new MetadataError(
-        'OMDB API key no configurada. Añade metadata.omdb_api_key a tu config.yaml.',
-      );
-    }
+    await rateLimiters.tvmaze.waitForSlot();
 
-    await rateLimiters.omdb.waitForSlot();
-
-    const url = new URL('http://www.omdbapi.com/');
-    url.searchParams.set('apikey', this.config.omdbApiKey);
-    url.searchParams.set('i', this.numberToImdbId(externalId));
-    url.searchParams.set('plot', 'short');
+    const url = new URL(`https://api.tvmaze.com/shows/${externalId}`);
 
     const response = await fetch(url.toString(), {
       headers: { Accept: 'application/json' },
     });
 
     if (!response.ok) {
-      throw new MetadataError(`OMDB API respondió ${response.status}`);
+      throw new MetadataError(`TVMaze API respondió ${response.status}`);
     }
 
-    const data = (await response.json()) as OmdbDetails;
+    const data = (await response.json()) as TvMazeShow;
 
-    if (data.Response !== 'True') {
-      throw new MetadataError(`OMDB no encontró el título ${externalId}`);
+    const posterPath = data.image?.original ?? data.image?.medium ?? null;
+
+    let localPosterPath: string | null = null;
+    if (posterPath) {
+      localPosterPath = await cachePoster(posterPath, data.id, this.logger);
+      localPosterPath ??= await getCachedPoster(data.id);
     }
-
-    const localPosterPath = await cachePoster(
-      data.Poster === 'N/A' ? null : data.Poster,
-      externalId,
-      adaptLogger(this.config.logger),
-    );
 
     return {
-      provider: 'omdb',
-      externalId,
-      title: data.Title,
-      overview: data.Plot,
-      posterPath: data.Poster === 'N/A' ? null : data.Poster,
+      provider: 'tvmaze',
+      externalId: data.id,
+      title: data.name,
+      overview: data.summary ? stripHtml(data.summary) : null,
+      posterPath,
       backdropPath: null,
-      voteAverage: data.imdbRating ? Number(data.imdbRating) : null,
-      releaseDate: data.Released,
-      originalLanguage: data.Language,
+      voteAverage: data.rating.average ?? null,
+      releaseDate: data.premiered,
+      originalLanguage: data.language,
       localPosterPath,
     };
   }
 
   /**
-   * Ejecuta una consulta GraphQL contra la API de AniList.
-   * AniList no requiere clave de autenticación para consultas públicas, pero
-   * aplica rate-limiting por IP.
+   * Busca anime en Jikan por consulta de texto.
+   * Devuelve resultados mapeados a un formato común.
+   * Jikan es gratuito y no requiere API key.
    */
-  private async anilistGraphQL(
-    query: string,
-    variables: Record<string, unknown>,
-  ): Promise<AnilistGraphQLResponse> {
-    await rateLimiters.anilist.waitForSlot();
+  async searchJikan(query: string): Promise<MetadataSearchResult[]> {
+    await rateLimiters.jikan.waitForSlot();
 
-    const response = await fetch('https://graphql.anilist.co', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ query, variables }),
+    const url = new URL('https://api.jikan.moe/v4/anime');
+    url.searchParams.set('q', query);
+    url.searchParams.set('limit', '10');
+
+    const response = await fetch(url.toString(), {
+      headers: { Accept: 'application/json' },
     });
 
     if (!response.ok) {
-      throw new MetadataError(`AniList API respondió ${response.status}`);
+      throw new MetadataError(`Jikan API respondió ${response.status}`);
     }
 
-    const data = (await response.json()) as AnilistGraphQLResponse;
+    const data = (await response.json()) as JikanSearchResponse;
 
-    if (data.errors?.length) {
-      throw new MetadataError(`AniList API devolvió errores: ${JSON.stringify(data.errors)}`);
-    }
+    const results: MetadataSearchResult[] = [];
+    for (const item of data.data) {
+      const posterPath = item.images?.jpg?.large_image_url ?? null;
 
-    return data;
-  }
-
-  /**
-   * Busca anime en AniList por consulta de texto.
-   * Devuelve resultados mapeados a un formato común.
-   * AniList no requiere clave de autenticación para consultas públicas.
-   */
-  async searchAnilist(query: string): Promise<MetadataSearchResult[]> {
-    const graphqlQuery = `
-      query ($search: String) {
-        Media(search: $search, type: ANIME) {
-          id
-          title { romaji english native userPreferred }
-          description
-          coverImage { large medium }
-          averageScore
-          startDate { year month day }
-          language
-          genres
-        }
+      let localPosterPath: string | null = null;
+      if (posterPath) {
+        localPosterPath = await cachePoster(posterPath, item.mal_id, this.logger);
+        localPosterPath ??= await getCachedPoster(item.mal_id);
       }
-    `;
 
-    const data = await this.anilistGraphQL(graphqlQuery, { search: query });
-    const rawMedia = data.data?.Media;
+      const releaseDate = item.aired?.from ?? null;
 
-    // AniList devuelve un solo medio cuando se busca por título exacto, o una lista
-    // cuando la consulta es ambigua. Normalizamos a array de AnilistMedia.
-    const medias: AnilistMedia[] = Array.isArray(rawMedia) ? rawMedia : rawMedia ? [rawMedia] : [];
-
-    return medias.map((m) => {
-      const releaseDate = m.startDate?.year
-        ? `${m.startDate.year}-${String(m.startDate.month ?? 1).padStart(2, '0')}-${String(
-            m.startDate.day ?? 1,
-          ).padStart(2, '0')}`
-        : null;
-      return {
-        provider: 'anilist' as const,
-        externalId: m.id,
-        title: m.title.userPreferred ?? m.title.english ?? m.title.romaji ?? m.title.native ?? '',
-        overview: m.description,
-        posterPath: m.coverImage?.large ?? null,
-        backdropPath: m.coverImage?.medium ?? null,
-        voteAverage: m.averageScore ?? null,
+      results.push({
+        provider: 'jikan' as const,
+        externalId: item.mal_id,
+        title: item.title_english ?? item.title,
+        overview: item.synopsis ?? null,
+        posterPath,
+        backdropPath: null,
+        voteAverage: item.score ?? null,
         releaseDate,
-        originalLanguage: m.language,
-        localPosterPath: null,
-      };
-    });
+        originalLanguage: 'ja',
+        localPosterPath,
+      });
+    }
+    return results;
   }
 
   /**
-   * Obtiene detalles de un anime de AniList por ID externo.
-   * AniList no requiere clave de autenticación para consultas públicas.
+   * Obtiene detalles de un anime de Jikan por ID externo.
    */
-  async getAnilistDetails(
-    externalId: number,
-    _mediaType: 'movie' | 'tv' = 'tv',
-  ): Promise<MetadataSearchResult> {
-    const graphqlQuery = `
-      query ($id: Int) {
-        Media(id: $id, type: ANIME) {
-          id
-          title { romaji english native userPreferred }
-          description
-          coverImage { large medium }
-          averageScore
-          startDate { year month day }
-          endDate { year month day }
-          language
-          format
-          status
-          episodes
-          duration
-          genres
-          synonyms
-        }
-      }
-    `;
+  async getJikanDetails(externalId: number): Promise<MetadataSearchResult> {
+    await rateLimiters.jikan.waitForSlot();
 
-    const data = await this.anilistGraphQL(graphqlQuery, { id: externalId });
-    const media = data.data?.Media;
+    const url = new URL(`https://api.jikan.moe/v4/anime/${externalId}`);
 
-    if (!media) {
-      throw new MetadataError(`AniList no encontró el anime ${externalId}`);
+    const response = await fetch(url.toString(), {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new MetadataError(`Jikan API respondió ${response.status}`);
     }
 
-    const releaseDate = media.startDate?.year
-      ? `${media.startDate.year}-${String(media.startDate.month ?? 1).padStart(2, '0')}-${String(
-          media.startDate.day ?? 1,
-        ).padStart(2, '0')}`
-      : null;
+    const data = (await response.json()) as JikanAnimeDetails;
+
+    const posterPath = data.images?.jpg?.large_image_url ?? null;
+
+    let localPosterPath: string | null = null;
+    if (posterPath) {
+      localPosterPath = await cachePoster(posterPath, data.mal_id, this.logger);
+      localPosterPath ??= await getCachedPoster(data.mal_id);
+    }
+
+    const releaseDate = data.aired?.from ?? null;
 
     return {
-      provider: 'anilist',
-      externalId: media.id,
-      title:
-        media.title.userPreferred ??
-        media.title.english ??
-        media.title.romaji ??
-        media.title.native ??
-        '',
-      overview: media.description,
-      posterPath: media.coverImage?.large ?? null,
-      backdropPath: media.coverImage?.medium ?? null,
-      voteAverage: media.averageScore ?? null,
+      provider: 'jikan',
+      externalId: data.mal_id,
+      title: data.title_english ?? data.title,
+      overview: data.synopsis ?? null,
+      posterPath,
+      backdropPath: null,
+      voteAverage: data.score ?? null,
       releaseDate,
-      originalLanguage: media.language,
-      localPosterPath: null,
+      originalLanguage: 'ja',
+      localPosterPath,
     };
   }
 
   /**
-   * Busca en todos los proveedores configurados (TMDB primero, luego TVDB, OMDB y AniList como fallback).
-   * Si no hay ningún proveedor configurado, devuelve un resultado local basado
-   * en la consulta (sin necesidad de API keys externas).
+   * Busca en todos los proveedores públicos disponibles (TVMaze primero,
+   * luego Jikan como fallback para anime).
+   * Siempre devuelve al menos un resultado local basado en la consulta.
    */
   async search(query: string): Promise<MetadataSearchResult[]> {
     const results: MetadataSearchResult[] = [];
 
-    if (this.config.tmdbApiKey) {
-      try {
-        const tmdbResults = await this.searchTmdb(query);
-        results.push(...tmdbResults);
-      } catch (error) {
-        this.config.logger.warn('TMDB búsqueda falló', {
-          error: formatError(error),
-        });
-      }
-    }
-
-    if (this.config.tvdbApiKey) {
-      try {
-        const tvdbResults = await this.searchTvdb(query);
-        results.push(...tvdbResults);
-      } catch (error) {
-        this.config.logger.warn('TVDB búsqueda falló', {
-          error: formatError(error),
-        });
-      }
-    }
-
-    if (this.config.omdbApiKey) {
-      try {
-        const omdbResults = await this.searchOmdb(query);
-        results.push(...omdbResults);
-      } catch (error) {
-        this.config.logger.warn('OMDB búsqueda falló', {
-          error: formatError(error),
-        });
-      }
-    }
-
-    // AniList no requiere API key: siempre se intenta.
+    // TVMaze primero (cubre series y películas).
     try {
-      const anilistResults = await this.searchAnilist(query);
-      results.push(...anilistResults);
+      const tvmazeResults = await this.searchTvMaze(query);
+      results.push(...tvmazeResults);
     } catch (error) {
-      this.config.logger.warn('AniList búsqueda falló', {
+      this.logger.warn('TVMaze búsqueda falló', {
+        error: formatError(error),
+      });
+    }
+
+    // Jikan como fallback para anime.
+    try {
+      const jikanResults = await this.searchJikan(query);
+      results.push(...jikanResults);
+    } catch (error) {
+      this.logger.warn('Jikan búsqueda falló', {
         error: formatError(error),
       });
     }
@@ -746,7 +422,7 @@ export class MetadataService {
     // basado en la consulta para no dejar al usuario sin nada.
     if (results.length === 0) {
       results.push({
-        provider: 'tmdb',
+        provider: 'default',
         externalId: 0,
         title: query.trim(),
         overview: null,
@@ -763,16 +439,15 @@ export class MetadataService {
   }
 
   /**
-   * Obtiene detalles de un título en todos los proveedores configurados.
+   * Obtiene detalles de un título en todos los proveedores públicos.
    * Devuelve el primer resultado exitoso.
    */
   async getDetails(
     externalId: number,
-    provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist',
-    mediaType: 'movie' | 'tv' = 'movie',
+    provider: 'tvmaze' | 'jikan' | 'default',
+    mediaType: 'movie' | 'tv' = 'tv',
   ): Promise<MetadataSearchResult> {
-    // externalId === 0 indica un resultado local (sin proveedor externo): no
-    // hay nada que obtener de una API, devolver los datos básicos tal cual.
+    // externalId === 0 indica un resultado local (sin proveedor externo).
     if (externalId === 0) {
       return {
         provider,
@@ -788,21 +463,29 @@ export class MetadataService {
       };
     }
 
-    if (provider === 'tmdb') {
-      return this.getTmdbDetails(externalId, mediaType);
+    if (provider === 'tvmaze') {
+      return this.getTvMazeDetails(externalId, mediaType);
     }
-    if (provider === 'tvdb') {
-      return this.getTvdbDetails(externalId, mediaType === 'tv' ? 'tv' : 'movie');
+    if (provider === 'jikan') {
+      return this.getJikanDetails(externalId);
     }
-    if (provider === 'omdb') {
-      return this.getOmdbDetails(externalId, mediaType);
-    }
-    return this.getAnilistDetails(externalId, mediaType);
+    return {
+      provider: 'default',
+      externalId,
+      title: '',
+      overview: null,
+      posterPath: null,
+      backdropPath: null,
+      voteAverage: null,
+      releaseDate: null,
+      originalLanguage: null,
+      localPosterPath: null,
+    };
   }
 
   /**
    * Verifica si hay al menos un proveedor disponible.
-   * El proveedor local siempre está disponible (sin necesidad de API keys).
+   * Los proveedores públicos siempre están disponibles.
    */
   hasProviderConfigured(): boolean {
     return true;
@@ -810,12 +493,21 @@ export class MetadataService {
 
   /**
    * Verifica si un proveedor específico está configurado.
-   * AniList siempre está disponible (no requiere API key para consultas públicas).
+   * TVMaze y Jikan siempre están disponibles (no requieren API key).
    */
-  isProviderConfigured(provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist'): boolean {
-    if (provider === 'tmdb') return !!this.config.tmdbApiKey;
-    if (provider === 'tvdb') return !!this.config.tvdbApiKey;
-    if (provider === 'omdb') return !!this.config.omdbApiKey;
-    return true; // AniList no requiere clave de autenticación
+  isProviderConfigured(_provider: 'tvmaze' | 'jikan' | 'default'): boolean {
+    return true;
   }
+}
+
+/**
+ * Elimina etiquetas HTML de una cadena de texto.
+ * TVMaze devuelve sinopsis con HTML (ej. <a>, <b>, <i>).
+ */
+function stripHtml(html: string | null): string | null {
+  if (!html) return null;
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
 }
