@@ -6,7 +6,7 @@
  * panel de detalles de la biblioteca (MediaDetails).
  */
 
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { renderImageToAnsi } from '../../shared/terminalImage.js';
@@ -23,12 +23,12 @@ export type PosterImageProps = {
 
 /** Arte ASCII de fallback cuando chafa no está disponible o falla. */
 const FALLBACK_ASCII = `
-██████╗ ███████╗███╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
+██████╗ ███████╗██╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
 ██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║████╗ ████║██╔══██╗██╔══██╗
 ██████╔╝█████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██╔████╔██║███████║██████╔╝
 ██╔═══╝ ██╔══╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔═══╝
 ██║     ███████╗██║ ╚████║╚██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
-╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝
+╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝
 `.trim();
 
 /** Componente que renderiza un póster de imagen en la terminal. */
@@ -41,6 +41,7 @@ export function PosterImage({
   const [loading, setLoading] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const { write } = useStdout();
 
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
@@ -61,6 +62,8 @@ export function PosterImage({
       if (art) {
         setAnsiArt(art);
         setLoading(false);
+        // Forzar volcado inmediato a la terminal tras renderizar el póster.
+        write('');
       } else {
         setAnsiArt('');
         setRenderError('chafa no devolvió contenido');
@@ -72,7 +75,7 @@ export function PosterImage({
       setRenderError(error instanceof Error ? error.message : 'No se pudo renderizar el póster.');
       setLoading(false);
     }
-  }, [imagePath, width, height]);
+  }, [imagePath, width, height, write]);
 
   useEffect(() => {
     mountedRef.current = true;
