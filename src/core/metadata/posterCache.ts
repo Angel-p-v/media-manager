@@ -1,79 +1,220 @@
-import { mkdirSync } from 'node:fs';
-import { readdir, writeFile, access, stat, rm } from 'node:fs/promises';
+import { mkdirSync, createWriteStream } from 'node:fs';
+import { access, readdir, stat, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { pipeline } from 'node:stream/promises';
 
 import { formatError } from '../../shared/errors.js';
 
 import type { Logger } from '../../shared/logger.js';
 
-export const DEFAULT_CACHE_DIR = join(homedir(), '.cache', 'media-manager', 'posters');
+/** Directorio de almacenamiento permanente de pósters (sin expiración de caché). */
+export const DEFAULT_CACHE_DIR = join(homedir(), '.local', 'share', 'media-manager', 'posters');
 
+/** Asegura que el directorio de almacenamiento exista al cargar el módulo. */
 mkdirSync(DEFAULT_CACHE_DIR, { recursive: true });
 
+/** Extensiones de imagen permitidas. */
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
 /**
- * Descarga un póster desde una URL y lo guarda en el caché local.
+ * Sanitiza un título para usarlo como nombre de archivo de sistema.
  *
- * Devuelve la ruta local al archivo descargado, o null si la descarga falla.
- * Si el fichero ya existe en caché, se reutiliza sin volver a descargar.
+ * Elimina caracteres no válidos, espacios repetidos y truncación excesiva,
+ * dejando un nombre descriptivo y seguro (ej. "black-torch-season-01").
+ *
+ * @param title - Título de la serie o película (puede contener [Judas], S01E01, etc.)
+ * @param contentType - Tipo de contenido: 'series', 'anime' o 'movie'
+ * @returns Nombre de archivo sanitizado sin extensión (ej. "black-torch")
+ */
+export function sanitizeFileName(title: string, contentType?: string): string {
+  let cleaned = title;
+
+  // Eliminar etiquetas entre corchetes: [Judas], [Dual Audio], etc.
+  cleaned = cleaned.replace(/\[[^\]]*\]/g, ' ');
+
+  // Eliminar especificadores de temporada/episodio: S01E01, 1x01, T1E2, E01, etc.
+  cleaned = cleaned.replace(/\bS\d{1,2}\s*(?:E\s*)?\d{1,3}\b/gi, ' ');
+  cleaned = cleaned.replace(/\b\d{1,2}x\d{1,3}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bT\d{1,2}E\d{1,3}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bE\d{1,3}\b/gi, ' ');
+
+  // Eliminar calidad y formato: 1080p, 720p, BluRay, WEBDL, x264, HEVC, etc.
+  cleaned = cleaned.replace(/\b(1080p|720p|480p|2160p|4k)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(BluRay|Blu-Ray|BluRay)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(WEBDL|WEB-DL|WebDL)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(WEBRIP|WEB-RIP|WebRip)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(x264|x265|HEVC|H\.264|H\.265)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(HDTV|PDTV|DVDRip|DVD-Rip|BRRip|BDRip)\b/gi, ' ');
+
+  // Eliminar extensiones de archivo
+  cleaned = cleaned.replace(/\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|m2ts)$/gi, ' ');
+
+  // Eliminar año entre paréntesis al final: (2023), (2023-2024)
+  cleaned = cleaned.replace(/\s*\(\d{4}(?:-\d{4})?\)\s*$/, ' ');
+
+  // Convertir a minúsculas, reemplazar espacios y caracteres no alfanuméricos por guiones
+  cleaned = cleaned
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  // Truncar a 80 caracteres para evitar nombres excesivamente largos
+  cleaned = cleaned.slice(0, 80).replace(/-+$/, '');
+
+  // Añadir sufijo de tipo de contenido si se proporciona y hay nombre base
+  if (contentType && cleaned) {
+    cleaned = `${cleaned}-${contentType}`;
+  } else if (contentType && !cleaned) {
+    cleaned = contentType;
+  }
+
+  return cleaned || 'poster';
+}
+
+/**
+ * Obtiene la extensión de archivo a partir de una URL de imagen.
+ *
+ * Devuelve '.jpg' por defecto si no se puede determinar la extensión.
+ */
+function getImageExtension(posterUrl: string): string {
+  try {
+    const url = new URL(posterUrl);
+    const pathname = url.pathname.toLowerCase();
+    for (const ext of ALLOWED_EXTENSIONS) {
+      if (pathname.endsWith(ext)) return ext;
+    }
+  } catch {
+    // URL no válida, usar extensión por defecto
+  }
+  return '.jpg';
+}
+
+/**
+ * Construye el nombre de archivo descriptivo para un póster.
+ *
+ * @param title - Título de la serie o película
+ * @param contentType - Tipo de contenido ('series', 'anime', 'movie')
+ * @param posterUrl - URL de la imagen original (para obtener la extensión)
+ * @returns Nombre de archivo con extensión (ej. "black-torch-series.jpg")
+ */
+function buildFileName(title: string, contentType: string | undefined, posterUrl: string): string {
+  const base = sanitizeFileName(title, contentType);
+  const ext = getImageExtension(posterUrl);
+  return `${base}${ext}`;
+}
+
+/**
+ * Descarga un póster desde una URL y lo guarda en el almacenamiento permanente.
+ *
+ * El archivo se guarda con un nombre descriptivo basado en el título y tipo
+ * de contenido (ej. black-torch-series.jpg). Si el archivo ya existe en disco,
+ * se reutiliza sin volver a descargar.
+ *
+ * La descarga se realiza mediante `fetch` + `fs.createWriteStream` y se espera
+ * al evento `finish` para confirmar que el búfer se escribió y cerró correctamente.
  *
  * `cacheDir` permite inyectar un directorio alternativo (útil en tests).
  */
 export async function cachePoster(
   posterUrl: string | null,
-  mediaId: number,
-  logger: Logger,
+  title: string,
+  contentType?: string,
+  logger?: Logger,
   cacheDir: string = DEFAULT_CACHE_DIR,
 ): Promise<string | null> {
-  if (!posterUrl) return null;
+  if (!posterUrl) {
+    logger?.debug('poster.cache.skip', { reason: 'no poster URL', title });
+    return null;
+  }
 
-  const fileName = `${mediaId}-${posterUrl.split('/').pop() ?? 'poster'}`;
+  // Asegurar que el directorio de almacenamiento existe antes de escribir
+  mkdirSync(cacheDir, { recursive: true });
+
+  const fileName = buildFileName(title, contentType, posterUrl);
   const localPath = join(cacheDir, fileName);
 
+  // Si ya existe en disco, reutilizar sin volver a descargar
   try {
-    // Si ya existe en caché, no volver a descargar
-    try {
-      await access(localPath);
-      logger.debug('poster.cache.hit', { mediaId, localPath });
-      return localPath;
-    } catch {
-      // No existe, seguir con la descarga
-    }
+    await access(localPath);
+    logger?.debug('poster.cache.hit', { title, contentType, localPath });
+    return localPath;
+  } catch {
+    // No existe, continuar con la descarga
+  }
+
+  try {
+    logger?.debug('poster.download.start', {
+      title,
+      contentType,
+      posterUrl,
+      localPath,
+    });
 
     const response = await fetch(posterUrl);
     if (!response.ok) {
-      logger.warn('poster.download.failed', { mediaId, posterUrl, status: response.status });
+      logger?.warn('poster.download.failed', {
+        title,
+        contentType,
+        posterUrl,
+        status: response.status,
+      });
       return null;
     }
 
-    const buffer = Buffer.from(await response.arrayBuffer());
-    await writeFile(localPath, buffer);
+    if (!response.body) {
+      logger?.warn('poster.download.no-body', {
+        title,
+        contentType,
+        posterUrl,
+      });
+      return null;
+    }
 
-    logger.debug('poster.cache.stored', { mediaId, localPath, bytes: buffer.length });
+    const fileStream = createWriteStream(localPath);
+
+    // pipeline espera al evento 'finish' del stream, confirmando escritura completa
+    await pipeline(response.body, fileStream);
+
+    const statResult = await stat(localPath);
+    logger?.debug('poster.download.finished', {
+      title,
+      contentType,
+      localPath,
+      bytes: statResult.size,
+    });
+
     return localPath;
   } catch (error) {
-    logger.warn('poster.cache.error', { mediaId, posterUrl, error: formatError(error) });
+    logger?.warn('poster.cache.error', {
+      title,
+      contentType,
+      posterUrl,
+      error: formatError(error),
+    });
     return null;
   }
 }
 
 /**
- * Devuelve la ruta de un póster previamente cacheado para un mediaId, si existe.
+ * Devuelve la ruta de un póster previamente almacenado para un título, si existe.
  *
- * Se usa como fallback cuando la descarga desde la API externa falla (red caída,
- * 404, etc.), permitiendo mostrar el último póster conocido en lugar de nada.
+ * Se usa como fallback cuando la descarga desde la API externa falla.
  *
  * `cacheDir` permite inyectar un directorio alternativo (útil en tests).
  */
 export async function getCachedPoster(
-  mediaId: number,
+  title: string,
+  contentType?: string,
   cacheDir: string = DEFAULT_CACHE_DIR,
 ): Promise<string | null> {
   try {
     const entries = await readdir(cacheDir);
-    const prefix = `${mediaId}-`;
+    const base = sanitizeFileName(title, contentType);
+
+    // Buscar cualquier archivo que comience con el nombre base (cualquier extensión)
     for (const entry of entries) {
-      if (entry.startsWith(prefix)) {
+      if (entry.startsWith(`${base}.`)) {
         const localPath = join(cacheDir, entry);
         try {
           await access(localPath);
@@ -84,20 +225,56 @@ export async function getCachedPoster(
       }
     }
   } catch {
-    // El directorio de caché no existe aún; no hay nada que devolver
+    // El directorio de almacenamiento no existe aún; no hay nada que devolver
   }
   return null;
 }
 
 /**
- * Elimina los pósters cacheados que no se han modificado en más de `maxAgeDays`.
+ * Elimina un póster específico del almacenamiento permanente por título y tipo.
  *
- * Se usa como mantenimiento del caché local: las imágenes que no se han
- * descargado ni actualizado en el período dado se consideran "no usadas" y se
- * borran para liberar espacio en disco.
+ * Se usa cuando se quiere eliminar los metadatos de un título y su póster asociado.
  *
- * Devuelve la cantidad de archivos eliminados y los errores encontrados (si los
- * hay). `cacheDir` permite inyectar un directorio alternativo (útil en tests).
+ * `cacheDir` permite inyectar un directorio alternativo (útil en tests).
+ */
+export async function removeCachedPoster(
+  title: string,
+  contentType?: string,
+  cacheDir: string = DEFAULT_CACHE_DIR,
+): Promise<boolean> {
+  try {
+    const entries = await readdir(cacheDir);
+    const base = sanitizeFileName(title, contentType);
+    let removed = false;
+
+    for (const entry of entries) {
+      if (entry.startsWith(`${base}.`)) {
+        const localPath = join(cacheDir, entry);
+        try {
+          await rm(localPath);
+          removed = true;
+        } catch {
+          // Ignorar errores de eliminación individual
+        }
+      }
+    }
+
+    return removed;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Elimina pósters del almacenamiento permanente.
+ *
+ * Cuando `maxAgeDays <= 0` borra todos los archivos del directorio.
+ * Cuando `maxAgeDays > 0` borra archivos más antiguos que ese umbral de edad.
+ *
+ * Se mantiene como operación de mantenimiento opcional; el almacenamiento
+ * en sí es permanente (no hay expiración automática).
+ *
+ * `cacheDir` permite inyectar un directorio alternativo (útil en tests).
  */
 export async function clearPosterCache(
   cacheDir: string = DEFAULT_CACHE_DIR,
@@ -106,7 +283,6 @@ export async function clearPosterCache(
   let deleted = 0;
   const errors: string[] = [];
 
-  // maxAgeDays <= 0 significa "borrar todo inmediatamente" (no verificar edad)
   const deleteAll = maxAgeDays <= 0;
   const cutoff = deleteAll ? 0 : Date.now() - maxAgeDays * 24 * 60 * 60 * 1000;
 
@@ -116,7 +292,6 @@ export async function clearPosterCache(
       const localPath = join(cacheDir, entry);
       try {
         const fileStat = await stat(localPath);
-        // Borrar si deleteAll (maxAgeDays <= 0) o si el archivo es más viejo que el cutoff
         if (deleteAll || fileStat.mtimeMs < cutoff) {
           await rm(localPath);
           deleted++;
@@ -126,7 +301,7 @@ export async function clearPosterCache(
       }
     }
   } catch {
-    // El directorio de caché no existe aún; no hay nada que borrar
+    // El directorio no existe aún; no hay nada que borrar
   }
 
   return { deleted, errors };

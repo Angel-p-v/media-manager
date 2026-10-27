@@ -235,8 +235,8 @@ export class MetadataService {
 
     let localPosterPath: string | null = null;
     if (posterPath) {
-      localPosterPath = await cachePoster(posterPath, data.id, this.logger);
-      localPosterPath ??= await getCachedPoster(data.id);
+      localPosterPath = await cachePoster(posterPath, data.name, 'tv', this.logger);
+      localPosterPath ??= await getCachedPoster(data.name, 'tv');
     }
 
     return [
@@ -280,8 +280,8 @@ export class MetadataService {
 
     let localPosterPath: string | null = null;
     if (posterPath) {
-      localPosterPath = await cachePoster(posterPath, data.id, this.logger);
-      localPosterPath ??= await getCachedPoster(data.id);
+      localPosterPath = await cachePoster(posterPath, data.name, 'tv', this.logger);
+      localPosterPath ??= await getCachedPoster(data.name, 'tv');
     }
 
     return {
@@ -326,8 +326,9 @@ export class MetadataService {
 
       let localPosterPath: string | null = null;
       if (posterPath) {
-        localPosterPath = await cachePoster(posterPath, item.mal_id, this.logger);
-        localPosterPath ??= await getCachedPoster(item.mal_id);
+        const itemTitle = item.title_english ?? item.title;
+        localPosterPath = await cachePoster(posterPath, itemTitle, 'anime', this.logger);
+        localPosterPath ??= await getCachedPoster(itemTitle, 'anime');
       }
 
       const releaseDate = item.aired?.from ?? null;
@@ -370,8 +371,9 @@ export class MetadataService {
 
     let localPosterPath: string | null = null;
     if (posterPath) {
-      localPosterPath = await cachePoster(posterPath, data.mal_id, this.logger);
-      localPosterPath ??= await getCachedPoster(data.mal_id);
+      const animeTitle = data.title_english ?? data.title;
+      localPosterPath = await cachePoster(posterPath, animeTitle, 'anime', this.logger);
+      localPosterPath ??= await getCachedPoster(animeTitle, 'anime');
     }
 
     const releaseDate = data.aired?.from ?? null;

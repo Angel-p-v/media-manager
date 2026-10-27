@@ -8,6 +8,7 @@ import {
   cachePoster,
   clearPosterCache,
   getCachedPoster,
+  sanitizeFileName,
 } from '../../../../src/core/metadata/posterCache.js';
 
 const logger = {
@@ -32,30 +33,42 @@ describe('posterCache', () => {
   });
 
   it('cachePoster devuelve null para posterUrl nulo', async () => {
-    const result = await cachePoster(null, 1, logger);
+    const result = await cachePoster(null, 'black-torch', 'tv', logger);
     expect(result).toBe(null);
+  });
+
+  it('sanitizeFileName elimina etiquetas, temporada/episodio y calidad', () => {
+    expect(sanitizeFileName('Black Torch [Judas] S01E01 1080p', 'tv')).toBe('black-torch-tv');
+    expect(sanitizeFileName('Spider-Man: Into the Spider-Verse', 'movie')).toBe(
+      'spider-man-into-the-spider-verse-movie',
+    );
+    expect(sanitizeFileName('Cowboy Bebop', 'anime')).toBe('cowboy-bebop-anime');
+    expect(sanitizeFileName('  ', 'tv')).toBe('tv');
   });
 
   it('getCachedPoster devuelve null cuando no hay caché', async () => {
-    const result = await getCachedPoster(999, workDir);
+    const result = await getCachedPoster('black-torch', 'tv', workDir);
     expect(result).toBe(null);
   });
 
-  it('getCachedPoster devuelve la ruta del póster cacheado', async () => {
-    await writeFile(path.join(workDir, '42-poster.jpg'), 'fake-image-data');
+  it('getCachedPoster devuelve la ruta del póster almacenado', async () => {
+    await writeFile(path.join(workDir, 'black-torch-tv.jpg'), 'fake-image-data');
 
-    const result = await getCachedPoster(42, workDir);
+    const result = await getCachedPoster('black-torch', 'tv', workDir);
 
-    expect(result).toBe(path.join(workDir, '42-poster.jpg'));
+    expect(result).toBe(path.join(workDir, 'black-torch-tv.jpg'));
   });
 
-  it('getCachedPoster ignora archivos que no coinciden con el mediaId', async () => {
-    await writeFile(path.join(workDir, '42-poster.jpg'), 'fake-image-data');
-    await writeFile(path.join(workDir, '99-other.jpg'), 'other-image');
+  it('getCachedPoster ignora archivos de otros títulos', async () => {
+    await writeFile(path.join(workDir, 'black-torch-tv.jpg'), 'fake-image-data');
+    await writeFile(
+      path.join(workDir, 'spider-man-into-the-spider-verse-movie.jpg'),
+      'other-image',
+    );
 
-    const result = await getCachedPoster(42, workDir);
+    const result = await getCachedPoster('black-torch', 'tv', workDir);
 
-    expect(result).toBe(path.join(workDir, '42-poster.jpg'));
+    expect(result).toBe(path.join(workDir, 'black-torch-tv.jpg'));
   });
 
   it('clearPosterCache devuelve 0 cuando no hay archivos', async () => {
@@ -66,7 +79,7 @@ describe('posterCache', () => {
   });
 
   it('clearPosterCache borra archivos más viejos que maxAgeDays', async () => {
-    const oldFile = path.join(workDir, '42-old.jpg');
+    const oldFile = path.join(workDir, 'black-torch-tv.jpg');
     await writeFile(oldFile, 'old-image-data');
 
     // Establecer el mtime a 40 días atrás (más viejo que maxAgeDays=30)
@@ -83,7 +96,7 @@ describe('posterCache', () => {
   });
 
   it('clearPosterCache no borra archivos más recientes que maxAgeDays', async () => {
-    const newFile = path.join(workDir, '43-new.jpg');
+    const newFile = path.join(workDir, 'cowboy-bebop-anime.jpg');
     await writeFile(newFile, 'new-image-data');
 
     // mtime ahora (más reciente que maxAgeDays=30)
@@ -100,8 +113,8 @@ describe('posterCache', () => {
   });
 
   it('clearPosterCache con maxAgeDays 0 borra todos los archivos', async () => {
-    await writeFile(path.join(workDir, '44-a.jpg'), 'a');
-    await writeFile(path.join(workDir, '45-b.jpg'), 'b');
+    await writeFile(path.join(workDir, 'a-tv.jpg'), 'a');
+    await writeFile(path.join(workDir, 'b-movie.jpg'), 'b');
 
     const result = await clearPosterCache(workDir, 0);
 
