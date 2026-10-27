@@ -124,29 +124,44 @@ describe('MetadataService resiliencia', () => {
     });
 
     it('descarga y guarda el póster de TVMaze', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue(
-        okResponse(200, {
-          id: 789,
-          name: 'Película 2',
-          type: 'Scripted',
-          language: 'English',
-          genres: ['Drama'],
-          status: 'Ended',
-          runtime: 60,
-          premiered: '2024-01-01',
-          officialSite: null,
-          schedule: { time: null, days: [] },
-          rating: { average: 8.0 },
-          weight: 0,
-          network: null,
-          webChannel: null,
-          externals: { tvrage: null, thetvdb: null, imdb: null },
-          image: { medium: '/poster.jpg', original: '/nuevo-poster.jpg' },
-          summary: '<p>Sinopsis 2</p>',
-          updated: 1234567890,
-          _links: { self: { href: 'https://api.tvmaze.com/shows/789' } },
-        }),
-      );
+      const posterBuffer = Buffer.from('fake-poster-image-data');
+
+      globalThis.fetch = vi.fn((input: string | URL | Request) => {
+        const url =
+          typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes('api.tvmaze.com/shows/')) {
+          return Promise.resolve(
+            okResponse(200, {
+              id: 789,
+              name: 'Película 2',
+              type: 'Scripted',
+              language: 'English',
+              genres: ['Drama'],
+              status: 'Ended',
+              runtime: 60,
+              premiered: '2024-01-01',
+              officialSite: null,
+              schedule: { time: null, days: [] },
+              rating: { average: 8.0 },
+              weight: 0,
+              network: null,
+              webChannel: null,
+              externals: { tvrage: null, thetvdb: null, imdb: null },
+              image: { medium: '/poster.jpg', original: '/nuevo-poster.jpg' },
+              summary: '<p>Sinopsis 2</p>',
+              updated: 1234567890,
+              _links: { self: { href: 'https://api.tvmaze.com/shows/789' } },
+            }),
+          );
+        }
+        // Descarga del póster: respuesta con buffer de imagen
+        return Promise.resolve(
+          new Response(posterBuffer, {
+            status: 200,
+            headers: { 'Content-Type': 'image/jpeg' },
+          }),
+        );
+      });
 
       const service = new MetadataService(tvmazeConfig);
       const result = await service.getTvMazeDetails(789, 'tv');
