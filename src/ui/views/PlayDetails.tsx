@@ -5,11 +5,12 @@ import { readVideoMediaInfo } from '../../core/video/ffprobe.js';
 import { PosterImage } from '../components/PosterImage.js';
 import { theme } from '../theme.js';
 
+import type { MediaMetadataRow } from '../../core/db/repositories/metadataRepo.js';
 import type { MediaFileRow } from '../../core/db/types.js';
 import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
-const EPISODES_PER_PAGE = 12;
+const EPISODES_PER_PAGE = 10;
 
 /** Pista de audio real extraída de los metadatos del fichero de vídeo. */
 export type RealAudioTrack = {
@@ -173,6 +174,14 @@ export function PlayDetails({
     setPosterPath(saved?.localPosterPath ?? null);
   }, [details, library]);
 
+  // Obtener la sinopsis de los metadatos externos (TMDB/TVDB/AniList).
+  const [metadata, setMetadata] = useState<MediaMetadataRow | null>(null);
+
+  useEffect(() => {
+    const saved = library.getMetadata(details.media.id);
+    setMetadata(saved ?? null);
+  }, [details, library]);
+
   /** Ajusta la ventana visible para que el índice seleccionado siempre esté visible. */
   const ensureVisible = useCallback(
     (nextIndex: number): void => {
@@ -276,30 +285,26 @@ export function PlayDetails({
 
   return (
     <Box flexGrow={1} flexDirection="row">
-      {/* ==================== Izquierda: póster ==================== */}
-      <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-        <PosterImage imagePath={posterPath} width={22} height={12} />
-        <Box marginTop={1}>
-          <Text>
-            {theme.highlight(media.title)}
-            {year}
-          </Text>
-          <Text>{theme.muted(`#${media.id} · ${typeLabel}`)}</Text>
-        </Box>
-      </Box>
-
-      {/* ==================== Derecha: detalles ==================== */}
+      {/* ==================== Izquierda/Centro: metadatos y episodios ==================== */}
       <Box flexDirection="column" flexGrow={1} paddingX={1} paddingY={1}>
         <Box flexDirection="row" flexGrow={1}>
-          {/* Columna principal: metadatos y episodios */}
+          {/* Columna principal: metadatos y sinopsis */}
           <Box flexDirection="column" flexGrow={1} flexShrink={1}>
-            <Text>{theme.label('Título')}</Text>
-            <Text>{theme.value(`${media.title}${year}`)}</Text>
+            <Text>
+              {theme.highlight(media.title)}
+              {year}
+            </Text>
+            <Text>{theme.muted(`#${media.id} · ${typeLabel}`)}</Text>
             <Text> </Text>
 
-            <Text>{theme.label('Tipo')}</Text>
-            <Text>{theme.value(typeLabel)}</Text>
-            <Text> </Text>
+            {media.year !== null && (
+              <>
+                <Text>{theme.label('Año')}</Text>
+                <Text>{theme.value(String(media.year))}</Text>
+                <Text> </Text>
+              </>
+            )}
+
             {videoCodec !== null && (
               <>
                 <Text>{theme.label('Códec vídeo')}</Text>
@@ -315,19 +320,16 @@ export function PlayDetails({
               </>
             )}
 
-            {media.year !== null && (
-              <>
-                <Text>{theme.label('Año')}</Text>
-                <Text>{theme.value(String(media.year))}</Text>
-                <Text> </Text>
-              </>
-            )}
-
+            {/* Sinopsis real de los metadatos externos (TMDB/TVDB/AniList) */}
             <Text>{theme.label('Sinopsis')}</Text>
             <Text>
-              {files.length > 0
-                ? theme.value(`Serie con ${files.length} fichero(s) indexado(s).`)
-                : theme.muted('Sin sinopsis disponible. Pulsa «r» para obtener metadatos.')}
+              {metadata?.overview
+                ? theme.value(metadata.overview)
+                : theme.muted(
+                    files.length > 0
+                      ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
+                      : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
+                  )}
             </Text>
             <Text> </Text>
 
@@ -457,6 +459,11 @@ export function PlayDetails({
             )}
           </Text>
         </Box>
+      </Box>
+
+      {/* ==================== Derecha: póster ==================== */}
+      <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
+        <PosterImage imagePath={posterPath} width={24} height={14} />
       </Box>
     </Box>
   );

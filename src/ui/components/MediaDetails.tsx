@@ -40,34 +40,6 @@ export function MediaDetails({
     setMetadata(saved ?? null);
   }, [library, media.id, metadataRefreshKey]);
 
-  const metadataSection = metadata ? (
-    <>
-      <Text>
-        {theme.label('Metadatos')} {theme.muted(`(${metadata.provider})`)}
-      </Text>
-      {metadata.title && <Text>{`  Título: ${metadata.title}`}</Text>}
-      {metadata.overview && (
-        <Text>{`  Sinopsis: ${metadata.overview.length > 60 ? metadata.overview.slice(0, 60) + '…' : metadata.overview}`}</Text>
-      )}
-      {metadata.voteAverage !== null && <Text>{`  Calificación: ${metadata.voteAverage}/10`}</Text>}
-      {metadata.releaseDate && <Text>{`  Estreno: ${metadata.releaseDate}`}</Text>}
-      {metadata.originalLanguage && <Text>{`  Idioma: ${metadata.originalLanguage}`}</Text>}
-      <PosterImage imagePath={metadata.localPosterPath} width={22} height={12} />
-      {metadata.localPosterPath ? (
-        <Text>{theme.muted(`  Póster guardado en: ${metadata.localPosterPath}`)}</Text>
-      ) : (
-        <Text>{theme.muted('  Sin póster disponible. Pulsa «r» para obtenerlo.')}</Text>
-      )}
-    </>
-  ) : (
-    <>
-      <Text>
-        {theme.label('Metadatos')} {theme.muted('(sin datos)')}
-      </Text>
-      <Text>{theme.muted('  Pulsa «r» para obtener metadatos externos.')}</Text>
-    </>
-  );
-
   return (
     <Box
       flexDirection="column"
@@ -76,34 +48,70 @@ export function MediaDetails({
       paddingX={1}
       marginTop={1}
     >
-      <Text>
-        {theme.highlight(`${media.title}${year}`)} {theme.muted(`#${media.id}`)}
-      </Text>
-      <Text>{theme.muted(`  ${shortenPath(media.folderPath, 72)}`)}</Text>
-      <Text>
-        {theme.label('Ficheros')} {theme.muted(`(${files.length})`)}
-      </Text>
-      {files.length === 0 ? (
-        <Text>{theme.muted('  sin ficheros asociados')}</Text>
-      ) : (
-        files.slice(0, MAX_FILES).map((file) => {
-          const season = file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
-          const episode = file.episode === null ? '' : `E${String(file.episode).padStart(2, '0')}`;
-          const label = `${season}${episode}` || '—';
-          return (
-            <Text key={file.id}>
-              {'  '}
-              {theme.muted(`#${file.id}`)} {theme.primary(label.padEnd(6))}{' '}
-              {shortenPath(file.filePath, 64)}
-            </Text>
-          );
-        })
-      )}
-      {files.length > MAX_FILES ? (
-        <Text>{theme.muted(`  … y ${files.length - MAX_FILES} más`)}</Text>
-      ) : null}
-      <Text> </Text>
-      {metadataSection}
+      <Box flexDirection="row" flexGrow={1}>
+        {/* ==================== Izquierda/Centro: información del título ==================== */}
+        <Box flexDirection="column" flexGrow={1} flexShrink={1}>
+          <Text>
+            {theme.highlight(`${media.title}${year}`)} {theme.muted(`#${media.id}`)}
+          </Text>
+          <Text>{theme.muted(`  ${shortenPath(media.folderPath, 72)}`)}</Text>
+          <Text>
+            {theme.label('Ficheros')} {theme.muted(`(${files.length})`)}
+          </Text>
+          {files.length === 0 ? (
+            <Text>{theme.muted('  sin ficheros asociados')}</Text>
+          ) : (
+            files.slice(0, MAX_FILES).map((file) => {
+              const season = file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
+              const episode =
+                file.episode === null ? '' : `E${String(file.episode).padStart(2, '0')}`;
+              const label = `${season}${episode}` || '—';
+              return (
+                <Text key={file.id}>
+                  {'  '}
+                  {theme.muted(`#${file.id}`)} {theme.primary(label.padEnd(6))}{' '}
+                  {shortenPath(file.filePath, 64)}
+                </Text>
+              );
+            })
+          )}
+          {files.length > MAX_FILES ? (
+            <Text>{theme.muted(`  … y ${files.length - MAX_FILES} más`)}</Text>
+          ) : null}
+          <Text> </Text>
+
+          {/* Metadatos externos (sinopsis, calificación, etc.) */}
+          {metadata ? (
+            <>
+              <Text>
+                {theme.label('Metadatos')} {theme.muted(`(${metadata.provider})`)}
+              </Text>
+              {metadata.title && <Text>{`  Título: ${metadata.title}`}</Text>}
+              {metadata.overview && <Text>{`  Sinopsis: ${metadata.overview}`}</Text>}
+              {metadata.voteAverage !== null && (
+                <Text>{`  Calificación: ${metadata.voteAverage}/10`}</Text>
+              )}
+              {metadata.releaseDate && <Text>{`  Estreno: ${metadata.releaseDate}`}</Text>}
+              {metadata.originalLanguage && <Text>{`  Idioma: ${metadata.originalLanguage}`}</Text>}
+            </>
+          ) : (
+            <>
+              <Text>
+                {theme.label('Metadatos')} {theme.muted('(sin datos)')}
+              </Text>
+              <Text>{theme.muted('  Pulsa «r» para obtener metadatos externos.')}</Text>
+            </>
+          )}
+        </Box>
+
+        {/* ==================== Derecha: póster ==================== */}
+        <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
+          <PosterImage imagePath={metadata?.localPosterPath ?? null} width={24} height={14} />
+          {metadata?.localPosterPath ? (
+            <Text>{theme.muted(`  Póster guardado en: ${metadata.localPosterPath}`)}</Text>
+          ) : null}
+        </Box>
+      </Box>
     </Box>
   );
 }
