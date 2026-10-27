@@ -516,6 +516,43 @@ function AppImpl({
     }
   });
 
+  // Teclas globales que funcionan desde la vista de detalles de reproducción
+  // (play-details), donde el useKeymap principal está desactivado para no
+  // entrar en conflicto con la navegación propia de esa vista.
+  useInput((input, key) => {
+    if (view !== 'play-details') return;
+    if (helpVisible) return;
+
+    if (key.ctrl && input === 'c') {
+      exitApp();
+      return;
+    }
+
+    if (key.escape || input === 'q') {
+      // Volver a la biblioteca (PlayDetails también lo gestiona; esta es la
+      // delegación desde App por si acaso llega hasta aquí).
+      setView('library');
+      setPlayDetailsMediaId(null);
+      setStatus(null);
+      return;
+    }
+
+    if (matchesKey(keybindings.search ?? '/', input, key)) {
+      handleSearch();
+      return;
+    }
+
+    if (matchesKey(keybindings.help ?? '?', input, key)) {
+      handleHelp();
+      return;
+    }
+
+    if (matchesKey(keybindings.settings ?? 's', input, key)) {
+      handleSettings();
+      return;
+    }
+  });
+
   return (
     <Box flexDirection="column" height={process.stdout.rows ?? 24}>
       <Header
@@ -611,7 +648,7 @@ function AppImpl({
           <Text>{theme.error(error)}</Text>
         </Box>
       )}
-      <StatusBar bindings={keybindings} message={status} />
+      <StatusBar bindings={keybindings} view={view} message={status} />
       {refreshingMetadata && (
         <Box paddingX={1}>
           <Text>{theme.muted('  actualizando metadatos…')}</Text>
