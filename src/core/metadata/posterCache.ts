@@ -1,4 +1,4 @@
-import { mkdirSync, createWriteStream } from 'node:fs';
+import { mkdirSync, createWriteStream, existsSync } from 'node:fs';
 import { access, readdir, stat, rm } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -124,7 +124,7 @@ export async function cachePoster(
   cacheDir: string = DEFAULT_CACHE_DIR,
 ): Promise<string | null> {
   if (!posterUrl) {
-    logger?.debug('poster.cache.skip', { reason: 'no poster URL', title });
+    logger?.info('poster.cache.skip', { reason: 'no poster URL', title });
     return null;
   }
 
@@ -137,14 +137,14 @@ export async function cachePoster(
   // Si ya existe en disco, reutilizar sin volver a descargar
   try {
     await access(localPath);
-    logger?.debug('poster.cache.hit', { title, contentType, localPath });
+    logger?.info('poster.cache.hit', { title, contentType, localPath });
     return localPath;
   } catch {
     // No existe, continuar con la descarga
   }
 
   try {
-    logger?.debug('poster.download.start', {
+    logger?.info('poster.download.start', {
       title,
       contentType,
       posterUrl,
@@ -157,7 +157,9 @@ export async function cachePoster(
         title,
         contentType,
         posterUrl,
+        localPath,
         status: response.status,
+        statusText: response.statusText,
       });
       return null;
     }
@@ -167,19 +169,36 @@ export async function cachePoster(
         title,
         contentType,
         posterUrl,
+        localPath,
       });
       return null;
     }
+
+    // Crear el directorio de nuevo justo antes de abrir el stream de escritura,
+    // para evitar fallos silenciosos si la ruta no existe.
+    mkdirSync(cacheDir, { recursive: true });
 
     const fileStream = createWriteStream(localPath);
 
     // pipeline espera al evento 'finish' del stream, confirmando escritura completa
     await pipeline(response.body, fileStream);
 
+    // Verificar que el archivo existe en disco tras la descarga
+    if (!existsSync(localPath)) {
+      logger?.warn('poster.download.missing-file', {
+        title,
+        contentType,
+        posterUrl,
+        localPath,
+      });
+      return null;
+    }
+
     const statResult = await stat(localPath);
-    logger?.debug('poster.download.finished', {
+    logger?.info('poster.download.finished', {
       title,
       contentType,
+      posterUrl,
       localPath,
       bytes: statResult.size,
     });
@@ -190,6 +209,7 @@ export async function cachePoster(
       title,
       contentType,
       posterUrl,
+      localPath,
       error: formatError(error),
     });
     return null;
