@@ -19,6 +19,8 @@ export type LibraryViewProps = {
   library: LibraryService;
   /** Modo compacto: más filas por pantalla. */
   compact?: boolean;
+  /** Clave de refresco de metadatos: se incrementa tras obtener metadatos externos. */
+  metadataRefreshKey: number;
   /** IDs de títulos seleccionados (selección múltiple). */
   selectedIds?: ReadonlySet<number>;
   /** Callback al alternar selección de un título. */
@@ -35,6 +37,7 @@ export function LibraryView({
   showDetails,
   library,
   compact = false,
+  metadataRefreshKey,
   selectedIds,
   _onToggleSelection,
 }: LibraryViewProps): React.JSX.Element {
@@ -50,7 +53,13 @@ export function LibraryView({
           selectedIds={selectedIds}
           _onToggleSelection={_onToggleSelection}
         />
-        {showDetails ? <MediaDetails details={details} library={library} /> : null}
+        {showDetails ? (
+          <MediaDetails
+            details={details}
+            library={library}
+            metadataRefreshKey={metadataRefreshKey}
+          />
+        ) : null}
       </Box>
     </Box>
   );
