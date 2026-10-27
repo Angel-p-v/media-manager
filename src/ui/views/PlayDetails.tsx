@@ -3,14 +3,14 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { readVideoMediaInfo } from '../../core/video/ffprobe.js';
 import { PosterImage } from '../components/PosterImage.js';
-import { theme, shortenPath } from '../theme.js';
+import { theme } from '../theme.js';
 
 import type { MediaMetadataRow } from '../../core/db/repositories/metadataRepo.js';
 import type { MediaFileRow } from '../../core/db/types.js';
 import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
-const EPISODES_PER_PAGE = 8;
+const EPISODES_PER_PAGE = 30;
 
 /** Pista de audio real extraída de los metadatos del fichero de vídeo. */
 export type RealAudioTrack = {
@@ -59,7 +59,7 @@ export type PlayDetailsProps = {
  * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
  *
  * Navegación:
- * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 8)
+ * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 30)
  * - ← / → : navega por las pistas de audio detectadas
  * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos detectadas
  * - p : reproduce el fichero seleccionado con las pistas elegidas
@@ -277,7 +277,7 @@ export function PlayDetails({
   // Nombre corto del fichero (sin ruta absoluta).
   const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
 
-  // Ventana visible de episodios (paginación de 8).
+  // Ventana visible de episodios (paginación de 30).
   const visibleFiles = files.slice(visibleStart, visibleStart + EPISODES_PER_PAGE);
 
   return (
@@ -346,7 +346,7 @@ export function PlayDetails({
               const episode =
                 file.episode === null ? '' : `E${String(file.episode).padStart(2, '0')}`;
               const label = `${season}${episode}` || '—';
-              const fileName = shortenPath(file.filePath, 16);
+              const fileName = file.filePath.split('/').pop() ?? '';
               return (
                 <Text key={file.id} bold={active} {...(active ? { color: 'cyan' as const } : {})}>
                   {`${active ? '▸ ' : '   '}${label.padEnd(8)} ${fileName}`}
