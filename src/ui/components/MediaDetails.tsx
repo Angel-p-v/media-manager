@@ -106,10 +106,7 @@ export function MediaDetails({
 
         {/* ==================== Derecha: póster ==================== */}
         <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-          <PosterImage imagePath={metadata?.localPosterPath ?? null} width={30} height={20} />
-          {metadata?.localPosterPath ? (
-            <Text>{theme.muted(`  Póster guardado en: ${metadata.localPosterPath}`)}</Text>
-          ) : null}
+          <PosterImage imagePath={metadata?.localPosterPath ?? null} width={48} height={36} />
         </Box>
       </Box>
     </Box>

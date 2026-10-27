@@ -300,9 +300,14 @@ else
     # Modo test: descargar directamente de una URL dada
     ASSET_NAME=$(basename "$ASSET_URL_OVERRIDE")
     CHECKSUM_NAME="${ASSET_NAME}.sha256"
-  else
-    ASSET_NAME="${APP_NAME}-${VERSION:-latest}-${OS_NAME}-${ARCH_NAME}.tar.gz"
+  elif [ -n "$VERSION" ]; then
+    # Versión específica: nombre del asset conocido de antemano
+    ASSET_NAME="${APP_NAME}-${VERSION}-${OS_NAME}-${ARCH_NAME}.tar.gz"
     CHECKSUM_NAME="${ASSET_NAME}.sha256"
+  else
+    # Última versión: se obtendrá el nombre real del asset desde el JSON del release
+    ASSET_NAME=""
+    CHECKSUM_NAME=""
   fi
 
   # Verificar herramientas necesarias (modo release)
@@ -344,9 +349,25 @@ else
       RELEASE_JSON=$(wget -qO- "${RELEASE_URL}" 2>/dev/null) || die 1 "no se pudo obtener información del release"
     fi
 
-    ASSET_URL=$(printf '%s' "${RELEASE_JSON}" | grep -o "https://[^\"]*${ASSET_NAME}" | head -n 1)
+    # Buscar el asset que coincida con nuestra plataforma.
+    # En modo versión específica usamos el nombre exacto; en modo "última"
+    # extraemos el nombre real del asset desde el JSON del release (los assets
+    # llevan la versión real, no la palabra "latest").
+    if [ -n "$ASSET_NAME" ]; then
+      ASSET_URL=$(printf '%s' "${RELEASE_JSON}" | grep -o "https://[^\"]*${ASSET_NAME}" | head -n 1)
+    else
+      ASSET_URL=$(printf '%s' "${RELEASE_JSON}" | grep -o "https://[^\"]*${APP_NAME}-[0-9][0-9.]*-${OS_NAME}-${ARCH_NAME}\.tar\.gz" | head -n 1)
+      # Extraer el nombre del asset de la URL para usarlo en checksum y guardado
+      ASSET_NAME=$(basename "${ASSET_URL}")
+    fi
+    CHECKSUM_NAME="${ASSET_NAME}.sha256"
+
     if [ -z "$ASSET_URL" ]; then
-      die 1 "no se encontró el asset ${ASSET_NAME} en el release"
+      if [ -n "$VERSION" ]; then
+        die 1 "no se encontró el asset ${ASSET_NAME} en el release ${VERSION}"
+      else
+        die 1 "no se encontró ningún asset para ${OS_NAME}-${ARCH_NAME} en el release más reciente"
+      fi
     fi
 
     step "descargando ${ASSET_NAME}"
