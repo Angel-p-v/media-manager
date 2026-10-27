@@ -525,18 +525,6 @@ npm run standalone   # distribución portable con Node incluido
 
 ---
 
-## 🗺️ Próximos pasos
-
-Todos los planes de desarrollo (M0–M22, Plan 01, Plan 02, Plan 09, Plan 10, Plan 11) están implementados y mergeados en `main`. El proyecto está estable y cada commit pasa `npm run verify`.
-
-Si tienes ideas para nuevas funcionalidades, puedes:
-
-1. Abrir un [issue](https://github.com/Angel-p-v/media-manager/issues) con tu propuesta.
-2. Proponer un [PR](https://github.com/Angel-p-v/media-manager/pulls) siguiendo las convenciones del proyecto (ver [`CONTRIBUTING.md`](./CONTRIBUTING.md)).
-3. Consultar los [`docs/plans/`](./docs/plans) para ver el historial de planes completados.
-
----
-
 ## 📄 Licencia
 
 [MIT](./LICENSE) © 2026 media-manager contributors
