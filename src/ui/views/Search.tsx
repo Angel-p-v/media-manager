@@ -17,6 +17,8 @@ export type SearchViewProps = {
   details: Details | null;
   showDetails: boolean;
   library: LibraryService;
+  /** Clave de refresco de metadatos (por defecto 0; la vista de búsqueda no refresca metadatos). */
+  metadataRefreshKey?: number;
 };
 
 /** Vista de búsqueda: el texto filtra la biblioteca mientras se escribe. */
@@ -28,6 +30,7 @@ export function SearchView({
   details,
   showDetails,
   library,
+  metadataRefreshKey = 0,
 }: SearchViewProps): React.JSX.Element {
   return (
     <Box flexDirection="column" flexGrow={1}>
@@ -52,7 +55,9 @@ export function SearchView({
         selectedIds={undefined}
         _onToggleSelection={undefined}
       />
-      {showDetails ? <MediaDetails details={details} library={library} /> : null}
+      {showDetails ? (
+        <MediaDetails details={details} library={library} metadataRefreshKey={metadataRefreshKey} />
+      ) : null}
     </Box>
   );
 }

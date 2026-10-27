@@ -299,6 +299,7 @@ export function PlayDetails({
 
             <Text>{theme.label('Tipo')}</Text>
             <Text>{theme.value(typeLabel)}</Text>
+            <Text> </Text>
             {videoCodec !== null && (
               <>
                 <Text>{theme.label('Códec vídeo')}</Text>
@@ -313,7 +314,6 @@ export function PlayDetails({
                 <Text> </Text>
               </>
             )}
-            <Text> </Text>
 
             {media.year !== null && (
               <>

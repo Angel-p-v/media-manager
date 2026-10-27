@@ -95,6 +95,9 @@ function AppImpl({
   const [keybindingsViewVisible, setKeybindingsViewVisible] = useState(false);
   /** ID del título abierto en la vista de detalles de reproducción (play-details). */
   const [playDetailsMediaId, setPlayDetailsMediaId] = useState<number | null>(null);
+  /** Clave de refresco de metadatos: se incrementa tras obtener metadatos externos para
+   *  forzar a MediaDetails a volver a leer de la BD y mostrar el póster recién descargado. */
+  const [metadataRefreshKey, setMetadataRefreshKey] = useState(0);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -271,6 +274,7 @@ function AppImpl({
       () => {
         setStatus('Metadatos actualizados.');
         setRefreshingMetadata(false);
+        setMetadataRefreshKey((k) => k + 1);
       },
       () => {
         setStatus('No se pudieron obtener metadatos.');
@@ -572,6 +576,7 @@ function AppImpl({
             showDetails={detailsVisible}
             library={library}
             compact={compactMode}
+            metadataRefreshKey={metadataRefreshKey}
             selectedIds={selectedIds}
             _onToggleSelection={(mediaId) => {
               setSelectedIds((prev) => {
@@ -595,6 +600,7 @@ function AppImpl({
             details={details}
             showDetails={config.ui.showDetails}
             library={library}
+            metadataRefreshKey={metadataRefreshKey}
           />
         ) : null}
         {!helpVisible && view === 'settings' ? (

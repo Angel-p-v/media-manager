@@ -10,12 +10,18 @@ import type { LibraryService, MediaDetails as Details } from '../../core/library
 export type MediaDetailsProps = {
   details: Details | null;
   library: LibraryService;
+  /** Clave de refresco de metadatos: al cambiarla, se vuelven a leer los metadatos de la BD. */
+  metadataRefreshKey: number;
 };
 
 const MAX_FILES = 8;
 
 /** Panel con la información del título seleccionado y sus ficheros. */
-export function MediaDetails({ details, library }: MediaDetailsProps): React.JSX.Element {
+export function MediaDetails({
+  details,
+  library,
+  metadataRefreshKey,
+}: MediaDetailsProps): React.JSX.Element {
   if (details === null) {
     return (
       <Box paddingX={1} marginTop={1}>
@@ -28,11 +34,11 @@ export function MediaDetails({ details, library }: MediaDetailsProps): React.JSX
   const year = media.year === null ? '' : ` (${media.year})`;
   const [metadata, setMetadata] = useState<MediaMetadataRow | null>(null);
 
-  // Cargar metadatos existentes al montar
+  // Cargar metadatos existentes al montar o al refrescar metadatos externos.
   useEffect(() => {
     const saved = library.getMetadata(media.id);
     setMetadata(saved ?? null);
-  }, [library, media.id]);
+  }, [library, media.id, metadataRefreshKey]);
 
   const metadataSection = metadata ? (
     <>
