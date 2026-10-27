@@ -90,10 +90,16 @@ export type LibraryService = {
   clearAllMetadata(): number;
   /**
    * Obtiene metadatos de un título, refrescándolos automáticamente si están
-   * expirados según el TTL configurado. Si no hay API key configurada, devuelve
-   * los metadatos almacenados (o undefined si no existen).
+   * expirados según el TTL configurado. Si `forceRefresh` es true, se ignora
+   * el TTL y siempre se intenta obtener metadatos de la API externa (útil
+   * cuando el usuario pulsa manualmente la tecla "r" en la TUI).
+   * Si no hay API key configurada, devuelve los metadatos almacenados
+   * (o undefined si no existen).
    */
-  getOrFetchMetadata(mediaId: number): Promise<MediaMetadataRow | undefined>;
+  getOrFetchMetadata(
+    mediaId: number,
+    options?: { forceRefresh?: boolean },
+  ): Promise<MediaMetadataRow | undefined>;
   /**
    * Refresca todos los metadatos cuyo caché ha expirado según el TTL configurado.
    * Devuelve cuántos se refrescaron y cuántos fallaron.
@@ -296,19 +302,26 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     /**
      * Obtiene metadatos de un título, refrescándolos automáticamente si están
-     * expirados según el TTL configurado. Si no hay API key configurada, devuelve
-     * los metadatos almacenados (o undefined si no existen).
+     * expirados según el TTL configurado. Si `forceRefresh` es true, se ignora
+     * el TTL y siempre se intenta obtener metadatos de la API externa (útil
+     * cuando el usuario pulsa manualmente la tecla "r" en la TUI).
+     * Si no hay API key configurada, devuelve los metadatos almacenados
+     * (o undefined si no existen).
      */
-    async getOrFetchMetadata(mediaId: number): Promise<MediaMetadataRow | undefined> {
+    async getOrFetchMetadata(
+      mediaId: number,
+      options: { forceRefresh?: boolean } = {},
+    ): Promise<MediaMetadataRow | undefined> {
+      const { forceRefresh = false } = options;
       await Promise.resolve();
       const existing = metadataRepo.get(mediaId);
       const ttlHours = metadataConfig.cacheTtlHours ?? 24;
       const now = new Date();
 
       // Si existen metadatos y no han expirado, devolverlos directamente,
-      // a menos que no tengan póster y haya un proveedor externo disponible:
-      // en ese caso intentamos obtener el póster del proveedor externo.
-      if (existing) {
+      // a menos que se force el refresco o que no tengan póster y haya un
+      // proveedor externo disponible.
+      if (existing && !forceRefresh) {
         const fetchedAt = new Date(existing.fetchedAt);
         const ageHours = (now.getTime() - fetchedAt.getTime()) / (1000 * 60 * 60);
         const hasExternalProvider = metadataService.hasProviderConfigured();
@@ -359,8 +372,12 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         if (media) {
           const mediaType = media.type === 'movie' ? 'movie' : 'tv';
 
+          // Limpiar el título antes de buscar en la API externa para evitar
+          // que etiquetas como [Judas], S01E01, 1080p, etc. impidan encontrar el título.
+          const searchQuery = cleanSearchTitle(media.title) || media.title;
+
           try {
-            const searchResults = await metadataService.search(media.title);
+            const searchResults = await metadataService.search(searchQuery);
             const result = searchResults.find(
               (
                 r,
@@ -533,6 +550,46 @@ function normalizeForMatch(value: string): string {
     .toLocaleLowerCase()
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/**
+ * Limpia un título de biblioteca para usarlo como consulta de búsqueda en APIs
+ * externas (TVMaze, Jikan). Elimina:
+ * - Etiquetas entre corchetes: [Judas], [DualAudio], etc.
+ * - Especificadores de temporada/episodio: S01E01, S01 E01, 1x01, T1E2, E01, etc.
+ * - Calidad y formato: 1080p, 720p, 480p, BluRay, WEBDL, WEB-DL, x264, x265, HEVC, etc.
+ * - Extensiones de archivo: .mkv, .mp4, .avi, etc.
+ * - Año entre paréntesis al final: (2023), (2023-2024)
+ * - Espacios repetidos sobrantes.
+ */
+function cleanSearchTitle(title: string): string {
+  let cleaned = title;
+
+  // Eliminar etiquetas entre corchetes y su contenido: [Judas], [Dual Audio], etc.
+  cleaned = cleaned.replace(/\[[^\]]*\]/g, ' ');
+
+  // Eliminar especificadores de temporada/episodio
+  cleaned = cleaned.replace(/\bS\d{1,2}\s*(?:E\s*)?\d{1,3}\b/gi, ' ');
+  cleaned = cleaned.replace(/\b\d{1,2}x\d{1,3}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bT\d{1,2}E\d{1,3}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bE\d{1,3}\b/gi, ' ');
+
+  // Eliminar calidad y formato
+  cleaned = cleaned.replace(/\b(1080p|720p|480p|2160p|4k)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(BluRay|Blu-Ray|BluRay)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(WEBDL|WEB-DL|WebDL)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(WEBRIP|WEB-RIP|WebRip)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(x264|x265|HEVC|H\.264|H\.265)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(HDTV|PDTV|DVDRip|DVD-Rip|BRRip|BDRip)\b/gi, ' ');
+
+  // Eliminar extensiones de archivo
+  cleaned = cleaned.replace(/\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|m2ts)$/gi, ' ');
+
+  // Eliminar año entre paréntesis al final del título: (2023), (2023-2024)
+  cleaned = cleaned.replace(/\s*\(\d{4}(?:-\d{4})?\)\s*$/, ' ');
+
+  // Colapsar espacios múltiples y recortar
+  return cleaned.replace(/\s+/g, ' ').trim();
 }
 
 /** Formatea un título con su año para listados de desambiguación. */

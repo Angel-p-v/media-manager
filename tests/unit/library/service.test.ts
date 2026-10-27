@@ -969,5 +969,187 @@ describe('createLibraryService', () => {
       expect(result.fetched).toBe(0);
       expect(result.failed).toBe(0);
     });
+
+    it('getOrFetchMetadata con forceRefresh ignora TTL y busca en API externa aunque existan metadatos', async () => {
+      const existingMetadata = {
+        mediaId: 1,
+        provider: 'tvmaze' as const,
+        externalId: 123,
+        title: 'Dark',
+        overview: 'Sinopsis vieja',
+        posterPath: 'https://static.tvmaze.com/uploads/images/original/123.jpg',
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        fetchedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        localPosterPath: '/cache/123-poster.jpg', // Tiene póster, no necesita refresco
+      };
+
+      const refreshedMetadata = {
+        ...existingMetadata,
+        overview: 'Sinopsis fresca de Dark',
+        posterPath: 'https://static.tvmaze.com/uploads/images/original/456.jpg',
+      };
+
+      const searchCalledWith: string[] = [];
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          findById: () => ({ ...dark, id: 1, type: 'series' }),
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          get: () => existingMetadata,
+          set: (input) => {
+            Object.assign(existingMetadata, input);
+            return existingMetadata;
+          },
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+          isProviderConfigured: () => true,
+          search: (query: string) => {
+            searchCalledWith.push(query);
+            return [
+              {
+                provider: 'tvmaze' as const,
+                externalId: 456,
+                title: 'Dark',
+                overview: 'Sinopsis fresca de Dark',
+                posterPath: 'https://static.tvmaze.com/uploads/images/original/456.jpg',
+                backdropPath: null,
+                voteAverage: 8.5,
+                releaseDate: '2017-12-01',
+                originalLanguage: 'de',
+                localPosterPath: null,
+              },
+            ];
+          },
+          getDetails: () => refreshedMetadata,
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      // Sin forceRefresh: no se debe buscar porque los metadatos no expiran y tienen póster
+      const result1 = await library.getOrFetchMetadata(1);
+      expect(searchCalledWith).toHaveLength(0);
+      expect(result1?.overview).toBe('Sinopsis vieja');
+
+      // Con forceRefresh y sin externalId previo: se busca por título
+      const libraryNoExternal = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          findById: () => ({ ...dark, id: 1, type: 'series' }),
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          // Sin metadatos previos: fuerza búsqueda por título
+          get: () => undefined,
+          set: () => refreshedMetadata,
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+          isProviderConfigured: () => true,
+          search: (query: string) => {
+            searchCalledWith.push(query);
+            return [
+              {
+                provider: 'tvmaze' as const,
+                externalId: 456,
+                title: 'Dark',
+                overview: 'Sinopsis fresca de Dark',
+                posterPath: 'https://static.tvmaze.com/uploads/images/original/456.jpg',
+                backdropPath: null,
+                voteAverage: 8.5,
+                releaseDate: '2017-12-01',
+                originalLanguage: 'de',
+                localPosterPath: null,
+              },
+            ];
+          },
+          getDetails: () => refreshedMetadata,
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      const result2 = await libraryNoExternal.getOrFetchMetadata(1, { forceRefresh: true });
+      expect(searchCalledWith).toHaveLength(1);
+      expect(result2?.overview).toBe('Sinopsis fresca de Dark');
+    });
+
+    it('getOrFetchMetadata limpia el título sucio antes de buscar en API externa', async () => {
+      const searchCalledWith: string[] = [];
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          findById: () => ({ ...dark, id: 1, type: 'series' }),
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          get: () => undefined, // No hay metadatos previos
+          set: () => ({
+            mediaId: 1,
+            provider: 'tvmaze' as const,
+            externalId: 456,
+            title: 'Dark',
+            overview: '',
+            posterPath: null,
+            backdropPath: null,
+            voteAverage: null,
+            firstAirDate: null,
+            releaseDate: null,
+            originalLanguage: null,
+            fetchedAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            localPosterPath: null,
+          }),
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+          isProviderConfigured: () => true,
+          search: (query: string) => {
+            searchCalledWith.push(query);
+            return [];
+          },
+          getDetails: () => ({
+            provider: 'tvmaze' as const,
+            externalId: 456,
+            title: 'Dark',
+            overview: '',
+            posterPath: null,
+            backdropPath: null,
+            voteAverage: null,
+            releaseDate: null,
+            originalLanguage: null,
+            localPosterPath: null,
+          }),
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      await library.getOrFetchMetadata(1, { forceRefresh: true });
+
+      // El título 'Dark [Judas] S01E01 1080p' debe limpiarse a 'Dark'
+      expect(searchCalledWith).toHaveLength(1);
+      expect(searchCalledWith[0]).toBe('Dark');
+    });
   });
 });

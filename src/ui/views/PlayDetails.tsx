@@ -100,6 +100,8 @@ export function PlayDetails({
   const [metadataError, setMetadataError] = useState<string | null>(null);
   /** Indica si se está obteniendo metadatos externos de la API pública. */
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
+  /** Error al obtener metadatos externos de la API pública (se muestra en el área de sinopsis). */
+  const [externalMetadataError, setExternalMetadataError] = useState<string | null>(null);
   /** Ruta local al póster cacheado del título (si existe). */
   const [posterPath, setPosterPath] = useState<string | null>(null);
   /** Metadatos externos (TMDB/TVDB/AniList) del título. */
@@ -127,16 +129,17 @@ export function PlayDetails({
     if (details === null) return;
 
     setFetchingMetadata(true);
-    setMetadataError(null);
+    setExternalMetadataError(null);
     try {
-      await library.getOrFetchMetadata(details.media.id);
+      // Forzar refresco: el usuario pulsó "r" explícitamente, ignorar TTL.
+      await library.getOrFetchMetadata(details.media.id, { forceRefresh: true });
 
       // Refrescar estado local desde el repositorio tras la obtención.
       const saved = library.getMetadata(details.media.id);
       setMetadata(saved ?? null);
       setPosterPath(saved?.localPosterPath ?? null);
     } catch (error) {
-      setMetadataError(
+      setExternalMetadataError(
         error instanceof Error ? error.message : 'No se pudieron obtener los metadatos.',
       );
     } finally {
@@ -349,18 +352,20 @@ export function PlayDetails({
             </>
           )}
 
-          {/* Sinopsis real de los metadatos externos (TMDB/TVDB/AniList) */}
+          {/* Sinopsis real de los metadatos externos (TMDB/Jikan) */}
           <Text>
             {theme.label('Sinopsis')}{' '}
             {fetchingMetadata
-              ? theme.muted('  obteniendo metadatos…')
-              : metadata?.overview
-                ? theme.value(metadata.overview)
-                : theme.muted(
-                    files.length > 0
-                      ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
-                      : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
-                  )}
+              ? theme.muted('  [Buscando metadatos…]')
+              : externalMetadataError !== null
+                ? theme.error(`  [Error al obtener metadatos: ${externalMetadataError}]`)
+                : metadata?.overview
+                  ? theme.value(metadata.overview)
+                  : theme.muted(
+                      files.length > 0
+                        ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
+                        : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
+                    )}
           </Text>
           <Text> </Text>
 
