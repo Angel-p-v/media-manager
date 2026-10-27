@@ -49,10 +49,10 @@ export type PlayDetailsProps = {
 /**
  * Vista de detalles de reproducción tipo Jellyfin.
  *
- * Diseño (3 columnas):
- * - Izquierda: póster grande.
+ * Diseño (3 columnas iguales):
+ * - Izquierda: selección de pista de audio (←→) y subtítulos (Mayús+←→).
  * - Centro: título, año, códec, sinopsis y listado de episodios con paginación.
- * - Derecha: selección de pista de audio (←→) y subtítulos (Mayús+←→).
+ * - Derecha: póster grande (renderizado con chafa).
  *
  * Los idiomas de audio y subtítulos se extraen de los metadatos reales de cada
  * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
@@ -284,14 +284,92 @@ export function PlayDetails({
 
   return (
     <Box flexGrow={1} flexDirection="row">
-      {/* ==================== Izquierda: póster grande ==================== */}
-      <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-        <PosterImage imagePath={posterPath} width={14} height={10} />
+      {/* ==================== Izquierda: selección de pistas ==================== */}
+      <Box flexDirection="column" flexShrink={0} paddingX={1} paddingY={1}>
+        {loadingMetadata ? (
+          <>
+            <Text>
+              {theme.label('Pista de audio')} {theme.muted('(←→)')}
+            </Text>
+            <Text>{theme.muted('  cargando metadatos…')}</Text>
+            <Text> </Text>
+            <Text>
+              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+            </Text>
+            <Text>{theme.muted('  cargando metadatos…')}</Text>
+            <Text> </Text>
+          </>
+        ) : metadataError !== null ? (
+          <>
+            <Text>
+              {theme.label('Pista de audio')} {theme.muted('(←→)')}
+            </Text>
+            <Text>{theme.error(`  error: ${metadataError}`)}</Text>
+            <Text> </Text>
+            <Text>
+              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+            </Text>
+            <Text>{theme.error(`  error: ${metadataError}`)}</Text>
+            <Text> </Text>
+          </>
+        ) : (
+          <>
+            <Text>
+              {theme.label('Pista de audio')} {theme.muted('(←→)')}
+            </Text>
+            {audioTracks.length === 0 ? (
+              <Text>{theme.muted('  sin pistas de audio detectadas')}</Text>
+            ) : (
+              audioTracks.map((track) => {
+                const active = track.index === selectedAudioIndex;
+                return (
+                  <Text
+                    key={`audio-${track.index}`}
+                    bold={active}
+                    {...(active ? { color: 'cyan' as const } : {})}
+                  >
+                    {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
+                      track.channels !== null ? ` ${track.channels}ch` : ''
+                    }${track.sampleRate ? ` ${track.sampleRate}Hz` : ''}${
+                      track.title ? ` - ${track.title}` : ''
+                    })`}
+                  </Text>
+                );
+              })
+            )}
+            <Text> </Text>
+
+            <Text>
+              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+            </Text>
+            {subtitleTracks.length === 0 ? (
+              <Text>{theme.muted('  sin pistas de subtítulos detectadas')}</Text>
+            ) : (
+              subtitleTracks.map((track) => {
+                const active = track.index === selectedSubtitleIndex;
+                return (
+                  <Text
+                    key={`subtitle-${track.index}`}
+                    bold={active}
+                    {...(active ? { color: 'cyan' as const } : {})}
+                  >
+                    {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
+                      track.title ? ` - ${track.title}` : ''
+                    })`}
+                  </Text>
+                );
+              })
+            )}
+            <Text> </Text>
+          </>
+        )}
       </Box>
 
       {/* ==================== Centro: metadatos y episodios ==================== */}
-      <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingY={1}>
-        <Text>{theme.value(`${media.title}${year}  #${media.id} · ${typeLabel}`)}</Text>
+      <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1} paddingY={1}>
+        <Text>
+          {theme.value(`${media.title}${year}`)} {theme.muted(`#${media.id} · ${typeLabel}`)}
+        </Text>
         <Text> </Text>
 
         {media.year !== null && (
@@ -361,85 +439,9 @@ export function PlayDetails({
         <Text> </Text>
       </Box>
 
-      {/* ==================== Derecha: selección de pistas ==================== */}
-      <Box flexDirection="column" flexShrink={0} paddingX={1} paddingY={1}>
-        {loadingMetadata ? (
-          <>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted('(←→)')}
-            </Text>
-            <Text>{theme.muted('  cargando metadatos…')}</Text>
-            <Text> </Text>
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
-            </Text>
-            <Text>{theme.muted('  cargando metadatos…')}</Text>
-            <Text> </Text>
-          </>
-        ) : metadataError !== null ? (
-          <>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted('(←→)')}
-            </Text>
-            <Text>{theme.error(`  error: ${metadataError}`)}</Text>
-            <Text> </Text>
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
-            </Text>
-            <Text>{theme.error(`  error: ${metadataError}`)}</Text>
-            <Text> </Text>
-          </>
-        ) : (
-          <>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted('(←→)')}
-            </Text>
-            {audioTracks.length === 0 ? (
-              <Text>{theme.muted('  sin pistas de audio detectadas')}</Text>
-            ) : (
-              audioTracks.map((track) => {
-                const active = track.index === selectedAudioIndex;
-                return (
-                  <Text
-                    key={`audio-${track.index}`}
-                    bold={active}
-                    {...(active ? { color: 'cyan' as const } : {})}
-                  >
-                    {`  ${active ? '▸ ' : '   '}${track.language} (${track.codec}${
-                      track.channels !== null ? ` ${track.channels}ch` : ''
-                    }${track.sampleRate ? ` ${track.sampleRate}Hz` : ''}${
-                      track.title ? ` - ${track.title}` : ''
-                    })`}
-                  </Text>
-                );
-              })
-            )}
-            <Text> </Text>
-
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
-            </Text>
-            {subtitleTracks.length === 0 ? (
-              <Text>{theme.muted('  sin pistas de subtítulos detectadas')}</Text>
-            ) : (
-              subtitleTracks.map((track) => {
-                const active = track.index === selectedSubtitleIndex;
-                return (
-                  <Text
-                    key={`subtitle-${track.index}`}
-                    bold={active}
-                    {...(active ? { color: 'cyan' as const } : {})}
-                  >
-                    {`  ${active ? '▸ ' : '   '}${track.language} (${track.codec}${
-                      track.title ? ` - ${track.title}` : ''
-                    })`}
-                  </Text>
-                );
-              })
-            )}
-            <Text> </Text>
-          </>
-        )}
+      {/* ==================== Derecha: póster ==================== */}
+      <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
+        <PosterImage imagePath={posterPath} width={24} height={16} />
       </Box>
 
       {/* Barra de estado inferior con hints de teclado */}
