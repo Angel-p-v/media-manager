@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { shortenPath, theme } from '../theme.js';
+import { PosterImage } from './PosterImage.js';
 
 import type { MediaMetadataRow } from '../../core/db/repositories/metadataRepo.js';
 import type { LibraryService, MediaDetails as Details } from '../../core/library/service.js';
@@ -45,7 +46,10 @@ export function MediaDetails({ details, library }: MediaDetailsProps): React.JSX
       {metadata.voteAverage !== null && <Text>{`  Calificación: ${metadata.voteAverage}/10`}</Text>}
       {metadata.releaseDate && <Text>{`  Estreno: ${metadata.releaseDate}`}</Text>}
       {metadata.originalLanguage && <Text>{`  Idioma: ${metadata.originalLanguage}`}</Text>}
-      {metadata.posterPath && <Text>{`  Póster: ${metadata.posterPath}`}</Text>}
+      <PosterImage imagePath={metadata.localPosterPath} width={22} height={12} />
+      {metadata.localPosterPath && (
+        <Text>{theme.muted(`  Póster guardado en: ${metadata.localPosterPath}`)}</Text>
+      )}
     </>
   ) : (
     <>
