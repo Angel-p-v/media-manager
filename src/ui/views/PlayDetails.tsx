@@ -10,7 +10,7 @@ import type { MediaFileRow } from '../../core/db/types.js';
 import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
-const EPISODES_PER_PAGE = 10;
+const EPISODES_PER_PAGE = 8;
 
 /** Pista de audio real extraída de los metadatos del fichero de vídeo. */
 export type RealAudioTrack = {
@@ -280,8 +280,6 @@ export function PlayDetails({
 
   // Ventana visible de episodios (paginación de 10).
   const visibleFiles = files.slice(visibleStart, visibleStart + EPISODES_PER_PAGE);
-  const totalPages = Math.ceil(files.length / EPISODES_PER_PAGE);
-  const currentPage = Math.floor(selectedFileIndex / EPISODES_PER_PAGE) + 1;
 
   return (
     <Box flexGrow={1} flexDirection="column">
@@ -337,8 +335,7 @@ export function PlayDetails({
           <Text> </Text>
 
           <Text>
-            {theme.label('Episodios / ficheros')}{' '}
-            {theme.muted(`(↑↓ navegan · pág ${currentPage}/${totalPages})`)}
+            {theme.label('Episodios / ficheros')} {theme.muted(`(↑↓ navegan)`)}
           </Text>
           {files.length === 0 ? (
             <Text>{theme.muted('  sin ficheros indexados')}</Text>
@@ -357,9 +354,6 @@ export function PlayDetails({
                 </Text>
               );
             })
-          )}
-          {files.length > EPISODES_PER_PAGE && (
-            <Text>{theme.muted(`(${currentPage}/${totalPages})`)}</Text>
           )}
           <Text> </Text>
         </Box>
