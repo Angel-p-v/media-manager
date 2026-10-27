@@ -165,25 +165,6 @@ function buildItems(config: AppConfig): SettingsItem[] {
     selectedOptionIndex: ['silent', 'error', 'warn', 'info', 'debug'].indexOf(config.logging.level),
   });
 
-  // API keys de metadatos (texto, opcionales).
-  const metadataApiKeys: { id: string; label: string; configKey: keyof AppConfig['metadata'] }[] = [
-    { id: 'metadata-tmdb-api-key', label: 'TMDB API key', configKey: 'tmdbApiKey' },
-    { id: 'metadata-tvdb-api-key', label: 'TVDB API key', configKey: 'tvdbApiKey' },
-    { id: 'metadata-omdb-api-key', label: 'OMDB API key', configKey: 'omdbApiKey' },
-    { id: 'metadata-anilist-api-key', label: 'AniList API key', configKey: 'anilistApiKey' },
-  ];
-  for (const apiKey of metadataApiKeys) {
-    const currentValue = String(config.metadata[apiKey.configKey] ?? '');
-    items.push({
-      id: apiKey.id,
-      label: apiKey.label,
-      kind: 'text',
-      value: currentValue,
-      originalValue: currentValue,
-      editing: false,
-    });
-  }
-
   return items;
 }
 
@@ -317,26 +298,6 @@ export function SettingsView({
         nextConfig.logging = {
           ...nextConfig.logging,
           level: newValue as AppConfig['logging']['level'],
-        };
-      } else if (item.id === 'metadata-tmdb-api-key') {
-        nextConfig.metadata = {
-          ...nextConfig.metadata,
-          tmdbApiKey: newValue.trim() || undefined,
-        };
-      } else if (item.id === 'metadata-tvdb-api-key') {
-        nextConfig.metadata = {
-          ...nextConfig.metadata,
-          tvdbApiKey: newValue.trim() || undefined,
-        };
-      } else if (item.id === 'metadata-omdb-api-key') {
-        nextConfig.metadata = {
-          ...nextConfig.metadata,
-          omdbApiKey: newValue.trim() || undefined,
-        };
-      } else if (item.id === 'metadata-anilist-api-key') {
-        nextConfig.metadata = {
-          ...nextConfig.metadata,
-          anilistApiKey: newValue.trim() || undefined,
         };
       }
 
