@@ -35,8 +35,8 @@ export type AppProps = {
   onQuit?: () => void;
   /** Solo para tests: permite observar o simular el lanzamiento del reproductor. */
   launchPlayer?: LaunchPlayerFn;
-  /** Indexa la biblioteca (se llama tras guardar cambios en ajustes). */
-  onIndex?: () => Promise<void>;
+  /** Indexa la biblioteca (se llama tras guardar cambios en ajustes). Recibe la config actualizada. */
+  onIndex?: (newConfig: AppConfig) => Promise<void>;
 };
 
 const SECTION_ORDER: readonly Section[] = [
@@ -690,7 +690,7 @@ function AppImpl({
                 if (onIndex) {
                   setStatus('Indexando biblioteca…');
                   try {
-                    await onIndex();
+                    await onIndex(updated);
                     setStatus('Indexación completada.');
                     setDataVersion((v) => v + 1);
                   } catch {
