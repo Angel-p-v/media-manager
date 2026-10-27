@@ -10,6 +10,7 @@ export default tseslint.config(
       'coverage/**',
       'node_modules/**',
       'release/**',
+      'scripts/test-poster.ts',
       'tests/unit/playback/mpvTracker.test.ts',
       'tests/unit/core/playback/mpvTracker-windows.test.ts',
     ],
