@@ -86,6 +86,8 @@ export type LibraryService = {
   }): MediaMetadataRow;
   /** Elimina metadatos externos de un título. */
   removeMetadata(mediaId: number): boolean;
+  /** Elimina todos los metadatos externos (forza refresco al configurar nuevas API keys). */
+  clearAllMetadata(): number;
   /**
    * Obtiene metadatos de un título, refrescándolos automáticamente si están
    * expirados según el TTL configurado. Si no hay API key configurada, devuelve
@@ -106,6 +108,8 @@ export type LibraryService = {
   getExpiredMetadataCount(): number;
   /** Devuelve true si hay algún proveedor de metadatos configurado. */
   hasMetadataProviderConfigured(): boolean;
+  /** Servicio de metadatos externos (permite actualizar claves API en caliente). */
+  readonly metadataService: MetadataService;
 };
 
 /**
@@ -284,6 +288,10 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     removeMetadata(mediaId: number): boolean {
       return metadataRepo.remove(mediaId);
+    },
+
+    clearAllMetadata(): number {
+      return metadataRepo.removeAll();
     },
 
     /**
@@ -510,6 +518,9 @@ export function createLibraryService(repositories: LibraryRepositories): Library
     hasMetadataProviderConfigured(): boolean {
       return metadataService.hasProviderConfigured();
     },
+
+    /** Servicio de metadatos externos (permite actualizar claves API en caliente). */
+    metadataService,
   };
 }
 

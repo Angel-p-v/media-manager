@@ -1,5 +1,5 @@
 import { Box, Text, useApp, useInput } from 'ink';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Header } from './components/Header.js';
 import { HelpOverlay } from './components/HelpOverlay.js';
@@ -189,6 +189,76 @@ function AppImpl({
         setRefreshingMetadata(false);
       });
   }, [library, config.metadata?.autoFetch, view]);
+
+  // Sincronizar las claves API de metadatos con el MetadataService en caliente.
+  // Cuando el usuario cambia las API keys desde los ajustes, la instancia del
+  // MetadataService (creada al arrancar) se actualiza sin cerrar la BD. Si
+  // aparecen claves nuevas, se limpian los metadatos existentes para forzar
+  // el refresco con los proveedores externos recién configurados.
+  const prevMetadataKeys = useRef<{
+    tmdb?: string | null;
+    tvdb?: string | null;
+    omdb?: string | null;
+    anilist?: string | null;
+  }>({ tmdb: null, tvdb: null, omdb: null, anilist: null });
+  const isFirstRun = useRef(true);
+
+  useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false;
+      prevMetadataKeys.current = {
+        tmdb: config.metadata?.tmdbApiKey ?? null,
+        tvdb: config.metadata?.tvdbApiKey ?? null,
+        omdb: config.metadata?.omdbApiKey ?? null,
+        anilist: config.metadata?.anilistApiKey ?? null,
+      };
+      return;
+    }
+
+    const next = config.metadata ?? {};
+    const prev = prevMetadataKeys.current;
+
+    const tmdbChanged = next.tmdbApiKey !== prev.tmdb;
+    const tvdbChanged = next.tvdbApiKey !== prev.tvdb;
+    const omdbChanged = next.omdbApiKey !== prev.omdb;
+    const anilistChanged = next.anilistApiKey !== prev.anilist;
+
+    if (!tmdbChanged && !tvdbChanged && !omdbChanged && !anilistChanged) return;
+
+    // Actualizar el MetadataService en caliente con las nuevas claves API.
+    library.metadataService.updateConfig({
+      ...(next.tmdbApiKey !== undefined ? { tmdbApiKey: next.tmdbApiKey } : {}),
+      ...(next.tvdbApiKey !== undefined ? { tvdbApiKey: next.tvdbApiKey } : {}),
+      ...(next.omdbApiKey !== undefined ? { omdbApiKey: next.omdbApiKey } : {}),
+      ...(next.anilistApiKey !== undefined ? { anilistApiKey: next.anilistApiKey } : {}),
+    });
+
+    prevMetadataKeys.current = {
+      tmdb: next.tmdbApiKey ?? null,
+      tvdb: next.tvdbApiKey ?? null,
+      omdb: next.omdbApiKey ?? null,
+      anilist: next.anilistApiKey ?? null,
+    };
+
+    // Si apareció alguna clave API nueva (de vacía a con valor), limpiar todos
+    // los metadatos existentes para forzar el refresco con los proveedores
+    // externos recién configurados.
+    const hadKeyBefore =
+      Boolean(prev.tmdb) || Boolean(prev.tvdb) || Boolean(prev.omdb) || Boolean(prev.anilist);
+    const hasKeyNow =
+      Boolean(next.tmdbApiKey) ||
+      Boolean(next.tvdbApiKey) ||
+      Boolean(next.omdbApiKey) ||
+      Boolean(next.anilistApiKey);
+
+    if (!hadKeyBefore && hasKeyNow) {
+      const removed = library.clearAllMetadata();
+      setMetadataRefreshKey((k) => k + 1);
+      setStatus(
+        `Metadatos limpiados (${removed}). Pulsa «r» para obtenerlos con las nuevas API keys.`,
+      );
+    }
+  }, [library, config.metadata]);
 
   const exitApp = (): void => {
     if (onQuit !== undefined) {
