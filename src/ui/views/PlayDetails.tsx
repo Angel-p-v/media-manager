@@ -270,20 +270,6 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
             {year}
           </Text>
           <Text>{theme.muted(`#${media.id} · ${typeLabel}`)}</Text>
-          {videoCodec !== null && (
-            <>
-              <Text>{theme.label('Códec vídeo')}</Text>
-              <Text>
-                {theme.value(
-                  videoCodec +
-                    (videoWidth !== null && videoHeight !== null
-                      ? ` ${videoWidth}x${videoHeight}`
-                      : ''),
-                )}
-              </Text>
-              <Text> </Text>
-            </>
-          )}
         </Box>
       </Box>
 

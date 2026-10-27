@@ -571,14 +571,9 @@ export class MetadataService {
   /**
    * Busca anime en AniList por consulta de texto.
    * Devuelve resultados mapeados a un formato común.
+   * AniList no requiere clave de autenticación para consultas públicas.
    */
   async searchAnilist(query: string): Promise<MetadataSearchResult[]> {
-    if (!this.config.anilistApiKey) {
-      throw new MetadataError(
-        'AniList no configurada. Añade metadata.anilist_api_key a tu config.yaml.',
-      );
-    }
-
     const graphqlQuery = `
       query ($search: String) {
         Media(search: $search, type: ANIME) {
@@ -624,17 +619,12 @@ export class MetadataService {
 
   /**
    * Obtiene detalles de un anime de AniList por ID externo.
+   * AniList no requiere clave de autenticación para consultas públicas.
    */
   async getAnilistDetails(
     externalId: number,
     _mediaType: 'movie' | 'tv' = 'tv',
   ): Promise<MetadataSearchResult> {
-    if (!this.config.anilistApiKey) {
-      throw new MetadataError(
-        'AniList no configurada. Añade metadata.anilist_api_key a tu config.yaml.',
-      );
-    }
-
     const graphqlQuery = `
       query ($id: Int) {
         Media(id: $id, type: ANIME) {
@@ -729,20 +719,19 @@ export class MetadataService {
       }
     }
 
-    if (this.config.anilistApiKey) {
-      try {
-        const anilistResults = await this.searchAnilist(query);
-        results.push(...anilistResults);
-      } catch (error) {
-        this.config.logger.warn('AniList búsqueda falló', {
-          error: formatError(error),
-        });
-      }
+    // AniList no requiere API key: siempre se intenta.
+    try {
+      const anilistResults = await this.searchAnilist(query);
+      results.push(...anilistResults);
+    } catch (error) {
+      this.config.logger.warn('AniList búsqueda falló', {
+        error: formatError(error),
+      });
     }
 
-    // Si no hay ningún proveedor configurado ni resultados, devolver un
-    // resultado local basado en la consulta para no dejar al usuario sin nada.
-    if (results.length === 0 && !this.hasProviderConfigured()) {
+    // Si no hay resultados de ningún proveedor, devolver un resultado local
+    // basado en la consulta para no dejar al usuario sin nada.
+    if (results.length === 0) {
       results.push({
         provider: 'tmdb',
         externalId: 0,
@@ -808,11 +797,12 @@ export class MetadataService {
 
   /**
    * Verifica si un proveedor específico está configurado.
+   * AniList siempre está disponible (no requiere API key para consultas públicas).
    */
   isProviderConfigured(provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist'): boolean {
     if (provider === 'tmdb') return !!this.config.tmdbApiKey;
     if (provider === 'tvdb') return !!this.config.tvdbApiKey;
     if (provider === 'omdb') return !!this.config.omdbApiKey;
-    return !!this.config.anilistApiKey;
+    return true; // AniList no requiere clave de autenticación
   }
 }

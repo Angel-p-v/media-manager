@@ -4,7 +4,7 @@ import type { Db } from '../connection.js';
 
 export type MediaMetadataRow = {
   mediaId: number;
-  provider: 'tmdb' | 'tvdb' | 'omdb';
+  provider: string;
   externalId: number;
   title: string | null;
   overview: string | null;
@@ -39,7 +39,7 @@ type MetadataDbRow = {
 
 export type SetMetadataInput = {
   mediaId: number;
-  provider: 'tmdb' | 'tvdb' | 'omdb';
+  provider: string;
   externalId: number;
   title?: string | null;
   overview?: string | null;
@@ -103,7 +103,7 @@ export function createMetadataRepository(db: Db): MetadataRepository {
 
   const toMetadataRow = (row: MetadataDbRow): MediaMetadataRow => ({
     mediaId: row.media_id,
-    provider: row.provider as 'tmdb' | 'tvdb' | 'omdb',
+    provider: row.provider,
     externalId: row.external_id,
     title: row.title,
     overview: row.overview,
