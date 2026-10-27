@@ -49,17 +49,17 @@ export type PlayDetailsProps = {
 /**
  * Vista de detalles de reproducción tipo Jellyfin.
  *
- * Diseño (3 columnas + barra inferior):
+ * Diseño (3 columnas flexibles + barra inferior):
  * - Izquierda: póster grande.
  * - Centro: título, año, códec, sinopsis y listado de episodios con paginación.
  * - Derecha: selección de pista de audio (←→) y subtítulos (Mayús+←→).
- * - Abajo (ancho completo): hints de teclado.
+ * - Abajo (ancho completo): barra de teclas de acción en filas separadas.
  *
  * Los idiomas de audio y subtítulos se extraen de los metadatos reales de cada
  * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
  *
  * Navegación:
- * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 10)
+ * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 8)
  * - ← / → : navega por las pistas de audio detectadas
  * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos detectadas
  * - p : reproduce el fichero seleccionado con las pistas elegidas
@@ -142,7 +142,6 @@ export function PlayDetails({
       setVideoCodec(info.videoCodec);
       setVideoWidth(info.videoWidth);
       setVideoHeight(info.videoHeight);
-      // Seleccionar la primera pista de audio y "Ninguna" para subtítulos por defecto
       setSelectedAudioIndex(info.audioTracks.length > 0 ? 0 : null);
       setSelectedSubtitleIndex(null);
     } catch (error) {
@@ -278,19 +277,19 @@ export function PlayDetails({
   // Nombre corto del fichero (sin ruta absoluta).
   const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
 
-  // Ventana visible de episodios (paginación de 10).
+  // Ventana visible de episodios (paginación de 8).
   const visibleFiles = files.slice(visibleStart, visibleStart + EPISODES_PER_PAGE);
 
   return (
     <Box flexGrow={1} flexDirection="column">
-      {/* ==================== Cuerpo principal (3 columnas) ==================== */}
+      {/* ==================== Cuerpo principal (3 columnas flexibles) ==================== */}
       <Box flexGrow={1} flexDirection="row">
-        {/* ==================== Izquierda: póster ==================== */}
+        {/* Izquierda: póster grande */}
         <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-          <PosterImage imagePath={posterPath} width={16} height={12} />
+          <PosterImage imagePath={posterPath} width={26} height={18} />
         </Box>
 
-        {/* ==================== Centro: metadatos y episodios ==================== */}
+        {/* Centro: metadatos y episodios */}
         <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1} paddingY={1}>
           <Text>
             {theme.value(`${media.title}${year}`)} {theme.muted(`#${media.id} · ${typeLabel}`)}
@@ -358,7 +357,7 @@ export function PlayDetails({
           <Text> </Text>
         </Box>
 
-        {/* ==================== Derecha: selección de pistas ==================== */}
+        {/* Derecha: selección de pistas */}
         <Box flexDirection="column" flexShrink={0} paddingX={1} paddingY={1}>
           {loadingMetadata ? (
             <>
@@ -440,8 +439,8 @@ export function PlayDetails({
         </Box>
       </Box>
 
-      {/* ==================== Barra inferior: teclas de acción (ancho completo) ==================== */}
-      <Box paddingX={1}>
+      {/* ==================== Barra inferior: teclas de acción (ancho completo, filas separadas) ==================== */}
+      <Box paddingX={1} paddingY={1}>
         <Text>
           {theme.muted(
             '  [p] Reproducir   [q/Esc] Volver   ↑↓ Episodios   ←→ Audio   Mayús+←→ Subtítulos',
