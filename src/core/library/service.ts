@@ -306,11 +306,11 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         }
       }
 
-      // Si hay API key configurada, intentar obtener metadatos desde la API externa
+      // Si hay algún proveedor disponible, intentar obtener metadatos
       if (metadataService.hasProviderConfigured()) {
         // Si ya tenemos metadatos previos (expirados) con externalId, refrescar por ID
         if (existing?.externalId) {
-          for (const provider of ['tmdb', 'tvdb'] as const) {
+          for (const provider of ['anilist', 'tmdb', 'tvdb'] as const) {
             if (!metadataService.isProviderConfigured(provider)) continue;
 
             try {
@@ -352,7 +352,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
               (
                 r,
               ): r is {
-                provider: 'tmdb' | 'tvdb' | 'omdb';
+                provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist';
                 externalId: number;
                 title: string;
                 overview: string | null;
@@ -362,7 +362,11 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 releaseDate: string | null;
                 originalLanguage: string | null;
                 localPosterPath: string | null;
-              } => r.provider === 'tmdb' || r.provider === 'tvdb' || r.provider === 'omdb',
+              } =>
+                r.provider === 'tmdb' ||
+                r.provider === 'tvdb' ||
+                r.provider === 'omdb' ||
+                r.provider === 'anilist',
             );
             if (result) {
               const details = await metadataService.getDetails(

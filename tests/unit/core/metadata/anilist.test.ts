@@ -60,10 +60,10 @@ describe('MetadataService (AniList)', () => {
     expect(service.isProviderConfigured('omdb')).toBe(false);
   });
 
-  it('isProviderConfigured devuelve false para anilist sin clave', () => {
+  it('isProviderConfigured devuelve true para anilist (sin clave requerida)', () => {
     const service = new MetadataService(noKeyConfig);
 
-    expect(service.isProviderConfigured('anilist')).toBe(false);
+    expect(service.isProviderConfigured('anilist')).toBe(true);
   });
 
   it('hasProviderConfigured es true con anilistApiKey', () => {
@@ -72,16 +72,18 @@ describe('MetadataService (AniList)', () => {
     expect(service.hasProviderConfigured()).toBe(true);
   });
 
-  it('hasProviderConfigured es true (proveedor local siempre disponible)', () => {
+  it('searchAnilist funciona sin anilistApiKey (consulta pública)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { Media: null } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
     const service = new MetadataService(noKeyConfig);
 
-    expect(service.hasProviderConfigured()).toBe(true);
-  });
+    const result = await service.searchAnilist('one piece');
 
-  it('searchAnilist lanza MetadataError sin anilistApiKey', async () => {
-    const service = new MetadataService(noKeyConfig);
-
-    await expect(service.searchAnilist('one piece')).rejects.toBeInstanceOf(MetadataError);
+    expect(result).toEqual([]);
   });
 
   it('searchAnilist lanza MetadataError cuando AniList responde 429', async () => {
@@ -189,9 +191,16 @@ describe('MetadataService (AniList)', () => {
     await expect(service.getAnilistDetails(999999)).rejects.toBeInstanceOf(MetadataError);
   });
 
-  it('getAnilistDetails lanza MetadataError sin anilistApiKey', async () => {
+  it('getAnilidDetails funciona sin anilistApiKey (consulta pública)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { Media: null } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
     const service = new MetadataService(noKeyConfig);
 
+    // Sin resultados de AniList, lanza MetadataError (no por falta de API key)
     await expect(service.getAnilistDetails(456)).rejects.toBeInstanceOf(MetadataError);
   });
 });

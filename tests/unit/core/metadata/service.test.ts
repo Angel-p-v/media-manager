@@ -159,6 +159,7 @@ describe('MetadataService (OMDB)', () => {
   });
 
   it('search incluye OMDB como fallback cuando solo omdb está configurado', async () => {
+    // OMDB se intenta antes que AniList en el código, así que su mock va primero
     mockOmdbResponse({
       Response: 'True',
       Search: [
@@ -172,11 +173,18 @@ describe('MetadataService (OMDB)', () => {
       ],
       totalResults: '1',
     });
+    // AniList se intenta después (sin API key), devuelve vacío
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ data: { Media: null } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
 
     const service = new MetadataService(omdbConfig);
     const results = await service.search('Severance');
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(results.length).toBe(1);
     expect(results[0]!.provider).toBe('omdb');
   });
