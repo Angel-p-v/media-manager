@@ -234,7 +234,7 @@ program
   .description('gestiona metadatos externos (TVMaze para series/películas, Jikan para anime)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-a, --action <fetch|search|clear|cache>', 'acción: fetch, search, clear o cache')
-  .option('-m, --media <id>', 'id del título (requerido para fetch/clear)')
+  .option('-m, --media-id <id>', 'id del título (requerido para fetch/clear)')
   .option('-q, --query <texto>', 'consulta de búsqueda (requerido para search)')
   .option('-p, --provider <tvmaze|jikan>', 'proveedor de metadatos (tvmaze o jikan)')
   .option('-e, --external-id <id>', 'id externo (requerido para fetch)')

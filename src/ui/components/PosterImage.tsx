@@ -34,12 +34,11 @@ const FALLBACK_ASCII = `
 /** Componente que renderiza un póster de imagen en la terminal. */
 export function PosterImage({
   imagePath,
-  width = 22,
-  height = 12,
+  width = 36,
+  height = 24,
 }: PosterImageProps): React.JSX.Element {
   const [ansiArt, setAnsiArt] = useState<string>('');
   const [loading, setLoading] = useState(false);
-  const [renderError, setRenderError] = useState<string | null>(null);
   const mountedRef = useRef(true);
   const { write } = useStdout();
 
@@ -49,12 +48,10 @@ export function PosterImage({
     if (!imagePath) {
       setAnsiArt('');
       setLoading(false);
-      setRenderError(null);
       return;
     }
 
     setLoading(true);
-    setRenderError(null);
     try {
       const art = await renderImageToAnsi(imagePath, { width, height });
       if (!mountedRef.current) return;
@@ -66,13 +63,11 @@ export function PosterImage({
         write('');
       } else {
         setAnsiArt('');
-        setRenderError('chafa no devolvió contenido');
         setLoading(false);
       }
-    } catch (error) {
+    } catch {
       if (!mountedRef.current) return;
       setAnsiArt('');
-      setRenderError(error instanceof Error ? error.message : 'No se pudo renderizar el póster.');
       setLoading(false);
     }
   }, [imagePath, width, height, write]);
@@ -139,8 +134,6 @@ export function PosterImage({
       {FALLBACK_ASCII.split('\n').map((line, i) => (
         <Text key={i}>{theme.muted(`  ${line}`)}</Text>
       ))}
-      <Text>{theme.muted(`  ruta: ${imagePath}`)}</Text>
-      {renderError !== null && <Text>{theme.error(`  error: ${renderError}`)}</Text>}
     </Box>
   );
 }
