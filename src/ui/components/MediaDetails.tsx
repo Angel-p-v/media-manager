@@ -53,8 +53,10 @@ export function MediaDetails({
       {metadata.releaseDate && <Text>{`  Estreno: ${metadata.releaseDate}`}</Text>}
       {metadata.originalLanguage && <Text>{`  Idioma: ${metadata.originalLanguage}`}</Text>}
       <PosterImage imagePath={metadata.localPosterPath} width={22} height={12} />
-      {metadata.localPosterPath && (
+      {metadata.localPosterPath ? (
         <Text>{theme.muted(`  Póster guardado en: ${metadata.localPosterPath}`)}</Text>
+      ) : (
+        <Text>{theme.muted('  Sin póster disponible. Pulsa «r» para obtenerlo.')}</Text>
       )}
     </>
   ) : (

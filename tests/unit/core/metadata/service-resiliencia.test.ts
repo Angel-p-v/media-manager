@@ -146,6 +146,33 @@ describe('MetadataService resiliencia', () => {
         localPosterPath: null, // fallback: no hay caché previa
       });
     });
+
+    it('descarga y guarda el póster de TMDB usando URL completa', async () => {
+      // poster_path relativo de TMDB: se convierte a URL completa antes de descargar
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          okResponse(200, {
+            id: 789,
+            title: 'Película 2',
+            overview: 'Sinopsis 2',
+            poster_path: '/nuevo-poster.jpg',
+            backdrop_path: null,
+            vote_average: 8.0,
+            release_date: '2024-01-01',
+            original_language: 'en',
+          }),
+        ),
+      );
+
+      const service = new MetadataService(tmdbConfig);
+      const result = await service.getTmdbDetails(789, 'movie');
+
+      // localPosterPath no debe ser null: el póster se descargó y guardó con URL completa
+      expect(result.localPosterPath).not.toBeNull();
+
+      vi.unstubAllGlobals();
+    });
   });
 
   describe('searchTvdb', () => {

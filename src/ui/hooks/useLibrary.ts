@@ -12,6 +12,8 @@ export type UseLibraryOptions = {
   limit?: number;
   /** Sección especial: 'in-progress' para títulos en curso, 'favorites' para favoritos. */
   section?: 'in-progress' | 'favorites' | undefined;
+  /** Versión de datos: al incrementarla se fuerza una re-lectura de la BD (útil tras indexar). */
+  dataVersion?: number;
 };
 
 export type UseLibraryResult = {
@@ -33,7 +35,7 @@ export function useLibrary(
   service: LibraryService,
   options: UseLibraryOptions = {},
 ): UseLibraryResult {
-  const { type, query, limit = DEFAULT_LIMIT, section } = options;
+  const { type, query, limit = DEFAULT_LIMIT, section, dataVersion = 0 } = options;
 
   return useMemo(() => {
     try {
@@ -70,5 +72,5 @@ export function useLibrary(
     } catch (error) {
       return { items: [], total: 0, error: formatError(error) };
     }
-  }, [service, type, query, limit, section]);
+  }, [service, type, query, limit, section, dataVersion]);
 }

@@ -98,6 +98,8 @@ function AppImpl({
   /** Clave de refresco de metadatos: se incrementa tras obtener metadatos externos para
    *  forzar a MediaDetails a volver a leer de la BD y mostrar el póster recién descargado. */
   const [metadataRefreshKey, setMetadataRefreshKey] = useState(0);
+  /** Versión de datos: se incrementa tras indexar para forzar la re-lectura de la BD. */
+  const [dataVersion, setDataVersion] = useState(0);
 
   const type =
     section === 'all' || section === 'in-progress' || section === 'favorites' ? undefined : section;
@@ -109,6 +111,7 @@ function AppImpl({
       section === 'in-progress' ? 'in-progress' : section === 'favorites' ? 'favorites' : undefined,
     ...(watchFilter === 'watched' ? { watched: true } : {}),
     ...(watchFilter === 'unwatched' ? { unwatched: true } : {}),
+    dataVersion,
   });
   const safeSelected = items.length === 0 ? 0 : Math.min(selected, items.length - 1);
   const selectedMedia = items[safeSelected];
@@ -689,6 +692,7 @@ function AppImpl({
                   try {
                     await onIndex();
                     setStatus('Indexación completada.');
+                    setDataVersion((v) => v + 1);
                   } catch {
                     setStatus('No se pudo indexar la biblioteca.');
                   }
