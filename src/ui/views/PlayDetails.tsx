@@ -10,7 +10,7 @@ import type { MediaFileRow } from '../../core/db/types.js';
 import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
-const EPISODES_PER_PAGE = 8;
+const EPISODES_PER_PAGE = 12;
 
 /** Pista de audio real extraída de los metadatos del fichero de vídeo. */
 export type RealAudioTrack = {
@@ -59,7 +59,7 @@ export type PlayDetailsProps = {
  * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
  *
  * Navegación:
- * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 8)
+ * - ↑ / ↓ : navega por los episodios/ficheros (con paginación de 12)
  * - ← / → : navega por las pistas de audio detectadas
  * - Mayús+← / Mayús+→ : navega por las pistas de subtítulos detectadas
  * - p : reproduce el fichero seleccionado con las pistas elegidas
@@ -98,6 +98,8 @@ export function PlayDetails({
   const [videoHeight, setVideoHeight] = useState<number | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
+  /** Indica si se está obteniendo metadatos externos de la API pública. */
+  const [fetchingMetadata, setFetchingMetadata] = useState(false);
   /** Ruta local al póster cacheado del título (si existe). */
   const [posterPath, setPosterPath] = useState<string | null>(null);
   /** Metadatos externos (TMDB/TVDB/AniList) del título. */
@@ -119,6 +121,28 @@ export function PlayDetails({
   const handleBack = useCallback((): void => {
     onBack();
   }, [onBack]);
+
+  /** Obtiene los metadatos externos (sinopsis, carátula, etc.) de la API pública. */
+  const handleFetchMetadata = useCallback(async (): Promise<void> => {
+    if (details === null) return;
+
+    setFetchingMetadata(true);
+    setMetadataError(null);
+    try {
+      await library.getOrFetchMetadata(details.media.id);
+
+      // Refrescar estado local desde el repositorio tras la obtención.
+      const saved = library.getMetadata(details.media.id);
+      setMetadata(saved ?? null);
+      setPosterPath(saved?.localPosterPath ?? null);
+    } catch (error) {
+      setMetadataError(
+        error instanceof Error ? error.message : 'No se pudieron obtener los metadatos.',
+      );
+    } finally {
+      setFetchingMetadata(false);
+    }
+  }, [details, library]);
 
   /** Carga los metadatos reales (audio/subtítulos/vídeo) del fichero seleccionado con ffprobe. */
   const loadFileMetadata = useCallback(async (file: MediaFileRow | undefined): Promise<void> => {
@@ -226,6 +250,11 @@ export function PlayDetails({
         return;
       }
 
+      if (input === 'r') {
+        void handleFetchMetadata();
+        return;
+      }
+
       // Navegación de episodios con flechas arriba/abajo.
       if (key.upArrow || input === '\u001b[A') {
         ensureVisible(Math.max(0, selectedFileIndex - 1));
@@ -277,7 +306,7 @@ export function PlayDetails({
   // Nombre corto del fichero (sin ruta absoluta).
   const fileName = selectedFile ? (selectedFile.filePath.split('/').pop() ?? '—') : '—';
 
-  // Ventana visible de episodios (paginación de 30).
+  // Ventana visible de episodios (paginación de 12).
   const visibleFiles = files.slice(visibleStart, visibleStart + EPISODES_PER_PAGE);
 
   return (
@@ -323,13 +352,15 @@ export function PlayDetails({
           {/* Sinopsis real de los metadatos externos (TMDB/TVDB/AniList) */}
           <Text>
             {theme.label('Sinopsis')}{' '}
-            {metadata?.overview
-              ? theme.value(metadata.overview)
-              : theme.muted(
-                  files.length > 0
-                    ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
-                    : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
-                )}
+            {fetchingMetadata
+              ? theme.muted('  obteniendo metadatos…')
+              : metadata?.overview
+                ? theme.value(metadata.overview)
+                : theme.muted(
+                    files.length > 0
+                      ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
+                      : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
+                  )}
           </Text>
           <Text> </Text>
 
@@ -443,7 +474,7 @@ export function PlayDetails({
       <Box paddingX={1} paddingY={1}>
         <Text>
           {theme.muted(
-            '  [p] Reproducir   [q/Esc] Volver   ↑↓ Episodios   ←→ Audio   Mayús+←→ Subtítulos',
+            '  [p] Reproducir   [q/Esc] Volver   ↑↓ Episodios   ←→ Audio   Mayús+←→ Subtítulos   [r] Metadatos',
           )}
         </Text>
         <Text>
