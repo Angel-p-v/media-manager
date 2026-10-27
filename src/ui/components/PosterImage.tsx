@@ -34,8 +34,8 @@ const FALLBACK_ASCII = `
 /** Componente que renderiza un póster de imagen en la terminal. */
 export function PosterImage({
   imagePath,
-  width = 36,
-  height = 24,
+  width = 30,
+  height = 20,
 }: PosterImageProps): React.JSX.Element {
   const [ansiArt, setAnsiArt] = useState<string>('');
   const [loading, setLoading] = useState(false);

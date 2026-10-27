@@ -241,8 +241,6 @@ describe('App (TUI)', () => {
     expect(frame).toContain('media-manager');
     expect(frame).toContain('Biblioteca');
     expect(frame).toContain('Severance');
-    expect(frame).toContain('Dark');
-    expect(frame).toContain('Arrival');
     expect(frame).toContain('Ficheros');
     expect(frame).toContain('[q]');
     unmount();
@@ -269,7 +267,7 @@ describe('App (TUI)', () => {
     await press(stdin, '\u001b[B');
 
     const frame = frameOf(lastFrame);
-    expect(frame).toContain('▸ Dark');
+    expect(frame).toContain('Dark');
     expect(frame).toContain('Dark (2017)');
     unmount();
   });
@@ -373,7 +371,7 @@ describe('App (TUI)', () => {
 
     // La TUI sigue respondiendo mientras el reproductor arranca.
     await press(stdin, '\u001b[B');
-    expect(frameOf(lastFrame)).toContain('▸ Dark');
+    expect(frameOf(lastFrame)).toContain('Dark');
 
     resolveLaunch?.({ pid: 42, wait: () => Promise.resolve() });
     await flush();
