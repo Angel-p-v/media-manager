@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { MetadataService } from '../../../../src/core/metadata/service.js';
 
@@ -8,18 +8,6 @@ const logger = {
   error: vi.fn(),
 };
 
-let fetchMock: ReturnType<typeof vi.fn>;
-
-beforeEach(() => {
-  fetchMock = vi.fn();
-  vi.stubGlobal('fetch', fetchMock);
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
-});
-
 function okResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -27,52 +15,109 @@ function okResponse(body: unknown, status = 200): Response {
   });
 }
 
-describe('MetadataService.updateConfig', () => {
-  it('actualiza tmdbApiKey en tiempo de ejecución y searchTmdb la usa', async () => {
-    // Crear sin API key: searchTmdb debería fallar.
+function fetchMockCalls(): unknown[][] {
+  return (globalThis.fetch as unknown as { mock: { calls: unknown[][] } }).mock.calls;
+}
+
+describe('MetadataService.updateConfig (proveedores públicos)', () => {
+  it('updateConfig es un no-op: los proveedores públicos no necesitan claves API', () => {
     const service = new MetadataService({ logger });
-    await expect(service.searchTmdb('sever')).rejects.toBeInstanceOf(Error);
 
-    // Actualizar con API key de TMDB en caliente.
-    service.updateConfig({ tmdbApiKey: 'new-tmdb-key' });
+    expect(service.isProviderConfigured('tvmaze')).toBe(true);
+    expect(service.isProviderConfigured('jikan')).toBe(true);
+    expect(service.isProviderConfigured('default')).toBe(true);
 
-    // Ahora searchTmdb debería intentar llamar a la API (fallará por fetch no mockeado
-    // pero no por falta de clave).
-    fetchMock.mockResolvedValueOnce(okResponse({ results: [] }));
-    await expect(service.searchTmdb('sever')).resolves.toEqual([]);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const url = String(fetchMock.mock.calls[0]![0]);
-    expect(url).toContain('api_key=new-tmdb-key');
+    service.updateConfig({});
+    expect(service.isProviderConfigured('tvmaze')).toBe(true);
+    expect(service.isProviderConfigured('jikan')).toBe(true);
   });
 
-  it('actualiza múltiples claves API a la vez', () => {
+  it('searchTvMaze funciona sin configuración previa', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
+      okResponse({
+        id: 123,
+        name: 'Severance',
+        type: 'Scripted',
+        language: 'English',
+        genres: ['Drama'],
+        status: 'Ended',
+        runtime: 60,
+        premiered: '2022-02-18',
+        officialSite: null,
+        schedule: { time: '21:00', days: ['Friday'] },
+        rating: { average: 8.5 },
+        weight: 90,
+        network: null,
+        webChannel: null,
+        externals: { tvrage: null, thetvdb: null, imdb: null },
+        image: { medium: null, original: null },
+        summary: null,
+        updated: 1234567890,
+        _links: { self: { href: 'https://api.tvmaze.com/shows/123' } },
+      }),
+    );
+
     const service = new MetadataService({ logger });
-    expect(service.isProviderConfigured('tmdb')).toBe(false);
-    expect(service.isProviderConfigured('tvdb')).toBe(false);
+    const results = await service.searchTvMaze('Severance');
 
-    service.updateConfig({
-      tmdbApiKey: 'tmdb-key',
-      tvdbApiKey: 'tvdb-key',
-      omdbApiKey: 'omdb-key',
-      anilistApiKey: 'anilist-key',
-    });
-
-    expect(service.isProviderConfigured('tmdb')).toBe(true);
-    expect(service.isProviderConfigured('tvdb')).toBe(true);
-    expect(service.isProviderConfigured('omdb')).toBe(true);
-    expect(service.isProviderConfigured('anilist')).toBe(true);
+    expect(fetchMockCalls()).toHaveLength(1);
+    expect(results.length).toBe(1);
+    expect(results[0]!.provider).toBe('tvmaze');
+    expect(results[0]!.title).toBe('Severance');
   });
 
-  it('updateConfig no borra claves previas al actualizar solo una', () => {
-    const service = new MetadataService({
-      logger,
-      tmdbApiKey: 'tmdb-key',
-    });
-    expect(service.isProviderConfigured('tmdb')).toBe(true);
+  it('searchJikan funciona sin configuración previa', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValueOnce(
+      okResponse({
+        data: [
+          {
+            mal_id: 123,
+            title: 'One Piece',
+            title_english: 'One Piece',
+            title_japanese: null,
+            title_synonyms: [],
+            type: 'TV',
+            source: 'Manga',
+            episodes: 1000,
+            status: 'Finished Airing',
+            airing: false,
+            aired: { from: '1999-10-20', to: null, string: 'Oct 20, 1999' },
+            duration: '24 min',
+            rating: 'PG-13',
+            score: 8.7,
+            ranked: null,
+            popularity: null,
+            members: null,
+            favorites: null,
+            synopsis: 'Un pirata busca el tesoro.',
+            background: null,
+            season: 'fall',
+            year: 1999,
+            broadcast: null,
+            producers: [],
+            licensors: [],
+            studios: [],
+            genres: [],
+            explicit_genres: [],
+            themes: [],
+            demographic: null,
+            images: {
+              jpg: { image_url: null, small_image_url: null, large_image_url: null },
+              webp: { image_url: null, small_image_url: null, large_image_url: null },
+            },
+            trailer: null,
+          },
+        ],
+        pagination: { last_visible_page: 1 },
+      }),
+    );
 
-    service.updateConfig({ tvdbApiKey: 'tvdb-key' });
+    const service = new MetadataService({ logger });
+    const results = await service.searchJikan('One Piece');
 
-    expect(service.isProviderConfigured('tmdb')).toBe(true);
-    expect(service.isProviderConfigured('tvdb')).toBe(true);
+    expect(fetchMockCalls()).toHaveLength(1);
+    expect(results.length).toBe(1);
+    expect(results[0]!.provider).toBe('jikan');
+    expect(results[0]!.title).toBe('One Piece');
   });
 });
