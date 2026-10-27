@@ -6,6 +6,22 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.3.1](https://github.com/Angel-p-v/media-manager/compare/v3.3.0...v3.3.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **db,ui:** descargar póster de TMDB con URL completa y indexar al guardar rutas ([#231](https://github.com/Angel-p-v/media-manager/issues/231)) ([4e43a69](https://github.com/Angel-p-v/media-manager/commit/4e43a69c86bc58a0c6f45738cf0a66fd55c30e1b))
+* **db:** actualizar API keys de metadatos en caliente y forzar refresco ([#230](https://github.com/Angel-p-v/media-manager/issues/230)) ([b4d720a](https://github.com/Angel-p-v/media-manager/commit/b4d720a63ddfafabf2ed7481a52c90b238c29ab0))
+* **db:** forzar refresco de póster sin esperar TTL e indexar con config actualizada ([#232](https://github.com/Angel-p-v/media-manager/issues/232)) ([6eb8a38](https://github.com/Angel-p-v/media-manager/commit/6eb8a3837d82aa7a56fc6e04df42958f5aa4132f))
+* **ui:** layout 3 columnas en play-details con barra de teclas abajo ([#236](https://github.com/Angel-p-v/media-manager/issues/236)) ([10b6bc0](https://github.com/Angel-p-v/media-manager/commit/10b6bc010ab2f1fa2520e135b01f340c58f37c6c))
+* **ui:** layout 3 columnas en play-details con barra de teclas abajo ([#237](https://github.com/Angel-p-v/media-manager/issues/237)) ([f095e7c](https://github.com/Angel-p-v/media-manager/commit/f095e7c7315f0facfe0a9a6f0fcd18887f03fff7))
+* **ui:** layout 3 columnas en play-details y metadatos automáticos al configurar API keys ([#235](https://github.com/Angel-p-v/media-manager/issues/235)) ([7dbe225](https://github.com/Angel-p-v/media-manager/commit/7dbe225c97ec7e06881f1aa4daa508a337cf0bd9))
+* **ui:** mostrar nombre completo de episodios y aumentar paginación en play-details ([#238](https://github.com/Angel-p-v/media-manager/issues/238)) ([b216f97](https://github.com/Angel-p-v/media-manager/commit/b216f9728db750d51ae162db5c7512e5c18b3e2f))
+* **ui:** mostrar póster tras refrescar metadatos y corregir espaciado de códec ([#228](https://github.com/Angel-p-v/media-manager/issues/228)) ([676f45d](https://github.com/Angel-p-v/media-manager/commit/676f45d32d17061a90bc52904b903c95f63ec0e7))
+* **ui:** póster a la derecha y sinopsis real en vistas de detalles ([#233](https://github.com/Angel-p-v/media-manager/issues/233)) ([da294ac](https://github.com/Angel-p-v/media-manager/commit/da294acc8806e78a9a93ecd2553f0e4077d6d2c6))
+* **ui:** póster a la izquierda en play-details, sinopsis real, póster más grande al inicio ([#234](https://github.com/Angel-p-v/media-manager/issues/234)) ([230f63d](https://github.com/Angel-p-v/media-manager/commit/230f63d2f3c6c4447e53059fe6687514dda2f2af))
+
 ## [3.3.0](https://github.com/Angel-p-v/media-manager/compare/v3.2.0...v3.3.0) (2026-10-27)
 
 
