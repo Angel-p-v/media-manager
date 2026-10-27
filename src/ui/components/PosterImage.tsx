@@ -7,7 +7,7 @@
  */
 
 import { Box, Text } from 'ink';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { renderImageToAnsi } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
@@ -21,6 +21,16 @@ export type PosterImageProps = {
   height?: number;
 };
 
+/** Arte ASCII de fallback cuando chafa no está disponible o falla. */
+const FALLBACK_ASCII = `
+██████╗ ███████╗███╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
+██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║████╗ ████║██╔══██╗██╔══██╗
+██████╔╝█████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██╔████╔██║███████║██████╔╝
+██╔═══╝ ██╔══╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔═══╝
+██║     ███████╗██║ ╚████║╚██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
+╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝
+`.trim();
+
 /** Componente que renderiza un póster de imagen en la terminal. */
 export function PosterImage({
   imagePath,
@@ -29,27 +39,48 @@ export function PosterImage({
 }: PosterImageProps): React.JSX.Element {
   const [ansiArt, setAnsiArt] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
 
   const renderPoster = useCallback(async (): Promise<void> => {
+    if (!mountedRef.current) return;
+
     if (!imagePath) {
       setAnsiArt('');
       setLoading(false);
+      setRenderError(null);
       return;
     }
 
     setLoading(true);
+    setRenderError(null);
     try {
       const art = await renderImageToAnsi(imagePath, { width, height });
-      setAnsiArt(art);
-    } catch {
+      if (!mountedRef.current) return;
+
+      if (art) {
+        setAnsiArt(art);
+        setLoading(false);
+      } else {
+        setAnsiArt('');
+        setRenderError('chafa no devolvió contenido');
+        setLoading(false);
+      }
+    } catch (error) {
+      if (!mountedRef.current) return;
       setAnsiArt('');
-    } finally {
+      setRenderError(error instanceof Error ? error.message : 'No se pudo renderizar el póster.');
       setLoading(false);
     }
   }, [imagePath, width, height]);
 
   useEffect(() => {
+    mountedRef.current = true;
     void renderPoster();
+
+    return () => {
+      mountedRef.current = false;
+    };
   }, [renderPoster]);
 
   if (!imagePath) {
@@ -77,7 +108,7 @@ export function PosterImage({
         flexShrink={0}
       >
         <Text>{theme.muted('  [ PÓSTER ]')}</Text>
-        <Text>{theme.muted('  descargando…')}</Text>
+        <Text>{theme.muted('  Cargando póster…')}</Text>
       </Box>
     );
   }
@@ -90,7 +121,7 @@ export function PosterImage({
     );
   }
 
-  // Fallback: chafa no disponible o error al renderizar
+  // Fallback: chafa no disponible o error al renderizar → arte ASCII informativo.
   return (
     <Box
       borderStyle="round"
@@ -100,8 +131,13 @@ export function PosterImage({
       flexShrink={0}
     >
       <Text>{theme.muted('  [ PÓSTER ]')}</Text>
-      <Text>{theme.muted('  (chafa no disponible)')}</Text>
-      <Text>{theme.muted(`  ${imagePath}`)}</Text>
+      <Text>{theme.muted('  (imagen no disponible)')}</Text>
+      <Text> </Text>
+      {FALLBACK_ASCII.split('\n').map((line, i) => (
+        <Text key={i}>{theme.muted(`  ${line}`)}</Text>
+      ))}
+      <Text>{theme.muted(`  ruta: ${imagePath}`)}</Text>
+      {renderError !== null && <Text>{theme.error(`  error: ${renderError}`)}</Text>}
     </Box>
   );
 }
