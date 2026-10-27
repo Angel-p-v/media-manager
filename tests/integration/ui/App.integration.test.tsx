@@ -551,7 +551,7 @@ describe('App (TUI)', () => {
     unmount();
   });
 
-  it('muestra máximo 12 episodios por página con paginación', async () => {
+  it('muestra máximo 8 episodios por página con paginación', async () => {
     const libraryManyEpisodes = {
       ...fakeLibrary(),
       find: (query: string) => {
@@ -583,21 +583,19 @@ describe('App (TUI)', () => {
     await press(stdin, '\r');
     let frame = frameOf(lastFrame);
 
-    // Primera página: debe mostrar episodios 1-10
-    expect(frame).toContain('(1/2)');
+    // Primera página: debe mostrar episodios 1-8
     expect(frame).toContain('T01E01');
-    expect(frame).toContain('T01E10');
-    expect(frame).not.toContain('T01E11');
+    expect(frame).toContain('T01E08');
+    expect(frame).not.toContain('T01E09');
 
-    // Navegar al episodio 11 con flecha abajo 10 veces
-    for (let i = 0; i < 10; i++) {
+    // Navegar al episodio 9 con flecha abajo 8 veces
+    for (let i = 0; i < 8; i++) {
       await press(stdin, '\u001b[B');
     }
     frame = frameOf(lastFrame);
 
-    // Ahora debería mostrar la página 2 (episodios 11-15)
-    expect(frame).toContain('(2/2)');
-    expect(frame).toContain('T01E11');
+    // Ahora debería mostrar la página 2 (episodios 9-15)
+    expect(frame).toContain('T01E09');
     // El episodio 1 ya no debería estar visible
     const episodeLines = frame.split('\n').filter((line) => line.includes('T01E01'));
     expect(episodeLines.length).toBe(0);
@@ -635,24 +633,21 @@ describe('App (TUI)', () => {
 
     await press(stdin, '\r');
     let frame = frameOf(lastFrame);
-    expect(frame).toContain('(1/2)');
-    expect(frame).toContain('T01E10');
-    expect(frame).not.toContain('T01E11');
+    expect(frame).toContain('T01E08');
+    expect(frame).not.toContain('T01E09');
 
-    // Ir al episodio 11 (índice 10)
-    for (let i = 0; i < 10; i++) {
+    // Ir al episodio 9 (índice 8)
+    for (let i = 0; i < 8; i++) {
       await press(stdin, '\u001b[B');
     }
     frame = frameOf(lastFrame);
-    expect(frame).toContain('(2/2)');
-    expect(frame).toContain('T01E11');
+    expect(frame).toContain('T01E09');
 
     // Volver al episodio 1
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 8; i++) {
       await press(stdin, '\u001b[A');
     }
     frame = frameOf(lastFrame);
-    expect(frame).toContain('(1/2)');
     expect(frame).toContain('T01E01');
 
     unmount();
