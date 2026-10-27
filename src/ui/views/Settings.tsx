@@ -35,6 +35,8 @@ type SettingsItem = {
   options?: SelectOption[];
   /** Índice de la opción seleccionada cuando kind === 'select'. */
   selectedOptionIndex?: number;
+  /** Tipo por defecto para una nueva raíz de biblioteca (solo library-root-add). */
+  defaultType?: string;
 };
 
 /** Construye la lista de ítems editables a partir de la configuración. */
@@ -54,6 +56,10 @@ function buildItems(config: AppConfig): SettingsItem[] {
   });
 
   // Opción para añadir una nueva raíz de biblioteca.
+  // El tipo por defecto es el tipo de la primera raíz ya configurada (si la hay),
+  // de modo que no se asuma siempre «movie». Si no hay raíces, se usa 'movie'.
+  const defaultRootType = config.library.roots.length > 0 ? config.library.roots[0]!.type : 'movie';
+
   items.push({
     id: 'library-root-add',
     label: '+ Añadir raíz',
@@ -61,6 +67,8 @@ function buildItems(config: AppConfig): SettingsItem[] {
     value: '',
     originalValue: '',
     editing: false,
+    /** Tipo por defecto para la nueva raíz (uno de los ya configurados). */
+    defaultType: defaultRootType,
   });
 
   // Ruta de la base de datos (texto).
@@ -156,6 +164,25 @@ function buildItems(config: AppConfig): SettingsItem[] {
     ],
     selectedOptionIndex: ['silent', 'error', 'warn', 'info', 'debug'].indexOf(config.logging.level),
   });
+
+  // API keys de metadatos (texto, opcionales).
+  const metadataApiKeys: { id: string; label: string; configKey: keyof AppConfig['metadata'] }[] = [
+    { id: 'metadata-tmdb-api-key', label: 'TMDB API key', configKey: 'tmdbApiKey' },
+    { id: 'metadata-tvdb-api-key', label: 'TVDB API key', configKey: 'tvdbApiKey' },
+    { id: 'metadata-omdb-api-key', label: 'OMDB API key', configKey: 'omdbApiKey' },
+    { id: 'metadata-anilist-api-key', label: 'AniList API key', configKey: 'anilistApiKey' },
+  ];
+  for (const apiKey of metadataApiKeys) {
+    const currentValue = String(config.metadata[apiKey.configKey] ?? '');
+    items.push({
+      id: apiKey.id,
+      label: apiKey.label,
+      kind: 'text',
+      value: currentValue,
+      originalValue: currentValue,
+      editing: false,
+    });
+  }
 
   return items;
 }
@@ -259,9 +286,11 @@ export function SettingsView({
           setStatus('La ruta no puede estar vacía.');
           return;
         }
+        const rootType = (item.defaultType ??
+          'movie') as AppConfig['library']['roots'][number]['type'];
         nextConfig.library = {
           ...nextConfig.library,
-          roots: [...nextConfig.library.roots, { path: newValue.trim(), type: 'movie' }],
+          roots: [...nextConfig.library.roots, { path: newValue.trim(), type: rootType }],
         };
       } else if (item.id.startsWith('library-root-')) {
         const index = Number(item.id.split('-').pop());
@@ -288,6 +317,26 @@ export function SettingsView({
         nextConfig.logging = {
           ...nextConfig.logging,
           level: newValue as AppConfig['logging']['level'],
+        };
+      } else if (item.id === 'metadata-tmdb-api-key') {
+        nextConfig.metadata = {
+          ...nextConfig.metadata,
+          tmdbApiKey: newValue.trim() || undefined,
+        };
+      } else if (item.id === 'metadata-tvdb-api-key') {
+        nextConfig.metadata = {
+          ...nextConfig.metadata,
+          tvdbApiKey: newValue.trim() || undefined,
+        };
+      } else if (item.id === 'metadata-omdb-api-key') {
+        nextConfig.metadata = {
+          ...nextConfig.metadata,
+          omdbApiKey: newValue.trim() || undefined,
+        };
+      } else if (item.id === 'metadata-anilist-api-key') {
+        nextConfig.metadata = {
+          ...nextConfig.metadata,
+          anilistApiKey: newValue.trim() || undefined,
         };
       }
 

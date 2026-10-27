@@ -19,6 +19,7 @@ export function KeybindingsView({
   onSave,
   onBack,
 }: KeybindingsViewProps): React.JSX.Element {
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [editingAction, setEditingAction] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -73,15 +74,22 @@ export function KeybindingsView({
         return;
       }
 
-      if (input === 'e' && editingAction === null) {
-        // Entrar en modo edición de la acción seleccionada (la primera por ahora;
-        // una versión completa añadiría selección por filas).
-        const first = actions[0];
-        if (first) setEditingAction(first.action);
+      if (key.upArrow) {
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : actions.length - 1));
+        return;
+      }
+      if (key.downArrow) {
+        setSelectedIndex((prev) => (prev < actions.length - 1 ? prev + 1 : 0));
+        return;
+      }
+
+      if ((key.return || input === ' ') && editingAction === null) {
+        const selected = actions[selectedIndex];
+        if (selected) setEditingAction(selected.action);
         return;
       }
     },
-    [editingAction, actions, config, onSave, onBack],
+    [editingAction, actions, selectedIndex, config, onSave, onBack],
   );
 
   useInput(handleKey);
@@ -91,17 +99,17 @@ export function KeybindingsView({
       <Text>{saving ? 'Guardando…' : 'Atajos de teclado'}</Text>
       <Text> </Text>
       <Text>
-        Presiona{' '}
         {editingAction
-          ? 'una tecla para reasignar'
-          : '«e» para editar el primer atajo, «q» para volver'}
+          ? 'Pulsa una tecla para reasignar · Escape para cancelar'
+          : '↑↓ navegan · Enter edita · q vuelve'}
       </Text>
       <Text> </Text>
-      {actions.map(({ action, key }) => {
+      {actions.map(({ action, key }, index) => {
+        const isSelected = index === selectedIndex;
         const isEditing = editingAction === action;
         return (
           <Text key={action}>
-            {isEditing ? '▶ ' : '  '}
+            {isEditing ? '▶ ' : isSelected ? '▸ ' : '  '}
             {action}: {key}
             {isEditing ? ' (escucha nueva tecla…)' : ''}
           </Text>

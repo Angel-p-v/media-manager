@@ -322,12 +322,34 @@ export function createMediaRepository(db: Db, deps: MediaRepositoryDeps = {}): M
 
     search(query: string, options: SearchMediaOptions = {}): MediaRow[] {
       const match = toFtsQuery(query);
-      if (!match) return [];
-      const rows = searchStatement.all({
-        query: match,
-        limit: options.limit ?? 20,
-        type: options.type ?? null,
-      });
+      let rows: MediaDbRow[] = [];
+      if (match) {
+        rows = searchStatement.all({
+          query: match,
+          limit: options.limit ?? 20,
+          type: options.type ?? null,
+        });
+      }
+      // Fallback: si FTS5 no devuelve nada (errores de escritura, términos
+      // parciales, etc.), prueba con LIKE como búsqueda difusa sobre el título.
+      if (rows.length === 0 && query.trim().length > 0) {
+        const likePattern = `%${escapeLike(query)}%`;
+        const fallback = db.prepare<
+          { like: string; type: MediaType | null; limit: number },
+          MediaDbRow
+        >(`
+          SELECT * FROM media
+          WHERE sort_title LIKE @like
+            AND (@type IS NULL OR type = @type)
+          ORDER BY sort_title ASC
+          LIMIT @limit
+        `);
+        rows = fallback.all({
+          like: likePattern,
+          type: options.type ?? null,
+          limit: options.limit ?? 20,
+        });
+      }
       return rows.map(toMediaRow);
     },
 
@@ -371,8 +393,10 @@ function toMediaRow(row: MediaDbRow): MediaRow {
 }
 
 /**
- * Convierte la consulta del usuario en una expresión FTS5 segura.
- * Se escapan las comillas y se añade el comodín de prefijo al último término.
+ * Convierte una consulta del usuario en una expresión FTS5 segura.
+ * Se escapan las comillas y se añade el comodín de prefijo a cada término.
+ * Los términos se unen con OR para que basten con que coincida cualquiera de
+ * ellos (búsqueda más tolerante a errores de escritura o palabras sueltas).
  */
 export function toFtsQuery(query: string): string {
   const terms = query
@@ -381,5 +405,13 @@ export function toFtsQuery(query: string): string {
     .filter((term) => term.length > 0);
 
   if (terms.length === 0) return '';
-  return terms.map((term) => `"${term}"*`).join(' AND ');
+  return terms.map((term) => `"${term}"*`).join(' OR ');
+}
+
+/**
+ * Escapa los caracteres especiales de LIKE (%, _) y la barra invertida para
+ * usarlos de forma segura en un patrón LIKE.
+ */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }

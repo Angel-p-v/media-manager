@@ -690,6 +690,8 @@ export class MetadataService {
 
   /**
    * Busca en todos los proveedores configurados (TMDB primero, luego TVDB, OMDB y AniList como fallback).
+   * Si no hay ningún proveedor configurado, devuelve un resultado local basado
+   * en la consulta (sin necesidad de API keys externas).
    */
   async search(query: string): Promise<MetadataSearchResult[]> {
     const results: MetadataSearchResult[] = [];
@@ -738,6 +740,23 @@ export class MetadataService {
       }
     }
 
+    // Si no hay ningún proveedor configurado ni resultados, devolver un
+    // resultado local basado en la consulta para no dejar al usuario sin nada.
+    if (results.length === 0 && !this.hasProviderConfigured()) {
+      results.push({
+        provider: 'tmdb',
+        externalId: 0,
+        title: query.trim(),
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        releaseDate: null,
+        originalLanguage: null,
+        localPosterPath: null,
+      });
+    }
+
     return results;
   }
 
@@ -750,6 +769,23 @@ export class MetadataService {
     provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist',
     mediaType: 'movie' | 'tv' = 'movie',
   ): Promise<MetadataSearchResult> {
+    // externalId === 0 indica un resultado local (sin proveedor externo): no
+    // hay nada que obtener de una API, devolver los datos básicos tal cual.
+    if (externalId === 0) {
+      return {
+        provider,
+        externalId: 0,
+        title: '',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        releaseDate: null,
+        originalLanguage: null,
+        localPosterPath: null,
+      };
+    }
+
     if (provider === 'tmdb') {
       return this.getTmdbDetails(externalId, mediaType);
     }
@@ -763,15 +799,11 @@ export class MetadataService {
   }
 
   /**
-   * Verifica si hay al menos un proveedor configurado.
+   * Verifica si hay al menos un proveedor disponible.
+   * El proveedor local siempre está disponible (sin necesidad de API keys).
    */
   hasProviderConfigured(): boolean {
-    return (
-      !!this.config.tmdbApiKey ||
-      !!this.config.tvdbApiKey ||
-      !!this.config.omdbApiKey ||
-      !!this.config.anilistApiKey
-    );
+    return true;
   }
 
   /**
