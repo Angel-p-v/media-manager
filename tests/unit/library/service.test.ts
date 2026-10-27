@@ -408,6 +408,7 @@ describe('createLibraryService', () => {
         backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
+        firstAirDate: null,
         originalLanguage: 'de',
         localPosterPath: null,
       };
@@ -420,6 +421,7 @@ describe('createLibraryService', () => {
         backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
+        firstAirDate: null,
         originalLanguage: 'de',
         localPosterPath: null,
       };
@@ -503,6 +505,7 @@ describe('createLibraryService', () => {
         backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
+        firstAirDate: null,
         originalLanguage: 'de',
         localPosterPath: null,
       };
@@ -515,6 +518,7 @@ describe('createLibraryService', () => {
         backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
+        firstAirDate: null,
         originalLanguage: 'de',
         localPosterPath: '/cache/123-poster.jpg',
       };
@@ -558,6 +562,101 @@ describe('createLibraryService', () => {
       });
 
       const result = await library.getOrFetchMetadata(1);
+      expect(setCalled).toBe(true);
+      expect(result?.title).toBe('Dark');
+      expect(result?.provider).toBe('tmdb');
+      expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
+    });
+
+    it('busca por título usando TMDB cuando hay metadatos del proveedor default sin póster y se configura API key de TMDB', async () => {
+      const existing = {
+        mediaId: 1,
+        provider: 'default' as const,
+        externalId: 0,
+        title: 'Dark',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        localPosterPath: null,
+        fetchedAt: new Date().toISOString(),
+        updatedAt: '',
+      };
+
+      const searchResult = {
+        provider: 'tmdb' as const,
+        externalId: 123,
+        title: 'Dark',
+        overview: 'Sinopsis de Dark',
+        posterPath: '/poster.jpg',
+        backdropPath: null,
+        voteAverage: 8.5,
+        releaseDate: '2017-12-01',
+        firstAirDate: null,
+        originalLanguage: 'de',
+        localPosterPath: null,
+      };
+      const details = {
+        provider: 'tmdb' as const,
+        externalId: 123,
+        title: 'Dark',
+        overview: 'Sinopsis de Dark',
+        posterPath: '/poster.jpg',
+        backdropPath: null,
+        voteAverage: 8.5,
+        releaseDate: '2017-12-01',
+        firstAirDate: null,
+        originalLanguage: 'de',
+        localPosterPath: '/cache/123-poster.jpg',
+      };
+
+      let searchCalled = false;
+      let getDetailsCalled = false;
+      let setCalled = false;
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          findById: () => ({ ...dark, id: 1, type: 'series' }),
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          get: () => existing,
+          set: (input: SetMetadataInput) => {
+            setCalled = true;
+            expect(input.provider).toBe('tmdb');
+            expect(input.externalId).toBe(123);
+            expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
+            return { ...details, mediaId: input.mediaId, fetchedAt: '', updatedAt: '' };
+          },
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+          isProviderConfigured: (provider: 'tmdb' | 'tvdb' | 'omdb' | 'anilist') =>
+            provider === 'tmdb',
+          search: (query: string) => {
+            searchCalled = true;
+            expect(query).toBe('Dark');
+            return Promise.resolve([searchResult]);
+          },
+          getDetails: () => {
+            getDetailsCalled = true;
+            return Promise.resolve(details);
+          },
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      const result = await library.getOrFetchMetadata(1);
+      expect(searchCalled).toBe(true);
+      expect(getDetailsCalled).toBe(true);
       expect(setCalled).toBe(true);
       expect(result?.title).toBe('Dark');
       expect(result?.provider).toBe('tmdb');
@@ -646,6 +745,7 @@ describe('createLibraryService', () => {
         backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
+        firstAirDate: null,
         originalLanguage: 'de',
         localPosterPath: '/cache/123-poster.jpg',
       };

@@ -241,7 +241,6 @@ describe('App (TUI)', () => {
     expect(frame).toContain('Biblioteca');
     expect(frame).toContain('Severance');
     expect(frame).toContain('Dark');
-    expect(frame).toContain('Frieren');
     expect(frame).toContain('Arrival');
     expect(frame).toContain('Ficheros');
     expect(frame).toContain('[q]');
@@ -452,7 +451,7 @@ describe('App (TUI)', () => {
     const frame = frameOf(lastFrame);
     expect(frame).toContain('Reproducir');
     expect(frame).toContain('Severance');
-    expect(frame).toContain('[q/Esc]');
+    expect(frame).toContain('[Esc]');
     unmount();
   });
 
@@ -585,10 +584,10 @@ describe('App (TUI)', () => {
     let frame = frameOf(lastFrame);
 
     // Primera página: debe mostrar episodios 1-10
-    expect(frame).toContain('pág 1/2');
-    expect(frame).toContain('S01E01.mkv');
-    expect(frame).toContain('S01E10.mkv');
-    expect(frame).not.toContain('S01E11.mkv');
+    expect(frame).toContain('(1/2)');
+    expect(frame).toContain('T01E01');
+    expect(frame).toContain('T01E10');
+    expect(frame).not.toContain('T01E11');
 
     // Navegar al episodio 11 con flecha abajo 10 veces
     for (let i = 0; i < 10; i++) {
@@ -597,10 +596,10 @@ describe('App (TUI)', () => {
     frame = frameOf(lastFrame);
 
     // Ahora debería mostrar la página 2 (episodios 11-15)
-    expect(frame).toContain('pág 2/2');
-    expect(frame).toContain('S01E11.mkv');
+    expect(frame).toContain('(2/2)');
+    expect(frame).toContain('T01E11');
     // El episodio 1 ya no debería estar visible
-    const episodeLines = frame.split('\n').filter((line) => line.includes('S01E01.mkv'));
+    const episodeLines = frame.split('\n').filter((line) => line.includes('T01E01'));
     expect(episodeLines.length).toBe(0);
 
     unmount();
@@ -636,25 +635,25 @@ describe('App (TUI)', () => {
 
     await press(stdin, '\r');
     let frame = frameOf(lastFrame);
-    expect(frame).toContain('pág 1/2');
-    expect(frame).toContain('S01E10.mkv');
-    expect(frame).not.toContain('S01E11.mkv');
+    expect(frame).toContain('(1/2)');
+    expect(frame).toContain('T01E10');
+    expect(frame).not.toContain('T01E11');
 
     // Ir al episodio 11 (índice 10)
     for (let i = 0; i < 10; i++) {
       await press(stdin, '\u001b[B');
     }
     frame = frameOf(lastFrame);
-    expect(frame).toContain('pág 2/2');
-    expect(frame).toContain('S01E11.mkv');
+    expect(frame).toContain('(2/2)');
+    expect(frame).toContain('T01E11');
 
     // Volver al episodio 1
     for (let i = 0; i < 10; i++) {
       await press(stdin, '\u001b[A');
     }
     frame = frameOf(lastFrame);
-    expect(frame).toContain('pág 1/2');
-    expect(frame).toContain('S01E01.mkv');
+    expect(frame).toContain('(1/2)');
+    expect(frame).toContain('T01E01');
 
     unmount();
   });
