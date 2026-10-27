@@ -89,7 +89,8 @@ describe('PlayDetails (flujo de metadatos)', () => {
     // Estado inicial: sin metadatos, muestra placeholder
     let frame = lastFrame() ?? '';
     expect(frame).toContain('Pulsa «r» para');
-    expect(frame).toContain('obtener metadatos');
+    expect(frame).toContain('obtener');
+    expect(frame).toContain('metadatos');
     expect(frame).not.toContain('Jiro Azuma');
 
     // Pulsar "r" para obtener metadatos
@@ -130,8 +131,11 @@ describe('PlayDetails (flujo de metadatos)', () => {
     const frame = lastFrame() ?? '';
 
     // Debe mostrarse el error en el área de sinopsis (texto dividido entre líneas)
-    expect(frame).toContain('Error al obtener');
-    expect(frame).toContain('API no disponible');
+    expect(frame).toContain('Error');
+    expect(frame).toContain('obtener');
+    expect(frame).toContain('metadatos');
+    expect(frame).toContain('API');
+    expect(frame).toContain('disponible');
 
     unmount();
   });

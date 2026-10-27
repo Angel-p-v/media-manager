@@ -192,6 +192,14 @@ describe('mm (e2e, TUI interactivo con node-pty)', () => {
 
   describeOrSkip('reproducción en TUI', () => {
     it('reproduce con p --dry-run', async () => {
+      // Saltar si mpv no está instalado (no disponible en todos los entornos)
+      try {
+        execFileSync('which', ['mpv'], { stdio: 'pipe' });
+      } catch {
+        console.log('mpv no está instalado, saltando test de reproducción');
+        return;
+      }
+
       const ptyProcess = spawnTui();
       resetOutputBuffer();
 

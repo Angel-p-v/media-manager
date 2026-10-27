@@ -40,6 +40,7 @@ describe('migraciones de esquema (integración)', () => {
         { version: 4, name: 'tags-and-collections' },
         { version: 5, name: 'external-metadata' },
         { version: 6, name: 'poster-cache' },
+        { version: 7, name: 'metadata-provider-update' },
       ]);
 
       expect(db.prepare('SELECT COUNT(*) AS total FROM media').get()).toEqual({ total: 1 });
@@ -59,7 +60,7 @@ describe('migraciones de esquema (integración)', () => {
       // Aplicar de nuevo no duplica filas ni vuelve a ejecutar la migración.
       runMigrations(db);
       expect(db.prepare('SELECT COUNT(*) AS total FROM schema_migrations').get()).toEqual({
-        total: 6,
+        total: 7,
       });
     } finally {
       db.close();
@@ -97,6 +98,7 @@ describe('migraciones de esquema (integración)', () => {
         { version: 4, name: 'tags-and-collections' },
         { version: 5, name: 'external-metadata' },
         { version: 6, name: 'poster-cache' },
+        { version: 7, name: 'metadata-provider-update' },
       ]);
 
       const tables = db
