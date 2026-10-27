@@ -447,8 +447,20 @@ export function SettingsView({
         setEditingValue((prev) => prev.slice(0, -1));
         return;
       }
-      // Caracter imprimible: añadir al valor.
-      if (input.length === 1) {
+      // Caracter imprimible o texto pegado: añadir al valor.
+      // Si input tiene varios caracteres (pegado) y no es una tecla de
+      // navegación especial (flechas, inicio, fin, etc.), se trata como
+      // texto pegado y se inserta completo.
+      const isNavigationKey =
+        key.leftArrow ||
+        key.rightArrow ||
+        key.upArrow ||
+        key.downArrow ||
+        key.home ||
+        key.end ||
+        key.pageUp ||
+        key.pageDown;
+      if (!isNavigationKey && input.length > 0) {
         setEditingValue((prev) => prev + input);
         return;
       }
