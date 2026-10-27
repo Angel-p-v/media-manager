@@ -6,6 +6,27 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.3.0](https://github.com/Angel-p-v/media-manager/compare/v3.2.0...v3.3.0) (2026-10-27)
+
+
+### Features
+
+* **config:** obtención automática de metadatos al abrir la TUI ([#210](https://github.com/Angel-p-v/media-manager/issues/210)) ([fc17a64](https://github.com/Angel-p-v/media-manager/commit/fc17a64934808eef06700f4e4b112946494c435a))
+* **indexer:** implementar plan 12 - clasificación de archivos y metadatos desde cero ([#207](https://github.com/Angel-p-v/media-manager/issues/207)) ([87239b7](https://github.com/Angel-p-v/media-manager/commit/87239b7a3c16500760b6b8d849046ce0342097dd))
+* **ui:** codec de vídeo, selección de subtítulos con Mayús+flechas, indexado al guardar ajustes ([#218](https://github.com/Angel-p-v/media-manager/issues/218)) ([c88e613](https://github.com/Angel-p-v/media-manager/commit/c88e613dcc5bb83fdb90d9f5042c7e74e10ee0ac))
+* **ui:** correcciones de UX, metadatos y búsqueda ([#220](https://github.com/Angel-p-v/media-manager/issues/220)) ([f005a03](https://github.com/Angel-p-v/media-manager/commit/f005a03c6688bf82198975165408c2f8600e4428))
+* **ui:** gestor de metadatos automático con proveedor por defecto ([#221](https://github.com/Angel-p-v/media-manager/issues/221)) ([626014c](https://github.com/Angel-p-v/media-manager/commit/626014cb2f8251163d1bc9d80112af1b1bf40a0c))
+* **ui:** idiomas de audio/subs desde los nombres de fichero ([#215](https://github.com/Angel-p-v/media-manager/issues/215)) ([8df72fd](https://github.com/Angel-p-v/media-manager/commit/8df72fd8adc740b4e4a9cb3209e25ba4dd700e4d))
+* **ui:** leer metadatos reales de vídeo (audio y subtítulos) con ffprobe ([#217](https://github.com/Angel-p-v/media-manager/issues/217)) ([3eb1f69](https://github.com/Angel-p-v/media-manager/commit/3eb1f69431cf7ef74deac15b71051b6c9bb2296f))
+* **ui:** mejorar vista de detalles de reproducción (play-details) ([#214](https://github.com/Angel-p-v/media-manager/issues/214)) ([bdc4a51](https://github.com/Angel-p-v/media-manager/commit/bdc4a5162bc810665adf0f696922c87d7b506451))
+* **ui:** paginación de 12 episodios y navegación de pistas en play-details ([#216](https://github.com/Angel-p-v/media-manager/issues/216)) ([a26cfd4](https://github.com/Angel-p-v/media-manager/commit/a26cfd41668c58b05aa344569fa4bb8555c191f4))
+* **ui:** vista de detalles de reproducción tipo Jellyfin ([#213](https://github.com/Angel-p-v/media-manager/issues/213)) ([68c39ff](https://github.com/Angel-p-v/media-manager/commit/68c39ff2bcb34109eacdbfecd750c880c93d11de))
+
+
+### Bug Fixes
+
+* **indexer:** detectar episodios con sufijos tipo v2 (S01E01v2) ([#209](https://github.com/Angel-p-v/media-manager/issues/209)) ([ece374f](https://github.com/Angel-p-v/media-manager/commit/ece374f1e37b2f14a0c8bec3dc07d562f6f5dace))
+
 ## [3.2.0](https://github.com/Angel-p-v/media-manager/compare/v3.1.0...v3.2.0) (2026-10-26)
 
 
