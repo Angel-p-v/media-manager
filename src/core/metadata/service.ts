@@ -4,6 +4,9 @@ import { MetadataError, formatError } from '../../shared/errors.js';
 
 import type { Logger } from '../../shared/logger.js';
 
+/** Base URL para las imágenes de TMDB (pósters, backdrops, etc.). */
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
+
 /** Respuesta de búsqueda de TMDB. */
 type TmdbSearchResponse = {
   results: TmdbSearchResult[];
@@ -297,11 +300,11 @@ export class MetadataService {
 
     const data = (await response.json()) as TmdbDetails;
 
-    let localPosterPath = await cachePoster(
-      data.poster_path,
-      data.id,
-      adaptLogger(this.config.logger),
-    );
+    // TMDB devuelve poster_path como ruta relativa (ej. /abc.jpg); construir URL completa.
+    const posterUrl =
+      data.poster_path !== null ? `${TMDB_IMAGE_BASE_URL}${data.poster_path}` : null;
+
+    let localPosterPath = await cachePoster(posterUrl, data.id, adaptLogger(this.config.logger));
 
     // Fallback: si la descarga falló, usar el póster previamente cacheado
     localPosterPath ??= await getCachedPoster(data.id);
