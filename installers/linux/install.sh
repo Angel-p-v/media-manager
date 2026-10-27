@@ -71,6 +71,43 @@ die() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# ---------------------------------------------------------------------------
+# chafa: renderizado de imágenes en terminal (pósters de metadatos)
+# ---------------------------------------------------------------------------
+ensure_chafa() {
+  if have chafa; then
+    step "chafa ya está instalado (renderizado de pósters habilitado)"
+    return 0
+  fi
+
+  warn "chafa no está instalado; es necesario para mostrar pósters de metadatos en la TUI"
+  step "intentando instalar chafa con el gestor de paquetes del sistema"
+
+  _pkg_cmd=""
+  if have apt-get; then _pkg_cmd="apt-get update -qq && apt-get install -y -qq chafa"
+  elif have dnf; then _pkg_cmd="dnf install -y chafa"
+  elif have yum; then _pkg_cmd="yum install -y chafa"
+  elif have pacman; then _pkg_cmd="pacman -Sy --noconfirm chafa"
+  elif have apk; then _pkg_cmd="apk add chafa"
+  elif have brew; then _pkg_cmd="brew install chafa"
+  fi
+
+  if [ -z "$_pkg_cmd" ]; then
+    warn "no se pudo instalar chafa automáticamente (gestor de paquetes no soportado)"
+    warn "instálalo manualmente (ej. 'sudo apt install chafa') para ver los pósters"
+    return 0
+  fi
+
+  # Instalar (puede requerir sudo; si falla, advertir y continuar)
+  if ! $_pkg_cmd >/dev/null 2>&1; then
+    warn "no se pudo instalar chafa automáticamente (puede requerir privilegios de administrador)"
+    warn "instálalo manualmente (ej. 'sudo apt install chafa') para ver los pósters"
+    return 0
+  fi
+
+  step "chafa instalado correctamente (renderizado de pósters habilitado)"
+}
+
 cleanup() {
   _status=$?
   trap - EXIT INT TERM HUP
@@ -200,6 +237,9 @@ if [ -e "$PREFIX" ] && [ ! -d "$PREFIX" ]; then
   die 1 "$PREFIX existe y no es un directorio"
 fi
 mkdir -p "$APP_DIR" "$BINDIR" "$CONFIG_DIR" || die 1 "no se pudieron crear los directorios de instalación"
+
+# Instalar chafa para renderizado de pósters en terminal (si no está disponible)
+ensure_chafa
 
 # ---------------------------------------------------------------------------
 # Modo repo clonado: usar dist/ y package.json locales

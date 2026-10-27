@@ -58,6 +58,44 @@ function have($cmd) {
     return (Get-Command $cmd -ErrorAction SilentlyContinue) -ne $null
 }
 
+# ---------------------------------------------------------------------------
+# chafa: renderizado de imágenes en terminal (pósters de metadatos)
+# ---------------------------------------------------------------------------
+function ensure_chafa() {
+    if (have chafa) {
+        step "chafa ya está instalado (renderizado de pósters habilitado)"
+        return
+    }
+
+    warn "chafa no está instalado; es necesario para mostrar pósters de metadatos en la TUI"
+    step "intentando instalar chafa con el gestor de paquetes de Windows"
+
+    # Intentar winget primero (estándar en Windows 10/11)
+    if (have winget) {
+        step "instalando chafa mediante winget"
+        winget install --id chafa.chafa --silent --accept-package-agreements --accept-source-agreements 2>$null
+        if (have chafa) {
+            step "chafa instalado correctamente mediante winget (renderizado de pósters habilitado)"
+            return
+        }
+        warn "winget no pudo instalar chafa"
+    }
+
+    # Intentar chocolatey como fallback
+    if (have choco) {
+        step "instalando chafa mediante chocolatey"
+        choco install chafa -y 2>$null
+        if (have chafa) {
+            step "chafa instalado correctamente mediante chocolatey (renderizado de pósters habilitado)"
+            return
+        }
+        warn "chocolatey no pudo instalar chafa"
+    }
+
+    warn "no se pudo instalar chafa automáticamente"
+    warn "instálalo manualmente (ej. 'winget install chafa.chafa') para ver los pósters"
+}
+
 # --- Parseo de argumentos ---
 $argsCopy = $args
 $i = 0
@@ -139,6 +177,9 @@ if ((Test-Path $PREFIX) -and -not ((Get-Item $PREFIX).PSIsContainer)) { die 1 "$
 New-Item -ItemType Directory -Path $APP_DIR -Force | Out-Null
 New-Item -ItemType Directory -Path $BINDIR -Force | Out-Null
 New-Item -ItemType Directory -Path $CONFIG_DIR -Force | Out-Null
+
+# Instalar chafa para renderizado de pósters en terminal (si no está disponible)
+ensure_chafa
 
 # Clonar el repositorio
 step "clonando el repositorio"
