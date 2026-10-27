@@ -49,10 +49,11 @@ export type PlayDetailsProps = {
 /**
  * Vista de detalles de reproducción tipo Jellyfin.
  *
- * Diseño (3 columnas iguales):
- * - Izquierda: selección de pista de audio (←→) y subtítulos (Mayús+←→).
+ * Diseño (3 columnas + barra inferior):
+ * - Izquierda: póster grande.
  * - Centro: título, año, códec, sinopsis y listado de episodios con paginación.
- * - Derecha: póster grande (renderizado con chafa).
+ * - Derecha: selección de pista de audio (←→) y subtítulos (Mayús+←→).
+ * - Abajo (ancho completo): hints de teclado.
  *
  * Los idiomas de audio y subtítulos se extraen de los metadatos reales de cada
  * fichero de vídeo mediante ffprobe, no se infieren del nombre de archivo.
@@ -283,175 +284,178 @@ export function PlayDetails({
   const currentPage = Math.floor(selectedFileIndex / EPISODES_PER_PAGE) + 1;
 
   return (
-    <Box flexGrow={1} flexDirection="row">
-      {/* ==================== Izquierda: selección de pistas ==================== */}
-      <Box flexDirection="column" flexShrink={0} paddingX={1} paddingY={1}>
-        {loadingMetadata ? (
-          <>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted('(←→)')}
-            </Text>
-            <Text>{theme.muted('  cargando metadatos…')}</Text>
-            <Text> </Text>
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
-            </Text>
-            <Text>{theme.muted('  cargando metadatos…')}</Text>
-            <Text> </Text>
-          </>
-        ) : metadataError !== null ? (
-          <>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted('(←→)')}
-            </Text>
-            <Text>{theme.error(`  error: ${metadataError}`)}</Text>
-            <Text> </Text>
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
-            </Text>
-            <Text>{theme.error(`  error: ${metadataError}`)}</Text>
-            <Text> </Text>
-          </>
-        ) : (
-          <>
-            <Text>
-              {theme.label('Pista de audio')} {theme.muted('(←→)')}
-            </Text>
-            {audioTracks.length === 0 ? (
-              <Text>{theme.muted('  sin pistas de audio detectadas')}</Text>
-            ) : (
-              audioTracks.map((track) => {
-                const active = track.index === selectedAudioIndex;
-                return (
-                  <Text
-                    key={`audio-${track.index}`}
-                    bold={active}
-                    {...(active ? { color: 'cyan' as const } : {})}
-                  >
-                    {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
-                      track.channels !== null ? ` ${track.channels}ch` : ''
-                    }${track.sampleRate ? ` ${track.sampleRate}Hz` : ''}${
-                      track.title ? ` - ${track.title}` : ''
-                    })`}
-                  </Text>
-                );
-              })
-            )}
-            <Text> </Text>
+    <Box flexGrow={1} flexDirection="column">
+      {/* ==================== Cuerpo principal (3 columnas) ==================== */}
+      <Box flexGrow={1} flexDirection="row">
+        {/* ==================== Izquierda: póster ==================== */}
+        <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
+          <PosterImage imagePath={posterPath} width={16} height={12} />
+        </Box>
 
-            <Text>
-              {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
-            </Text>
-            {subtitleTracks.length === 0 ? (
-              <Text>{theme.muted('  sin pistas de subtítulos detectadas')}</Text>
-            ) : (
-              subtitleTracks.map((track) => {
-                const active = track.index === selectedSubtitleIndex;
-                return (
-                  <Text
-                    key={`subtitle-${track.index}`}
-                    bold={active}
-                    {...(active ? { color: 'cyan' as const } : {})}
-                  >
-                    {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
-                      track.title ? ` - ${track.title}` : ''
-                    })`}
-                  </Text>
-                );
-              })
-            )}
-            <Text> </Text>
-          </>
-        )}
-      </Box>
-
-      {/* ==================== Centro: metadatos y episodios ==================== */}
-      <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1} paddingY={1}>
-        <Text>
-          {theme.value(`${media.title}${year}`)} {theme.muted(`#${media.id} · ${typeLabel}`)}
-        </Text>
-        <Text> </Text>
-
-        {media.year !== null && (
-          <>
-            <Text>
-              {theme.label('Año')} {theme.value(String(media.year))}
-            </Text>
-            <Text> </Text>
-          </>
-        )}
-
-        {videoCodec !== null && (
-          <>
-            <Text>
-              {theme.label('Códec vídeo')}{' '}
-              {theme.value(
-                videoCodec +
-                  (videoWidth !== null && videoHeight !== null
-                    ? ` ${videoWidth}x${videoHeight}`
-                    : ''),
-              )}
-            </Text>
-            <Text> </Text>
-          </>
-        )}
-
-        {/* Sinopsis real de los metadatos externos (TMDB/TVDB/AniList) */}
-        <Text>
-          {theme.label('Sinopsis')}{' '}
-          {metadata?.overview
-            ? theme.value(metadata.overview)
-            : theme.muted(
-                files.length > 0
-                  ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
-                  : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
-              )}
-        </Text>
-        <Text> </Text>
-
-        <Text>
-          {theme.label('Episodios / ficheros')}{' '}
-          {theme.muted(`(↑↓ navegan · pág ${currentPage}/${totalPages})`)}
-        </Text>
-        {files.length === 0 ? (
-          <Text>{theme.muted('  sin ficheros indexados')}</Text>
-        ) : (
-          visibleFiles.map((file, relativeIndex) => {
-            const absoluteIndex = visibleStart + relativeIndex;
-            const active = absoluteIndex === selectedFileIndex;
-            const season = file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
-            const episode =
-              file.episode === null ? '' : `E${String(file.episode).padStart(2, '0')}`;
-            const label = `${season}${episode}` || '—';
-            const fileName = shortenPath(file.filePath, 16);
-            return (
-              <Text key={file.id} bold={active} {...(active ? { color: 'cyan' as const } : {})}>
-                {`${active ? '▸ ' : '   '}${label.padEnd(8)} ${fileName}`}
-              </Text>
-            );
-          })
-        )}
-        {files.length > EPISODES_PER_PAGE && (
+        {/* ==================== Centro: metadatos y episodios ==================== */}
+        <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1} paddingY={1}>
           <Text>
-            {theme.muted(`  +${files.length - visibleFiles.length} (${currentPage}/${totalPages})`)}
+            {theme.value(`${media.title}${year}`)} {theme.muted(`#${media.id} · ${typeLabel}`)}
           </Text>
-        )}
-        <Text> </Text>
+          <Text> </Text>
+
+          {media.year !== null && (
+            <>
+              <Text>
+                {theme.label('Año')} {theme.value(String(media.year))}
+              </Text>
+              <Text> </Text>
+            </>
+          )}
+
+          {videoCodec !== null && (
+            <>
+              <Text>
+                {theme.label('Códec vídeo')}{' '}
+                {theme.value(
+                  videoCodec +
+                    (videoWidth !== null && videoHeight !== null
+                      ? ` ${videoWidth}x${videoHeight}`
+                      : ''),
+                )}
+              </Text>
+              <Text> </Text>
+            </>
+          )}
+
+          {/* Sinopsis real de los metadatos externos (TMDB/TVDB/AniList) */}
+          <Text>
+            {theme.label('Sinopsis')}{' '}
+            {metadata?.overview
+              ? theme.value(metadata.overview)
+              : theme.muted(
+                  files.length > 0
+                    ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
+                    : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
+                )}
+          </Text>
+          <Text> </Text>
+
+          <Text>
+            {theme.label('Episodios / ficheros')}{' '}
+            {theme.muted(`(↑↓ navegan · pág ${currentPage}/${totalPages})`)}
+          </Text>
+          {files.length === 0 ? (
+            <Text>{theme.muted('  sin ficheros indexados')}</Text>
+          ) : (
+            visibleFiles.map((file, relativeIndex) => {
+              const absoluteIndex = visibleStart + relativeIndex;
+              const active = absoluteIndex === selectedFileIndex;
+              const season = file.season === null ? '' : `T${String(file.season).padStart(2, '0')}`;
+              const episode =
+                file.episode === null ? '' : `E${String(file.episode).padStart(2, '0')}`;
+              const label = `${season}${episode}` || '—';
+              const fileName = shortenPath(file.filePath, 16);
+              return (
+                <Text key={file.id} bold={active} {...(active ? { color: 'cyan' as const } : {})}>
+                  {`${active ? '▸ ' : '   '}${label.padEnd(8)} ${fileName}`}
+                </Text>
+              );
+            })
+          )}
+          {files.length > EPISODES_PER_PAGE && (
+            <Text>{theme.muted(`(${currentPage}/${totalPages})`)}</Text>
+          )}
+          <Text> </Text>
+        </Box>
+
+        {/* ==================== Derecha: selección de pistas ==================== */}
+        <Box flexDirection="column" flexShrink={0} paddingX={1} paddingY={1}>
+          {loadingMetadata ? (
+            <>
+              <Text>
+                {theme.label('Pista de audio')} {theme.muted('(←→)')}
+              </Text>
+              <Text>{theme.muted('  cargando metadatos…')}</Text>
+              <Text> </Text>
+              <Text>
+                {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+              </Text>
+              <Text>{theme.muted('  cargando metadatos…')}</Text>
+              <Text> </Text>
+            </>
+          ) : metadataError !== null ? (
+            <>
+              <Text>
+                {theme.label('Pista de audio')} {theme.muted('(←→)')}
+              </Text>
+              <Text>{theme.error(`  error: ${metadataError}`)}</Text>
+              <Text> </Text>
+              <Text>
+                {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+              </Text>
+              <Text>{theme.error(`  error: ${metadataError}`)}</Text>
+              <Text> </Text>
+            </>
+          ) : (
+            <>
+              <Text>
+                {theme.label('Pista de audio')} {theme.muted('(←→)')}
+              </Text>
+              {audioTracks.length === 0 ? (
+                <Text>{theme.muted('  sin pistas de audio detectadas')}</Text>
+              ) : (
+                audioTracks.map((track) => {
+                  const active = track.index === selectedAudioIndex;
+                  return (
+                    <Text
+                      key={`audio-${track.index}`}
+                      bold={active}
+                      {...(active ? { color: 'cyan' as const } : {})}
+                    >
+                      {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
+                        track.channels !== null ? ` ${track.channels}ch` : ''
+                      }${track.sampleRate ? ` ${track.sampleRate}Hz` : ''}${
+                        track.title ? ` - ${track.title}` : ''
+                      })`}
+                    </Text>
+                  );
+                })
+              )}
+              <Text> </Text>
+
+              <Text>
+                {theme.label('Pista de subtítulos')} {theme.muted('(Mayús+←→)')}
+              </Text>
+              {subtitleTracks.length === 0 ? (
+                <Text>{theme.muted('  sin pistas de subtítulos detectadas')}</Text>
+              ) : (
+                subtitleTracks.map((track) => {
+                  const active = track.index === selectedSubtitleIndex;
+                  return (
+                    <Text
+                      key={`subtitle-${track.index}`}
+                      bold={active}
+                      {...(active ? { color: 'cyan' as const } : {})}
+                    >
+                      {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
+                        track.title ? ` - ${track.title}` : ''
+                      })`}
+                    </Text>
+                  );
+                })
+              )}
+              <Text> </Text>
+            </>
+          )}
+        </Box>
       </Box>
 
-      {/* ==================== Derecha: póster ==================== */}
-      <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-        <PosterImage imagePath={posterPath} width={24} height={16} />
-      </Box>
-
-      {/* Barra de estado inferior con hints de teclado */}
-      <Box marginTop={1} paddingX={1}>
-        <Text>{theme.muted('  [p] Reproducir')}</Text>
-        <Text>{theme.muted('  [q/Esc] Volver a la biblioteca')}</Text>
-        <Text>{theme.muted(`  Fichero: ${fileName}`)}</Text>
+      {/* ==================== Barra inferior: teclas de acción (ancho completo) ==================== */}
+      <Box paddingX={1}>
         <Text>
           {theme.muted(
-            `  Audio: ${selectedAudio?.language ?? '—'}  ·  Subtítulos: ${selectedSubtitle?.language ?? '—'}`,
+            '  [p] Reproducir   [q/Esc] Volver   ↑↓ Episodios   ←→ Audio   Mayús+←→ Subtítulos',
+          )}
+        </Text>
+        <Text>
+          {theme.muted(
+            `  Fichero: ${fileName}   Audio: ${selectedAudio?.language ?? '—'}   Subtítulos: ${selectedSubtitle?.language ?? '—'}`,
           )}
         </Text>
       </Box>

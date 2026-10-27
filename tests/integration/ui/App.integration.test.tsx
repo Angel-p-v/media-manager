@@ -551,7 +551,7 @@ describe('App (TUI)', () => {
     unmount();
   });
 
-  it('muestra máximo 12 episodios por página con paginación', async () => {
+  it('muestra máximo 10 episodios por página con paginación', async () => {
     const libraryManyEpisodes = {
       ...fakeLibrary(),
       find: (query: string) => {
