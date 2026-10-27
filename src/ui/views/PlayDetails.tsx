@@ -2,10 +2,11 @@ import { Box, Text, useApp, useInput } from 'ink';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { readVideoMediaInfo } from '../../core/video/ffprobe.js';
+import { PosterImage } from '../components/PosterImage.js';
 import { theme } from '../theme.js';
 
 import type { MediaFileRow } from '../../core/db/types.js';
-import type { MediaDetails as Details } from '../../core/library/service.js';
+import type { MediaDetails as Details, LibraryService } from '../../core/library/service.js';
 
 /** Número máximo de episodios visibles por página en la lista. */
 const EPISODES_PER_PAGE = 12;
@@ -32,6 +33,8 @@ export type RealSubtitleTrack = {
 export type PlayDetailsProps = {
   /** Título seleccionado en la biblioteca. */
   details: Details | null;
+  /** Servicio de biblioteca (para obtener metadatos y pósters cacheados). */
+  library: LibraryService;
   /** Reproduce el fichero seleccionado con las pistas de audio/subtítulo elegidas. */
   onPlay: (input: {
     fileId: number;
@@ -61,7 +64,12 @@ export type PlayDetailsProps = {
  * - p : reproduce el fichero seleccionado con las pistas elegidas
  * - q / Esc : vuelve a la biblioteca
  */
-export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): React.JSX.Element {
+export function PlayDetails({
+  details,
+  library,
+  onPlay,
+  onBack,
+}: PlayDetailsProps): React.JSX.Element {
   const { exit } = useApp();
 
   if (details === null) {
@@ -89,6 +97,8 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   const [videoHeight, setVideoHeight] = useState<number | null>(null);
   const [loadingMetadata, setLoadingMetadata] = useState(false);
   const [metadataError, setMetadataError] = useState<string | null>(null);
+  /** Ruta local al póster cacheado del título (si existe). */
+  const [posterPath, setPosterPath] = useState<string | null>(null);
 
   const selectedFile = files[selectedFileIndex];
   const selectedAudio = audioTracks[selectedAudioIndex ?? -1];
@@ -152,6 +162,16 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
   useEffect(() => {
     void loadFileMetadata(selectedFile);
   }, [selectedFile, loadFileMetadata]);
+
+  // Obtener el póster cacheado del título cuando cambian los detalles.
+  useEffect(() => {
+    if (details === null) {
+      setPosterPath(null);
+      return;
+    }
+    const saved = library.getMetadata(details.media.id);
+    setPosterPath(saved?.localPosterPath ?? null);
+  }, [details, library]);
 
   /** Ajusta la ventana visible para que el índice seleccionado siempre esté visible. */
   const ensureVisible = useCallback(
@@ -258,12 +278,7 @@ export function PlayDetails({ details, onPlay, onBack }: PlayDetailsProps): Reac
     <Box flexGrow={1} flexDirection="row">
       {/* ==================== Izquierda: póster ==================== */}
       <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-        <Box borderStyle="round" borderColor={theme.border} width={22} height={12} flexShrink={0}>
-          <Text>{theme.muted('  [ PÓSTER ]')}</Text>
-          <Text>{theme.muted('  (placeholder)')}</Text>
-          <Text>{theme.muted('  sin portada')} </Text>
-          <Text>{theme.muted('  descargada')} </Text>
-        </Box>
+        <PosterImage imagePath={posterPath} width={22} height={12} />
         <Box marginTop={1}>
           <Text>
             {theme.highlight(media.title)}

@@ -627,6 +627,7 @@ function AppImpl({
         {!helpVisible && view === 'play-details' ? (
           <PlayDetails
             details={playDetailsMediaId === null ? null : library.find(String(playDetailsMediaId))}
+            library={library}
             onPlay={handlePlayFromDetails}
             onBack={() => {
               setView('library');
