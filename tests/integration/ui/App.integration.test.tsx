@@ -210,7 +210,8 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
 
 async function press(stdin: ReturnType<typeof render>['stdin'], value: string): Promise<void> {
   stdin.write(value);
-  await new Promise((resolve) => setTimeout(resolve, 20));
+  // Esperar a que React/Ink procese el evento y re-renderice antes de leer el frame.
+  await new Promise((resolve) => setTimeout(resolve, 100));
 }
 
 async function typeText(stdin: ReturnType<typeof render>['stdin'], text: string): Promise<void> {
