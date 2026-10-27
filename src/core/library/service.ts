@@ -370,11 +370,14 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 result.provider,
                 mediaType,
               );
+              // Si el proveedor no devolvió título (proveedor local sin API key),
+              // usamos el título del resultado de búsqueda (título del usuario).
+              const title = details.title || result.title;
               return metadataRepo.set({
                 mediaId,
                 provider: result.provider,
                 externalId: details.externalId,
-                title: details.title,
+                title,
                 overview: details.overview,
                 posterPath: details.posterPath,
                 backdropPath: details.backdropPath,
