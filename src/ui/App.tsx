@@ -260,6 +260,15 @@ function AppImpl({
       setStatus(
         `Metadatos limpiados (${removed}). Pulsa «r» para obtenerlos con las nuevas API keys.`,
       );
+
+      // También intentar obtener metadatos (sinopsis y póster) automáticamente
+      // para el título actualmente seleccionado, para que el usuario vea
+      // resultados inmediatos al configurar las API keys.
+      if (selectedMedia) {
+        void library
+          .getOrFetchMetadata(selectedMedia.id)
+          .then(() => setMetadataRefreshKey((k) => k + 1));
+      }
     }
   }, [library, config.metadata]);
 
