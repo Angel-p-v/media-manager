@@ -232,6 +232,18 @@ export class MetadataService {
     const data = (await response.json()) as TvMazeShow;
 
     const posterPath = data.image?.original ?? data.image?.medium ?? null;
+    if (posterPath) {
+      this.logger.info('[METADATA API] Poster URL encontrada:', {
+        provider: 'tvmaze',
+        title: data.name,
+        posterUrl: posterPath,
+      });
+    } else {
+      this.logger.warn('[METADATA API] No se encontró URL de póster para este título:', {
+        provider: 'tvmaze',
+        title: data.name,
+      });
+    }
 
     let localPosterPath: string | null = null;
     if (posterPath) {
@@ -277,6 +289,18 @@ export class MetadataService {
     const data = (await response.json()) as TvMazeShow;
 
     const posterPath = data.image?.original ?? data.image?.medium ?? null;
+    if (posterPath) {
+      this.logger.info('[METADATA API] Poster URL encontrada:', {
+        provider: 'tvmaze',
+        title: data.name,
+        posterUrl: posterPath,
+      });
+    } else {
+      this.logger.warn('[METADATA API] No se encontró URL de póster para este título:', {
+        provider: 'tvmaze',
+        title: data.name,
+      });
+    }
 
     let localPosterPath: string | null = null;
     if (posterPath) {
@@ -323,10 +347,23 @@ export class MetadataService {
     const results: MetadataSearchResult[] = [];
     for (const item of data.data) {
       const posterPath = item.images?.jpg?.large_image_url ?? null;
+      const itemTitle = item.title_english ?? item.title;
+
+      if (posterPath) {
+        this.logger.info('[METADATA API] Poster URL encontrada:', {
+          provider: 'jikan',
+          title: itemTitle,
+          posterUrl: posterPath,
+        });
+      } else {
+        this.logger.warn('[METADATA API] No se encontró URL de póster para este título:', {
+          provider: 'jikan',
+          title: itemTitle,
+        });
+      }
 
       let localPosterPath: string | null = null;
       if (posterPath) {
-        const itemTitle = item.title_english ?? item.title;
         localPosterPath = await cachePoster(posterPath, itemTitle, 'anime', this.logger);
         localPosterPath ??= await getCachedPoster(itemTitle, 'anime');
       }
@@ -368,10 +405,23 @@ export class MetadataService {
     const data = (await response.json()) as JikanAnimeDetails;
 
     const posterPath = data.images?.jpg?.large_image_url ?? null;
+    const animeTitle = data.title_english ?? data.title;
+
+    if (posterPath) {
+      this.logger.info('[METADATA API] Poster URL encontrada:', {
+        provider: 'jikan',
+        title: animeTitle,
+        posterUrl: posterPath,
+      });
+    } else {
+      this.logger.warn('[METADATA API] No se encontró URL de póster para este título:', {
+        provider: 'jikan',
+        title: animeTitle,
+      });
+    }
 
     let localPosterPath: string | null = null;
     if (posterPath) {
-      const animeTitle = data.title_english ?? data.title;
       localPosterPath = await cachePoster(posterPath, animeTitle, 'anime', this.logger);
       localPosterPath ??= await getCachedPoster(animeTitle, 'anime');
     }
