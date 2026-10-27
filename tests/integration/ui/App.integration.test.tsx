@@ -9,6 +9,7 @@ import { App } from '../../../src/ui/App.js';
 import type { AppConfig } from '../../../src/core/config/schema.js';
 import type { MediaFileRow, MediaRow } from '../../../src/core/db/types.js';
 import type { LibraryService } from '../../../src/core/library/service.js';
+import type { MetadataService } from '../../../src/core/metadata/service.js';
 import type { LaunchPlan, PlayerHandle } from '../../../src/core/player/launcher.js';
 
 const config: AppConfig = {
@@ -200,6 +201,10 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
     },
     getExpiredMetadataCount: () => 0,
     hasMetadataProviderConfigured: () => false,
+    clearAllMetadata: () => 0,
+    metadataService: {
+      updateConfig: () => undefined,
+    } as unknown as MetadataService,
   };
 }
 

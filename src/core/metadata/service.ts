@@ -208,10 +208,20 @@ function adaptLogger(configLogger: ConfigLogger): Logger {
  * fallan con un error informativo.
  */
 export class MetadataService {
-  private readonly config: MetadataServiceConfig;
+  private config: MetadataServiceConfig;
 
   constructor(config: MetadataServiceConfig) {
     this.config = config;
+  }
+
+  /**
+   * Actualiza la configuración de claves API en tiempo de ejecución.
+   * Se usa cuando el usuario modifica las API keys desde los ajustes y la
+   * instancia del MetadataService ya fue creada (no se puede recrear sin
+   * cerrar y volver a abrir la base de datos).
+   */
+  updateConfig(newConfig: Partial<MetadataServiceConfig>): void {
+    this.config = { ...this.config, ...newConfig };
   }
 
   /**

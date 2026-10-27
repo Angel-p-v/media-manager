@@ -63,6 +63,8 @@ export type MetadataRepository = {
   set(input: SetMetadataInput): MediaMetadataRow;
   /** Elimina metadatos de un título. */
   remove(mediaId: number): boolean;
+  /** Elimina todos los metadatos (usado para forzar refresco al configurar API keys). */
+  removeAll(): number;
   /** Obtiene metadatos cuyo fetched_at es anterior a ttlHours horas (expirados). */
   listExpired(ttlHours: number): MediaMetadataRow[];
 };
@@ -154,6 +156,11 @@ export function createMetadataRepository(db: Db): MetadataRepository {
 
     remove(mediaId: number): boolean {
       return removeStatement.run(mediaId).changes > 0;
+    },
+
+    /** Elimina todos los metadatos de la base de datos. */
+    removeAll(): number {
+      return db.prepare('DELETE FROM media_metadata').run().changes;
     },
 
     /** Obtiene metadatos cuyo fetched_at es anterior a ttlHours horas (expirados). */
