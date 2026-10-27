@@ -17,14 +17,15 @@ export async function runTui(config: AppConfig, configPath?: string): Promise<vo
   });
   const opened = openLibrary(config.database.path, config, logger);
 
-  /** Reindexa la biblioteca usando las raíces y filtros de la configuración actual. */
-  const indexLibraryNow = async (): Promise<void> => {
+  /** Reindexa la biblioteca usando las raíces y filtros de la configuración
+   *  pasada por App (siempre la config más actualizada tras guardar ajustes). */
+  const indexLibraryNow = async (newConfig: AppConfig): Promise<void> => {
     await indexLibrary(
       opened.repositories,
       {
-        roots: config.library.roots,
-        exclude: config.library.exclude,
-        scan: config.library.scan,
+        roots: newConfig.library.roots,
+        exclude: newConfig.library.exclude,
+        scan: newConfig.library.scan,
       },
       { logger },
     );

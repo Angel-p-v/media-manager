@@ -305,18 +305,23 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       const ttlHours = metadataConfig.cacheTtlHours ?? 24;
       const now = new Date();
 
-      // Si existen metadatos y no han expirado, devolverlos directamente
+      // Si existen metadatos y no han expirado, devolverlos directamente,
+      // a menos que no tengan póster y haya un proveedor externo disponible:
+      // en ese caso intentamos obtener el póster del proveedor externo.
       if (existing) {
         const fetchedAt = new Date(existing.fetchedAt);
         const ageHours = (now.getTime() - fetchedAt.getTime()) / (1000 * 60 * 60);
-        if (ageHours < ttlHours) {
+        const hasExternalProvider = metadataService.hasProviderConfigured();
+        const needsPoster = existing.localPosterPath === null;
+
+        if (ageHours < ttlHours && !(needsPoster && hasExternalProvider)) {
           return existing;
         }
       }
 
       // Si hay algún proveedor disponible, intentar obtener metadatos
       if (metadataService.hasProviderConfigured()) {
-        // Si ya tenemos metadatos previos (expirados) con externalId, refrescar por ID
+        // Si ya tenemos metadatos previos (expirados o sin póster) con externalId, refrescar por ID
         if (existing?.externalId) {
           for (const provider of ['anilist', 'tmdb', 'tvdb'] as const) {
             if (!metadataService.isProviderConfigured(provider)) continue;

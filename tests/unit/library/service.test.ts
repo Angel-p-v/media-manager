@@ -564,20 +564,20 @@ describe('createLibraryService', () => {
       expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
     });
 
-    it('no fuerza refresco si los metadatos no expiraron (TTL vigente)', async () => {
+    it('no fuerza refresco si los metadatos no expiraron y ya tienen póster (TTL vigente)', async () => {
       const existing = {
         mediaId: 1,
         provider: 'tmdb' as const,
         externalId: 123,
         title: 'Título existente',
         overview: null,
-        posterPath: null,
+        posterPath: '/poster.jpg',
         backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
         originalLanguage: null,
-        localPosterPath: null,
+        localPosterPath: '/cache/123-poster.jpg', // Ya tiene póster
         fetchedAt: new Date().toISOString(), // Acabado de obtener
         updatedAt: '',
       };
@@ -617,6 +617,78 @@ describe('createLibraryService', () => {
       const result = await library.getOrFetchMetadata(1);
       expect(result).toBe(existing); // Devuelve los existentes sin intentar refrescar
       expect(setCalled).toBe(false);
+    });
+
+    it('fuerza refresco de póster si los metadatos no expiraron pero no tienen póster y hay proveedor externo', async () => {
+      const existing = {
+        mediaId: 1,
+        provider: 'tmdb' as const,
+        externalId: 123,
+        title: 'Título existente',
+        overview: null,
+        posterPath: null,
+        backdropPath: null,
+        voteAverage: null,
+        firstAirDate: null,
+        releaseDate: null,
+        originalLanguage: null,
+        localPosterPath: null, // Sin póster
+        fetchedAt: new Date().toISOString(), // Acabado de obtener (no expirado)
+        updatedAt: '',
+      };
+
+      const details = {
+        provider: 'tmdb' as const,
+        externalId: 123,
+        title: 'Título existente',
+        overview: 'Sinopsis obtenida de TMDB',
+        posterPath: '/poster.jpg',
+        backdropPath: null,
+        voteAverage: 8.5,
+        releaseDate: '2017-12-01',
+        originalLanguage: 'de',
+        localPosterPath: '/cache/123-poster.jpg',
+      };
+
+      let setCalled = false;
+      const library = createLibraryService({
+        mediaRepo: fakeMediaRepository({
+          findById: () => ({ ...dark, id: 1, type: 'series' }),
+        }),
+        fileRepo: fakeFileRepository(),
+        indexRunRepo: fakeIndexRunRepository(undefined),
+        playbackRepo: fakePlaybackRepository(),
+        preferenceRepo: fakePreferenceRepository(),
+        tagRepo: fakeTagRepository(),
+        metadataRepo: {
+          ...fakeMetadataRepository(),
+          get: () => existing,
+          set: (input: SetMetadataInput) => {
+            setCalled = true;
+            expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
+            return {
+              ...details,
+              mediaId: input.mediaId,
+              firstAirDate: null,
+              fetchedAt: '',
+              updatedAt: '',
+            };
+          },
+        },
+        metadataService: {
+          ...fakeMetadataService(),
+          hasProviderConfigured: () => true,
+          isProviderConfigured: () => true,
+          search: () => Promise.resolve([]),
+          getDetails: () => Promise.resolve(details),
+        } as unknown as MetadataService,
+        metadataConfig: { cacheTtlHours: 24, autoFetch: false },
+      });
+
+      const result = await library.getOrFetchMetadata(1);
+      expect(setCalled).toBe(true); // Se forzó el refresco para obtener el póster
+      expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
+      expect(result?.overview).toBe('Sinopsis obtenida de TMDB');
     });
   });
 
