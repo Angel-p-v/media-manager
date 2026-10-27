@@ -112,6 +112,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)   | ✅     |
 | 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
 | 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación)   | ✅     |
+| 🖼️ Renderizado de pósters en terminal con `chafa`                  | ✅     |
 | 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
 | 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)          | ✅     |
 
@@ -181,7 +182,21 @@ npm run standalone -- --node-source official
 > sh installers/linux/install.sh --dry-run            # muestra los cambios sin aplicarlos
 > ```
 
-### 🗑️ Desinstalar
+---
+
+### 🖼️ Renderizado de pósters en terminal (`chafa`)
+
+media-manager puede mostrar los pósters de tus series y películas directamente en la TUI usando **chafa**, que convierte imágenes a arte Unicode con colores ANSI. Esto permite ver la portada de un título sin salir de la terminal.
+
+- **Linux**: el instalador (`installers/linux/install.sh`) intenta instalar `chafa` automáticamente con el gestor de paquetes del sistema (`apt`, `dnf`, `yum`, `pacman`, `apk` o `brew`). Si no puede (por falta de privilegios), se muestra un aviso y puedes instalarlo manualmente (por ejemplo, `sudo apt install chafa`).
+- **Windows**: el instalador (`installers/windows/install.ps1`) intenta instalar `chafa` mediante `winget` o `chocolatey`.
+- **macOS**: instala `chafa` manualmente (por ejemplo, `brew install chafa`).
+
+Si `chafa` no está disponible, la aplicación funciona normalmente pero muestra un placeholder de texto en lugar del póster.
+
+---
+
+## 🗑️ Desinstalar
 
 ```bash
 # Clona el repositorio si aún no lo tienes
