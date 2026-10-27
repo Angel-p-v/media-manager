@@ -111,7 +111,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | 📋 Sección "Continuar" en la TUI                                   | ✅     |
 | 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)   | ✅     |
 | 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
-| 🎞️ Metadatos externos TMDB/TVDB (sinopsis, póster, calificación)   | ✅     |
+| 🎞️ Metadatos externos TMDB/Jikan (sinopsis, póster, calificación)  | ✅     |
 | 🖼️ Renderizado de pósters en terminal con `chafa`                  | ✅     |
 | 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
 | 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)          | ✅     |
@@ -262,8 +262,8 @@ mm self-update --check             # comprueba si hay actualización
 mm self-update                     # descarga e instala la nueva versión
 mm self-update --dry-run           # muestra qué se haría sin instalar
 
-# 🎞️ Metadatos externos (TMDB/TVDB)
-mm metadata search "cowboy bebop"  # busca en TMDB/TVDB
+# 🎞️ Metadatos externos (TMDB/Jikan)
+mm metadata search "cowboy bebop"  # busca en TMDB/Jikan
 mm metadata fetch 12345            # obtiene y guarda metadatos por ID
 mm metadata clear                  # limpia metadatos de un título
 ```
@@ -373,8 +373,6 @@ logging:
   format: text
 
 metadata:
-  tmdbApiKey: TU_CLAVE_TMDB # opcional, para obtener metadatos externos
-  tvdbApiKey: TU_CLAVE_TVDB # opcional, proveedor alternativo
   cacheTtlHours: 24 # horas antes de refrescar metadatos
   autoFetch: false # true = obtener metadatos al abrir la TUI
 
@@ -388,17 +386,16 @@ keybindings:
 
 ### 🤖 Metadatos automáticos (tipo Sonarr/Radarr)
 
-Si activas `metadata.autoFetch: true` y configuras al menos una clave API (TMDB o TVDB), al abrir la TUI se buscarán automáticamente los metadatos de **todos los títulos que no los tienen aún**, sin que tengas que pulsar `r` en cada uno individualmente.
+Si activas `metadata.autoFetch: true`, al abrir la TUI se buscarán automáticamente los metadatos de **todos los títulos que no los tienen aún**, usando proveedores públicos gratuitos (TMDB para series/películas, Jikan para anime), sin que tengas que pulsar `r` en cada uno individualmente.
 
 ```yaml
 metadata:
-  tmdbApiKey: TU_CLAVE_TMDB
   autoFetch: true
 ```
 
-El proceso respeta el rate limiting de cada proveedor (TMDB: 40 req/10s, TVDB: 10 req/10s) y procesa los títulos en lotes para no bloquear la aplicación. Al finalizar, verás un resumen en la barra de estado con cuántos metadatos se obtuvieron y cuántos fallaron.
+El proceso respeta el rate limiting de cada proveedor y procesa los títulos en lotes para no bloquear la aplicación. Al finalizar, verás un resumen en la barra de estado con cuántos metadatos se obtuvieron y cuántos fallaron.
 
-> **💡 Por defecto** `autoFetch` está desactivado (`false`) para no hacer llamadas API inesperadas si no tienes claves configuradas.
+> **💡 Por defecto** `autoFetch` está desactivado (`false`) para no hacer llamadas API inesperadas.
 
 > **⌨️ Tecla `r`**: si prefieres obtener metadatos título por título manualmente, pulsa `r` sobre cualquier título seleccionado en la biblioteca.
 
