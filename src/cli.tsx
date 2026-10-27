@@ -39,14 +39,20 @@ import { runTui } from './ui/run.js';
 
 const program = new Command()
   .name('mm')
-  .description('Media Manager — gestor de contenido multimedia para terminal')
+  .description(
+    'Media Manager — gestor de contenido multimedia para terminal (series, anime y películas)',
+  )
   .version(getVersion(), '-V, --version', 'muestra la versión')
   .option('-v, --verbose', 'activa logs de depuración y pilas de error')
   .option('--log-file <ruta>', 'escribe los logs en un archivo con rotación automática (10 MB)')
   .showHelpAfterError()
   .addHelpText(
+    'before',
+    '\nÍndice de comandos:\n  list / search / show   explorar la biblioteca\n  play / continue        reproducir títulos\n  index / watch          mantener la biblioteca actualizada\n  metadata / doctor      metadatos externos y diagnóstico\n  config / tag / favorite  ajustes y etiquetas\n  db / self-update / completion  utilidades avanzadas\n',
+  )
+  .addHelpText(
     'after',
-    '\nCódigos de salida:\n  0  éxito\n  1  error de ejecución\n  2  uso incorrecto',
+    '\nEjemplos de uso:\n  mm                              abre la interfaz interactiva (TUI)\n  mm list                         lista todos los títulos indexados\n  mm search "Black Torch"         busca un título por nombre\n  mm show 1                       muestra el detalle del título #1\n  mm play 1                       reproduce el título #1\n  mm index                        indexa la biblioteca completa\n  mm metadata search "Black Torch"busca metadatos externos (TVMaze/Jikan)\n  mm doctor                       diagnostica y repara la biblioteca\n  mm completion bash              genera script de autocompletado para bash\n\nCódigos de salida:\n  0  éxito\n  1  error de ejecución\n  2  uso incorrecto\n',
   )
   .exitOverride();
 
@@ -64,7 +70,7 @@ program.hook('preAction', (thisCommand, actionCommand) => {
 
 program
   .command('config')
-  .description('muestra la configuración efectiva')
+  .description('muestra y edita la configuración efectiva')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--path', 'muestra solo la ruta del archivo de configuración')
   .option('--validate', 'valida el archivo de configuración y termina')
@@ -75,7 +81,7 @@ program
 
 program
   .command('index')
-  .description('indexa la biblioteca')
+  .description('indexa la biblioteca (escanea carpetas y añade títulos a la BD)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--dry-run', 'simula la indexación sin escribir en la base de datos')
   .option('--root <ruta>', 'indexa solo la raíz indicada')
@@ -85,7 +91,7 @@ program
 
 program
   .command('list')
-  .description('enumera los títulos de la biblioteca')
+  .description('enumera los títulos de la biblioteca con filtros y paginación')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-t, --type <tipo>', 'filtra por tipo (series, anime, movie)', parseMediaType)
   .option('--sort <orden>', 'ordena por title, added o recent', parseSortOrder)
@@ -103,7 +109,7 @@ program
 
 program
   .command('search')
-  .description('busca títulos por texto')
+  .description('busca títulos por texto en la biblioteca indexada')
   .argument('<consulta>', 'texto a buscar')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-t, --type <tipo>', 'filtra por tipo (series, anime, movie)', parseMediaType)
@@ -113,7 +119,7 @@ program
 
 program
   .command('show')
-  .description('muestra el detalle de un título')
+  .description('muestra el detalle completo de un título (metadatos, ficheros, póster)')
   .argument('<id-o-titulo>', 'id numérico o título a consultar')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--json', 'salida en formato JSON')
@@ -121,7 +127,7 @@ program
 
 program
   .command('play')
-  .description('reproduce un título con el reproductor configurado')
+  .description('reproduce un título con el reproductor configurado (mpv/vlc)')
   .argument('<id-o-titulo>', 'id numérico o título a reproducir')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-f, --file <id>', 'id del fichero a reproducir', parsePositiveInteger)
@@ -147,7 +153,7 @@ program
 
 program
   .command('continue')
-  .description('lista títulos en curso')
+  .description('lista títulos en curso (reproducción pendiente)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-l, --limit <n>', 'máximo de resultados', parsePositiveInteger)
   .option('--json', 'salida en formato JSON')
@@ -155,7 +161,7 @@ program
 
 program
   .command('history')
-  .description('muestra el historial reciente')
+  .description('muestra el historial reciente de reproducciones')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-l, --limit <n>', 'máximo de resultados', parsePositiveInteger)
   .option('--json', 'salida en formato JSON')
@@ -163,7 +169,7 @@ program
 
 program
   .command('mark')
-  .description('marca estado visto/no visto o posición manual')
+  .description('marca estado visto/no visto o posición de reproducción de un título')
   .argument('<id-o-titulo>', 'id numérico o título a marcar')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-f, --file <id>', 'id del fichero (requerido si hay varios)', parsePositiveInteger)
@@ -201,7 +207,7 @@ program
 
 program
   .command('doctor')
-  .description('diagnóstico y reparación de la biblioteca')
+  .description('diagnóstico y reparación de la biblioteca (índice, metadatos, pósters)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--json', 'salida en formato JSON')
   .option('--full-hash', 'hash completo para confirmar duplicados')
@@ -225,19 +231,19 @@ program
 
 program
   .command('metadata')
-  .description('gestiona metadatos externos (TMDB/TVDB)')
+  .description('gestiona metadatos externos (TVMaze para series/películas, Jikan para anime)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
-  .option('-a, --action <fetch|search|clear>', 'acción: fetch, search o clear')
+  .option('-a, --action <fetch|search|clear|cache>', 'acción: fetch, search, clear o cache')
   .option('-m, --media <id>', 'id del título (requerido para fetch/clear)')
   .option('-q, --query <texto>', 'consulta de búsqueda (requerido para search)')
-  .option('-p, --provider <tmdb|tvdb>', 'proveedor de metadatos')
+  .option('-p, --provider <tvmaze|jikan>', 'proveedor de metadatos (tvmaze o jikan)')
   .option('-e, --external-id <id>', 'id externo (requerido para fetch)')
   .option('--json', 'salida en formato JSON')
   .action(runMetadataCommand);
 
 program
   .command('completion <shell>')
-  .description('genera script de autocompletado para shell')
+  .description('genera script de autocompletado para shell (bash, zsh, fish)')
   .action((shell: string) => {
     try {
       console.log(generateCompletion(shell));
