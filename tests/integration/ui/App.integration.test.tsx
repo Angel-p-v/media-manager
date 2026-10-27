@@ -584,21 +584,21 @@ describe('App (TUI)', () => {
     await press(stdin, '\r');
     let frame = frameOf(lastFrame);
 
-    // Primera página: debe mostrar episodios 1-12
+    // Primera página: debe mostrar episodios 1-10
     expect(frame).toContain('pág 1/2');
     expect(frame).toContain('S01E01.mkv');
-    expect(frame).toContain('S01E12.mkv');
-    expect(frame).not.toContain('S01E13.mkv');
+    expect(frame).toContain('S01E10.mkv');
+    expect(frame).not.toContain('S01E11.mkv');
 
-    // Navegar al episodio 13 con flecha abajo 12 veces
-    for (let i = 0; i < 12; i++) {
+    // Navegar al episodio 11 con flecha abajo 10 veces
+    for (let i = 0; i < 10; i++) {
       await press(stdin, '\u001b[B');
     }
     frame = frameOf(lastFrame);
 
-    // Ahora debería mostrar la página 2 (episodios 2-13)
+    // Ahora debería mostrar la página 2 (episodios 11-15)
     expect(frame).toContain('pág 2/2');
-    expect(frame).toContain('S01E13.mkv');
+    expect(frame).toContain('S01E11.mkv');
     // El episodio 1 ya no debería estar visible
     const episodeLines = frame.split('\n').filter((line) => line.includes('S01E01.mkv'));
     expect(episodeLines.length).toBe(0);
@@ -637,19 +637,19 @@ describe('App (TUI)', () => {
     await press(stdin, '\r');
     let frame = frameOf(lastFrame);
     expect(frame).toContain('pág 1/2');
-    expect(frame).toContain('S01E12.mkv');
-    expect(frame).not.toContain('S01E13.mkv');
+    expect(frame).toContain('S01E10.mkv');
+    expect(frame).not.toContain('S01E11.mkv');
 
-    // Ir al episodio 13 (índice 12)
-    for (let i = 0; i < 12; i++) {
+    // Ir al episodio 11 (índice 10)
+    for (let i = 0; i < 10; i++) {
       await press(stdin, '\u001b[B');
     }
     frame = frameOf(lastFrame);
     expect(frame).toContain('pág 2/2');
-    expect(frame).toContain('S01E13.mkv');
+    expect(frame).toContain('S01E11.mkv');
 
     // Volver al episodio 1
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 10; i++) {
       await press(stdin, '\u001b[A');
     }
     frame = frameOf(lastFrame);
