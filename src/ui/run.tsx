@@ -1,5 +1,7 @@
+import { homedir } from 'node:os';
+import path from 'node:path';
+
 import { render } from 'ink';
-import { InkPictureProvider } from 'ink-picture';
 import React from 'react';
 
 import { App } from './App.js';
@@ -10,11 +12,27 @@ import { createLogger } from '../shared/logger.js';
 
 import type { AppConfig } from '../core/config/schema.js';
 
+/** Directorio de datos de la aplicación (p. ej. `~/.local/share/media-manager`). */
+function appDataDir(): string {
+  return path.join(homedir(), '.local', 'share', 'media-manager');
+}
+
+/** Ruta por defecto del fichero de log cuando se activa `--verbose`. */
+export function defaultLogFile(): string {
+  return path.join(appDataDir(), 'app.log');
+}
+
 /** Arranca la interfaz de terminal y espera a que termine. */
-export async function runTui(config: AppConfig, configPath?: string): Promise<void> {
+export async function runTui(
+  config: AppConfig,
+  configPath?: string,
+  options: { verbose?: boolean; logFile?: string } = {},
+): Promise<void> {
+  const { verbose, logFile } = options;
   const logger = createLogger({
-    level: config.logging.level,
+    level: verbose === true ? 'debug' : config.logging.level,
     format: config.logging.format,
+    ...(logFile !== undefined ? { logFile } : {}),
   });
   const opened = openLibrary(config.database.path, config, logger);
 
@@ -35,14 +53,12 @@ export async function runTui(config: AppConfig, configPath?: string): Promise<vo
   enterAlternateScreen();
   try {
     const instance = render(
-      <InkPictureProvider>
-        <App
-          config={config}
-          library={opened.library}
-          {...(configPath ? { configPath } : {})}
-          onIndex={indexLibraryNow}
-        />
-      </InkPictureProvider>,
+      <App
+        config={config}
+        library={opened.library}
+        {...(configPath ? { configPath } : {})}
+        onIndex={indexLibraryNow}
+      />,
       { exitOnCtrlC: false },
     );
     await instance.waitUntilExit();
