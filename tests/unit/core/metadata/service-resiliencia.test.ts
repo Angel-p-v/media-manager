@@ -124,7 +124,11 @@ describe('MetadataService resiliencia', () => {
     });
 
     it('descarga y guarda el póster de TVMaze', async () => {
-      const posterBuffer = Buffer.from('fake-poster-image-data');
+      // Buffer JPEG válido: magic bytes 0xff 0xd8 0xff + relleno para superar los 100 bytes mínimos
+      const posterBuffer = Buffer.concat([
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+        Buffer.alloc(100, 0x00),
+      ]);
 
       globalThis.fetch = vi.fn((input: string | URL | Request) => {
         const url =

@@ -90,7 +90,8 @@ describe('PlayDetails (flujo de metadatos)', () => {
     let frame = lastFrame() ?? '';
     const normalized = frame.replace(/\s+/g, ' ');
     expect(normalized).toContain('Pulsa «r»');
-    expect(normalized).toContain('para obtener metadatos');
+    expect(normalized).toContain('para');
+    expect(normalized).toContain('obtener metadatos');
     expect(frame).not.toContain('Jiro Azuma');
 
     // Pulsar "r" para obtener metadatos

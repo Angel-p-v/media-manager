@@ -327,7 +327,7 @@ export function PlayDetails({
       {/* ==================== Cuerpo principal (3 columnas flexibles) ==================== */}
       <Box flexGrow={1} flexDirection="row">
         {/* Izquierda: póster grande */}
-        <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
+        <Box flexDirection="column" paddingX={0} paddingY={1} flexShrink={0}>
           <PosterImage imagePath={posterPath} />
         </Box>
 

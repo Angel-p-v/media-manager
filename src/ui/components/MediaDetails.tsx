@@ -115,7 +115,7 @@ export function MediaDetails({
         </Box>
 
         {/* ==================== Derecha: póster ==================== */}
-        <Box flexDirection="column" marginLeft={4} flexShrink={0}>
+        <Box flexDirection="column" marginLeft={2} flexShrink={0}>
           <PosterImage imagePath={metadata?.localPosterPath ?? null} />
         </Box>
       </Box>
