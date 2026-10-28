@@ -106,20 +106,23 @@ export async function renderKittyGraphic(
   }
 
   try {
-    const { stdout } = await execFilePromiseWithAbort(
-      'chafa',
-      [
-        '--format=kitty',
-        '--colors=full',
-        '--stretch',
-        '--align=top,left',
-        `--size=${width}x${height}`,
-        '--animate=false',
-        imagePath,
-      ],
-      { encoding: 'utf-8' },
-      signal,
-    );
+    const args: string[] = [
+      '--format=kitty',
+      '--colors=full',
+      '--stretch',
+      '--align=top,left',
+      `--size=${width}x${height}`,
+      '--animate=false',
+      imagePath,
+    ];
+
+    // Passthrough para multiplexores como Tmux: chafa envuelve los escapes
+    // gráficamente para que el protocolo Kitty sobreviva al multiplexor.
+    if (process.env.TMUX) {
+      args.splice(args.length - 1, 0, '--passthrough=tmux');
+    }
+
+    const { stdout } = await execFilePromiseWithAbort('chafa', args, { encoding: 'utf-8' }, signal);
     return stdout.trimEnd();
   } catch {
     return '';
