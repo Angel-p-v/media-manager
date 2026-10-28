@@ -57,7 +57,14 @@ export async function renderImageToAnsi(
   try {
     const { stdout } = await execFilePromiseWithAbort(
       'chafa',
-      ['--format=ansi', '--colors=256', `--size=${width}x${height}`, '--animate=false', imagePath],
+      [
+        '--format=ansi',
+        '--colors=256',
+        '--align=top,left',
+        `--size=${width}x${height}`,
+        '--animate=false',
+        imagePath,
+      ],
       { encoding: 'utf-8' },
       signal,
     );
