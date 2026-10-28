@@ -110,8 +110,10 @@ export async function renderKittyGraphic(
       '--format=kitty',
       '--colors=full',
       '--stretch',
+      '--scale=max',
       '--align=top,left',
       `--size=${width}x${height}`,
+      `--view-size=${width}x${height}`,
       '--animate=false',
       imagePath,
     ];
