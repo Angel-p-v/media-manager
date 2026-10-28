@@ -1,5 +1,6 @@
 import { AmbiguousError, NotFoundError } from '../../shared/errors.js';
 
+import type { Logger } from '../../shared/logger.js';
 import type { MediaType, MetadataConfig } from '../config/schema.js';
 import type { FileRepository } from '../db/repositories/fileRepo.js';
 import type { IndexRunRepository } from '../db/repositories/indexRunRepo.js';
@@ -22,6 +23,8 @@ export type LibraryRepositories = {
   metadataRepo: MetadataRepository;
   metadataService: MetadataService;
   metadataConfig: MetadataConfig;
+  /** Logger para logs de depuración (se activa con --verbose). Opcional. */
+  logger?: Logger;
 };
 
 export type SearchMediaOptions = {
@@ -138,6 +141,7 @@ export function createLibraryService(repositories: LibraryRepositories): Library
     metadataRepo,
     metadataService,
     metadataConfig,
+    logger,
   } = repositories;
 
   const detailsFor = (media: MediaRow): MediaDetails => ({
@@ -376,6 +380,13 @@ export function createLibraryService(repositories: LibraryRepositories): Library
           // que etiquetas como [Judas], S01E01, 1080p, etc. impidan encontrar el título.
           const searchQuery = cleanSearchTitle(media.title) || media.title;
 
+          logger?.debug('metadata.search.title', {
+            mediaId,
+            originalTitle: media.title,
+            cleanedTitle: searchQuery,
+            mediaType,
+          });
+
           try {
             const searchResults = await metadataService.search(searchQuery);
             const result = searchResults.find(
@@ -556,46 +567,55 @@ function normalizeForMatch(value: string): string {
  * Limpia un título de biblioteca para usarlo como consulta de búsqueda en APIs
  * externas (TVMaze, Jikan). Elimina:
  * - Etiquetas entre corchetes: [Judas], [DualAudio], etc.
- * - Especificadores de temporada/episodio: S01E01, S01 E01, 1x01, T1E2, E01, etc.
- * - Calidad y formato: 1080p, 720p, 480p, BluRay, WEBDL, WEB-DL, x264, x265, HEVC, etc.
+ * - Especificadores de temporada/episodio y todo lo que sigue: S01E01, S01 E01, 1x01,
+ *   Season 01, T1E2, E01, etc. (corta todo desde el primer patrón en adelante)
+ * - Calidad y formato: 1080p, 720p, 480p, 2160p, 4K, BluRay, WEBDL, WEB-DL, x264, x265,
+ *   HEVC, H.264, H.265, 10 bits, REMUX, RIP, HDTV, PDTV, etc.
+ * - Audio: Dual Audio, DD+, AAC, FLAC, DTS, etc.
  * - Extensiones de archivo: .mkv, .mp4, .avi, etc.
  * - Año entre paréntesis al final: (2023), (2023-2024)
+ * - Grupos de release al final: -EMBER, -Judas, -SUBSPLEASE, etc.
  * - Espacios repetidos sobrantes.
  */
 function cleanSearchTitle(title: string): string {
   let cleaned = title;
 
-  // Eliminar etiquetas entre corchetes y su contenido: [Judas], [Dual Audio], etc.
+  // 1. Cortar la cadena desde el primer patrón de temporada/episodio en adelante.
+  //    Esto descarta todo lo que venga después de "S01", "Season 1", "T01",
+  //    "S01E02", "1x02", "E02", etc.
+  cleaned = cleaned.replace(
+    /\b(?:S\d{1,2}|Season\s*\d{1,2}|T\d{1,2}|E\d{1,3}|S\d{1,2}E\d{1,3}|\d{1,2}x\d{1,3}).*/gi,
+    ' ',
+  );
+
+  // 2. Eliminar etiquetas entre corchetes y su contenido: [Judas], [Dual Audio], etc.
   cleaned = cleaned.replace(/\[[^\]]*\]/g, ' ');
 
-  // Eliminar especificadores de temporada/episodio
-  cleaned = cleaned.replace(/\bS\d{1,2}\s*(?:E\s*)?\d{1,3}\b/gi, ' ');
-  cleaned = cleaned.replace(/\b\d{1,2}x\d{1,3}\b/gi, ' ');
-  cleaned = cleaned.replace(/\bT\d{1,2}E\d{1,3}\b/gi, ' ');
-  cleaned = cleaned.replace(/\bE\d{1,3}\b/gi, ' ');
+  // 3. Eliminar grupos de release al final: -EMBER, -Judas, -SUBSPLEASE, etc.
+  cleaned = cleaned.replace(/\s*-\s*[A-Za-z0-9]+(?:\s*$|\s)/g, ' ');
 
-  // Eliminar especificadores de temporada sueltos (sin episodio): "Season 01", "Temporada 1", "S01", "T01"
-  cleaned = cleaned.replace(/\bSeason\s*\d{1,2}\b/gi, ' ');
-  cleaned = cleaned.replace(/\bTemporada\s*\d{1,2}\b/gi, ' ');
-  cleaned = cleaned.replace(/\bS\d{1,2}\b/gi, ' ');
-  cleaned = cleaned.replace(/\bT\d{1,2}\b/gi, ' ');
+  // 4. Eliminar resoluciones y calidad
+  cleaned = cleaned.replace(/\b(1080p|720p|480p|2160p|4k|4K|HD|FHD|UHD)\b/gi, ' ');
 
-  // Eliminar etiquetas de calidad/resolución y otros residuos comunes
-  cleaned = cleaned.replace(/\b(HD|FHD|UHD|REMUX|RIP)\b/gi, ' ');
-  cleaned = cleaned.replace(/\b(DUAL|LATINO|CASTELLANO|SUBESPAÑOL|SUB)\b/gi, ' ');
+  // 5. Eliminar fuentes y formatos
+  cleaned = cleaned.replace(
+    /\b(BluRay|Blu-Ray|BRRIP|BDRip|WEBDL|WEB-DL|WebDL|WEBRIP|WEB-RIP|WebRip|REMUX|RIP|HDTV|PDTV|DVDRip|DVD-Rip)\b/gi,
+    ' ',
+  );
 
-  // Eliminar calidad y formato
-  cleaned = cleaned.replace(/\b(1080p|720p|480p|2160p|4k)\b/gi, ' ');
-  cleaned = cleaned.replace(/\b(BluRay|Blu-Ray|BluRay)\b/gi, ' ');
-  cleaned = cleaned.replace(/\b(WEBDL|WEB-DL|WebDL)\b/gi, ' ');
-  cleaned = cleaned.replace(/\b(WEBRIP|WEB-RIP|WebRip)\b/gi, ' ');
+  // 6. Eliminar codecs
   cleaned = cleaned.replace(/\b(x264|x265|HEVC|H\.264|H\.265)\b/gi, ' ');
-  cleaned = cleaned.replace(/\b(HDTV|PDTV|DVDRip|DVD-Rip|BRRip|BDRip)\b/gi, ' ');
 
-  // Eliminar extensiones de archivo
+  // 7. Eliminar profundidad de bits y audio
+  cleaned = cleaned.replace(
+    /\b(10\s*bits|10bit|DD\+|DDP|DTS|FLAC|AAC|Dual\s*Audio|LATINO|CASTELLANO|SUBESPAÑOL|SUB)\b/gi,
+    ' ',
+  );
+
+  // 8. Eliminar extensiones de archivo
   cleaned = cleaned.replace(/\.(mkv|mp4|avi|mov|wmv|flv|webm|m4v|ts|m2ts)$/gi, ' ');
 
-  // Eliminar año entre paréntesis al final del título: (2023), (2023-2024)
+  // 9. Eliminar año entre paréntesis al final del título: (2023), (2023-2024)
   cleaned = cleaned.replace(/\s*\(\d{4}(?:-\d{4})?\)\s*$/, ' ');
 
   // Colapsar espacios múltiples y recortar

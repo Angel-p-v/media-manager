@@ -109,6 +109,7 @@ export function openLibrary(
     metadataRepo,
     metadataService,
     metadataConfig,
+    ...(logger ? { logger } : {}),
   };
 
   return {
