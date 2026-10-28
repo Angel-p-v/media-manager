@@ -112,7 +112,7 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 | 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)   | ✅     |
 | 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
 | 🎞️ Metadatos externos TMDB/Jikan (sinopsis, póster, calificación)  | ✅     |
-| 🖼️ Renderizado de pósters en terminal con `chafa`                  | ✅     |
+| 🖼️ Renderizado de pósters en terminal (Kitty SGP + chafa fallback) | ✅     |
 | 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
 | 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)          | ✅     |
 
@@ -184,15 +184,31 @@ npm run standalone -- --node-source official
 
 ---
 
-### 🖼️ Renderizado de pósters en terminal (`chafa`)
+### 🖼️ Renderizado de pósters en terminal
 
-media-manager puede mostrar los pósters de tus series y películas directamente en la TUI usando **chafa**, que convierte imágenes a arte Unicode con colores ANSI. Esto permite ver la portada de un título sin salir de la terminal.
+media-manager puede mostrar los pósters de tus series y películas directamente en la TUI. Usa dos estrategias según la terminal:
+
+**1. Protocolo gráfico nativo (Kitty SGP)**
+En terminales que soporten el [Protocolo Gráfico de Kitty (SGP)](https://sw.kovidgoyal.net/kitty/graphics-protocol/) —Ghostty, Kitty, WezTerm— se renderiza el póster como imagen nativa con nitidez y proporción correcta, usando `ink-picture`. Esto requiere `MEDIA_MANAGER_GRAPHICS=native` o que el terminal se detecte automáticamente (variable `GHOSTTY_RESOURCES_DIR`, `KITTY_WINDOW_ID` o `TERM_PROGRAM`).
+
+**2. Fallback ANSI (`chafa`)**
+En terminales sin gráficos nativos, se usa `chafa --format=symbols --symbols=sextant` para renderizar arte Unicode con colores ANSI. La resolución es limitada (2×3 subpíxeles por celda) y nunca se verá como un 4K, pero es legible.
+
+| Terminal              | Protocolo      | Calidad           |
+| --------------------- | -------------- | ----------------- |
+| Ghostty               | Kitty SGP      | 🟢 Nativa         |
+| Kitty                 | Kitty SGP      | 🟢 Nativa         |
+| WezTerm               | Kitty SGP      | 🟢 Nativa         |
+| iTerm2                | —              | 🟡 Fallback chafa |
+| Terminal sin gráficos | chafa símbolos | 🟡 Unicode ANSI   |
+
+Si `chafa` no está disponible, la aplicación funciona normalmente pero muestra un placeholder de texto en lugar del póster.
+
+#### Instalación de chafa (fallback)
 
 - **Linux**: el instalador (`installers/linux/install.sh`) intenta instalar `chafa` automáticamente con el gestor de paquetes del sistema (`apt`, `dnf`, `yum`, `pacman`, `apk` o `brew`). Si no puede (por falta de privilegios), se muestra un aviso y puedes instalarlo manualmente (por ejemplo, `sudo apt install chafa`).
 - **Windows**: el instalador (`installers/windows/install.ps1`) intenta instalar `chafa` mediante `winget` o `chocolatey`.
 - **macOS**: instala `chafa` manualmente (por ejemplo, `brew install chafa`).
-
-Si `chafa` no está disponible, la aplicación funciona normalmente pero muestra un placeholder de texto en lugar del póster.
 
 ---
 
