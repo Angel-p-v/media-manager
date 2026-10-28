@@ -50,7 +50,7 @@ export function MediaDetails({
     >
       <Box flexDirection="row" flexGrow={1} justifyContent="space-between">
         {/* ==================== Izquierda/Centro: información del título ==================== */}
-        <Box flexDirection="column" flexGrow={0} flexShrink={1} maxWidth={64}>
+        <Box flexDirection="column" flexGrow={0} flexShrink={1} maxWidth={100}>
           <Text>
             {theme.highlight(`${media.title}${year}`)} {theme.muted(`#${media.id}`)}
           </Text>
@@ -88,7 +88,7 @@ export function MediaDetails({
               </Text>
               {metadata.title && <Text>{`  Título: ${metadata.title}`}</Text>}
               {metadata.overview && (
-                <Box maxWidth={100} paddingX={1} marginBottom={1}>
+                <Box maxWidth={120} paddingX={1} marginBottom={1}>
                   <Text wrap="wrap">{`  Sinopsis: ${metadata.overview}`}</Text>
                 </Box>
               )}
