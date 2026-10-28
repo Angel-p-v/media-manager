@@ -1,5 +1,5 @@
 import { mkdirSync, createWriteStream, existsSync } from 'node:fs';
-import { access, readdir, stat, rm } from 'node:fs/promises';
+import { access, readdir, stat, rm, readFile, rename } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -16,6 +16,66 @@ mkdirSync(DEFAULT_CACHE_DIR, { recursive: true });
 
 /** Extensiones de imagen permitidas. */
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+
+/** Tamaño mínimo en bytes para considerar que un fichero es una imagen válida. */
+const MIN_IMAGE_BYTES = 100;
+
+/** Cabeceras Content-Type aceptadas para una descarga de póster. */
+const ALLOWED_CONTENT_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+
+/** Magic bytes de formatos de imagen soportados (inicio del fichero). */
+const IMAGE_MAGIC_BYTES: Record<string, Buffer> = {
+  '.jpg': Buffer.from([0xff, 0xd8, 0xff]),
+  '.jpeg': Buffer.from([0xff, 0xd8, 0xff]),
+  '.png': Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+  '.webp': Buffer.from([0x52, 0x49, 0x46, 0x46]), // RIFF, se confirma 'WEBP' en el offset 8
+  '.gif': Buffer.from([0x47, 0x49, 0x46, 0x38]),
+};
+
+/** Comprueba si una cadena de Content-Type es un tipo de imagen aceptado. */
+export function isAllowedContentType(contentType: string | null): boolean {
+  if (!contentType) return false;
+  const type = (contentType.split(';')[0] ?? '').trim().toLowerCase();
+  return ALLOWED_CONTENT_TYPES.includes(type);
+}
+
+/** Comprueba que los primeros bytes del fichero coincidan con magic bytes de imagen. */
+export function hasValidMagicBytes(buffer: Buffer, extension: string): boolean {
+  const magic = IMAGE_MAGIC_BYTES[extension];
+  if (!magic) return false;
+  if (buffer.length < magic.length) return false;
+  for (let i = 0; i < magic.length; i += 1) {
+    if (buffer[i] !== magic[i]) return false;
+  }
+
+  // WEBP requiere además la marca 'WEBP' en el offset 8 tras la cabecera RIFF.
+  if (extension === '.webp') {
+    const webpMarker = buffer.slice(8, 12).toString('ascii');
+    return webpMarker === 'WEBP';
+  }
+
+  return true;
+}
+
+/**
+ * Valida que un fichero descargado sea una imagen real y no un cuerpo de error
+ * HTML o datos basura. Comprueba Content-Type, magic bytes y tamaño mínimo.
+ *
+ * @param filePath - Ruta al fichero descargado.
+ * @param extension - Extensión esperada (para elegir los magic bytes).
+ * @returns `true` si el fichero es una imagen válida.
+ */
+async function isValidImageFile(filePath: string, extension: string): Promise<boolean> {
+  try {
+    const statResult = await stat(filePath);
+    if (statResult.size < MIN_IMAGE_BYTES) return false;
+
+    const head = await readFile(filePath);
+    return hasValidMagicBytes(head, extension);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Sanitiza un título para usarlo como nombre de archivo de sistema.
@@ -137,29 +197,33 @@ export async function cachePoster(
   // Si ya existe en disco, reutilizar sin volver a descargar
   try {
     await access(localPath);
-    logger?.info('poster.cache.hit', { title, contentType, localPath });
+    logger?.info('poster.cache.hit', { title, localPath });
     return localPath;
   } catch {
     // No existe, continuar con la descarga
   }
 
   try {
-    logger?.info('poster.download.start', {
-      title,
-      contentType,
-      posterUrl,
-      localPath,
-    });
-
     const response = await fetch(posterUrl);
     if (!response.ok) {
       logger?.warn('poster.download.failed', {
         title,
-        contentType,
         posterUrl,
         localPath,
         status: response.status,
         statusText: response.statusText,
+      });
+      return null;
+    }
+
+    // Validar Content-Type antes de descargar el cuerpo.
+    const contentType = response.headers.get('content-type');
+    if (!isAllowedContentType(contentType)) {
+      logger?.warn('poster.download.invalid-content-type', {
+        title,
+        contentType,
+        posterUrl,
+        localPath,
       });
       return null;
     }
@@ -178,12 +242,38 @@ export async function cachePoster(
     // para evitar fallos silenciosos si la ruta no existe.
     mkdirSync(cacheDir, { recursive: true });
 
-    const fileStream = createWriteStream(localPath);
+    // Escribir primero en un fichero temporal .part; solo se renombra al
+    // destino final si supera la validación de imagen. Esto evita dejar
+    // ficheros corruptos o incompletos con el nombre definitivo.
+    const partPath = `${localPath}.part`;
+    const fileStream = createWriteStream(partPath);
 
     // pipeline espera al evento 'finish' del stream, confirmando escritura completa
     await pipeline(response.body, fileStream);
 
-    // Verificar que el archivo existe en disco tras la descarga
+    // Validar que el fichero descargado sea una imagen real.
+    const extension = getImageExtension(posterUrl);
+    const valid = await isValidImageFile(partPath, extension);
+    if (!valid) {
+      logger?.warn('poster.download.invalid-image', {
+        title,
+        contentType,
+        posterUrl,
+        localPath,
+        reason: 'magic-bytes o tamaño mínimo no válidos',
+      });
+      try {
+        await rm(partPath);
+      } catch {
+        // El fichero ya puede no existir; ignorar.
+      }
+      return null;
+    }
+
+    // Renombrar atómicamente de .part al nombre definitivo.
+    await rename(partPath, localPath);
+
+    // Verificar que el archivo existe en disco tras la renombrada.
     if (!existsSync(localPath)) {
       logger?.warn('poster.download.missing-file', {
         title,
