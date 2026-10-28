@@ -65,9 +65,9 @@ describe('terminalImage', () => {
     const [file, cmdArgs] = execFileMock.mock.calls[execFileMock.mock.calls.length - 1]!;
     expect(file).toBe('chafa');
     expect(cmdArgs).toContain('--format=symbols');
-    expect(cmdArgs).toContain('--colors=256');
-    expect(cmdArgs).toContain('--symbols=braille');
-    expect(cmdArgs).toContain('--font-ratio=2/1');
+    expect(cmdArgs).toContain('--colors=full');
+    expect(cmdArgs).toContain('--symbols=block+border+space');
+    expect(cmdArgs).toContain('--stretch');
     expect(cmdArgs).toContain('--align=top,left');
     expect(cmdArgs).toContain('--size=22x12');
     expect(cmdArgs).toContain('--animate=false');
