@@ -6,6 +6,57 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 versionado [SemVer](https://semver.org/lang/es/). A partir de `v1.0.0`, release-please
 mantiene este archivo a partir de los commits convencionales.
 
+## [3.4.0](https://github.com/Angel-p-v/media-manager/compare/v3.3.0...v3.4.0) (2026-10-28)
+
+
+### Features
+
+* **metadata:** proveedores públicos gratuitos (TMDB/Jikan) sin API key ([#239](https://github.com/Angel-p-v/media-manager/issues/239)) ([17adb85](https://github.com/Angel-p-v/media-manager/commit/17adb85610dc7222dc4e9bb3767cf970b529562a))
+
+
+### Bug Fixes
+
+* **ci:** arreglar verify en matriz node 22/24/26 ([952b34a](https://github.com/Angel-p-v/media-manager/commit/952b34a5597020510d4bc968fd70b3e4edb9ce12))
+* **ci:** arreglar verify en matriz node 22/24/26 ([#253](https://github.com/Angel-p-v/media-manager/issues/253)) ([3367a3b](https://github.com/Angel-p-v/media-manager/commit/3367a3bed326a584709298ff3be00f0794c61fac))
+* **cli:** mejora help de mm con descripciones y ejemplos de uso ([#251](https://github.com/Angel-p-v/media-manager/issues/251)) ([6f9247b](https://github.com/Angel-p-v/media-manager/commit/6f9247bbc8a5681716775d17d12c0ae7f539fde5))
+* **db,ui:** descargar póster de TMDB con URL completa y indexar al guardar rutas ([#231](https://github.com/Angel-p-v/media-manager/issues/231)) ([4e43a69](https://github.com/Angel-p-v/media-manager/commit/4e43a69c86bc58a0c6f45738cf0a66fd55c30e1b))
+* **db:** actualizar API keys de metadatos en caliente y forzar refresco ([#230](https://github.com/Angel-p-v/media-manager/issues/230)) ([b4d720a](https://github.com/Angel-p-v/media-manager/commit/b4d720a63ddfafabf2ed7481a52c90b238c29ab0))
+* **db:** almacenamiento permanente de pósters con nombres descriptivos ([#248](https://github.com/Angel-p-v/media-manager/issues/248)) ([e3e782e](https://github.com/Angel-p-v/media-manager/commit/e3e782eb1edb04d35b0a85a7d510bcd061c47aa2))
+* **db:** asegurar descarga y renderizado de pósters en disco ([#249](https://github.com/Angel-p-v/media-manager/issues/249)) ([51a292a](https://github.com/Angel-p-v/media-manager/commit/51a292a8cb28046e7fc996be63a6c6dd2f1701c7))
+* **db:** diagnóstico y logs de descarga de pósters en service.ts ([#250](https://github.com/Angel-p-v/media-manager/issues/250)) ([7a99dcf](https://github.com/Angel-p-v/media-manager/commit/7a99dcf53308bee33b805e8aac3bf87c46c742c2))
+* **db:** forzar refresco de póster sin esperar TTL e indexar con config actualizada ([#232](https://github.com/Angel-p-v/media-manager/issues/232)) ([6eb8a38](https://github.com/Angel-p-v/media-manager/commit/6eb8a3837d82aa7a56fc6e04df42958f5aa4132f))
+* **indexer:** limpiar especificadores de temporada en títulos de búsqueda ([ba0685a](https://github.com/Angel-p-v/media-manager/commit/ba0685a6f608433db049d09c0826f78b1460bb69))
+* **indexer:** limpieza avanzada de títulos para metadatos multi-temporada y releases P2P ([#261](https://github.com/Angel-p-v/media-manager/issues/261)) ([f0a277b](https://github.com/Angel-p-v/media-manager/commit/f0a277ba8b7b5a540aeb59c878d0dbc393c99a10))
+* **indexer:** logs detallados y fallback en obtención de metadatos ([#262](https://github.com/Angel-p-v/media-manager/issues/262)) ([ef0d935](https://github.com/Angel-p-v/media-manager/commit/ef0d935b3431b48000c4e5f898b065684e76da0d))
+* **test:** actualiza pruebas de paginación TUI a 12 episodios por página ([#243](https://github.com/Angel-p-v/media-manager/issues/243)) ([f1fef8c](https://github.com/Angel-p-v/media-manager/commit/f1fef8c32f3c082ddd14bdad52d0fb83f44eb729))
+* **test:** corrige mockeo de fetch en prueba de descarga de póster TVMaze ([#241](https://github.com/Angel-p-v/media-manager/issues/241)) ([2cce3d4](https://github.com/Angel-p-v/media-manager/commit/2cce3d4d9e9b9232620438cc8651a099d5b520d9))
+* **ui,indexer:** póster con margen, renderizado asíncrono y metadatos multi-temporada ([#260](https://github.com/Angel-p-v/media-manager/issues/260)) ([d8fd70d](https://github.com/Angel-p-v/media-manager/commit/d8fd70da38adfc0b899ab08d36c796bee415c72d))
+* **ui,indexer:** reajustar póster y soportar metadatos multi-temporada ([#258](https://github.com/Angel-p-v/media-manager/issues/258)) ([c4d4479](https://github.com/Angel-p-v/media-manager/commit/c4d44796d0d133441c562601e5d4685aa7458c8e))
+* **ui:** 12 episodios por página y tecla r para refrescar metadatos en play-details ([#242](https://github.com/Angel-p-v/media-manager/issues/242)) ([5c8aec2](https://github.com/Angel-p-v/media-manager/commit/5c8aec274319f5ed69da5930d7f8f708f0885f78))
+* **ui:** aplicar reajuste de posición del póster en MediaDetails ([#259](https://github.com/Angel-p-v/media-manager/issues/259)) ([6acc89f](https://github.com/Angel-p-v/media-manager/commit/6acc89fbe67bb9b9069ccaa4104f8d00c80caef2))
+* **ui:** aumentar ancho del bloque de Sinopsis a 80 columnas ([#255](https://github.com/Angel-p-v/media-manager/issues/255)) ([6748d66](https://github.com/Angel-p-v/media-manager/commit/6748d66e188785b3e064fdd155512b9053483b61))
+* **ui:** corrige flujo de refresco de metadatos en play-details ([#245](https://github.com/Angel-p-v/media-manager/issues/245)) ([b6df1cd](https://github.com/Angel-p-v/media-manager/commit/b6df1cd2910785fc9ca6dc415166b0b8d5209443))
+* **ui:** layout 3 columnas en play-details con barra de teclas abajo ([#236](https://github.com/Angel-p-v/media-manager/issues/236)) ([10b6bc0](https://github.com/Angel-p-v/media-manager/commit/10b6bc010ab2f1fa2520e135b01f340c58f37c6c))
+* **ui:** layout 3 columnas en play-details con barra de teclas abajo ([#237](https://github.com/Angel-p-v/media-manager/issues/237)) ([f095e7c](https://github.com/Angel-p-v/media-manager/commit/f095e7c7315f0facfe0a9a6f0fcd18887f03fff7))
+* **ui:** layout 3 columnas en play-details y metadatos automáticos al configurar API keys ([#235](https://github.com/Angel-p-v/media-manager/issues/235)) ([7dbe225](https://github.com/Angel-p-v/media-manager/commit/7dbe225c97ec7e06881f1aa4daa508a337cf0bd9))
+* **ui:** limitar ancho y activar wrap en el bloque de Sinopsis ([#254](https://github.com/Angel-p-v/media-manager/issues/254)) ([257c349](https://github.com/Angel-p-v/media-manager/commit/257c349d10df757d9e1236713a95aeae7fe7b904))
+* **ui:** lista de episodios en 1 línea y póster al extremo derecho ([#263](https://github.com/Angel-p-v/media-manager/issues/263)) ([95dd2b3](https://github.com/Angel-p-v/media-manager/commit/95dd2b3a5427d66c19cf56868084b81cbde9d35d))
+* **ui:** llamar a chafa solo con la ruta de la imagen ([#268](https://github.com/Angel-p-v/media-manager/issues/268)) ([41c688c](https://github.com/Angel-p-v/media-manager/commit/41c688c4cf66f9ea46c00a495c2a6f3cd9a07f29))
+* **ui:** mejora renderizado de pósters en terminal y migración de proveedores ([#252](https://github.com/Angel-p-v/media-manager/issues/252)) ([3b9e57f](https://github.com/Angel-p-v/media-manager/commit/3b9e57f297bcf2a236e70c6979e5962a02baf951))
+* **ui:** mejorar calidad y legibilidad del renderizado del póster ([#267](https://github.com/Angel-p-v/media-manager/issues/267)) ([22556e0](https://github.com/Angel-p-v/media-manager/commit/22556e00b372cb0362c35427b123bf848e5509eb))
+* **ui:** mostrar nombre completo de episodios y aumentar paginación en play-details ([#238](https://github.com/Angel-p-v/media-manager/issues/238)) ([b216f97](https://github.com/Angel-p-v/media-manager/commit/b216f9728db750d51ae162db5c7512e5c18b3e2f))
+* **ui:** mostrar póster tras refrescar metadatos y corregir espaciado de códec ([#228](https://github.com/Angel-p-v/media-manager/issues/228)) ([676f45d](https://github.com/Angel-p-v/media-manager/commit/676f45d32d17061a90bc52904b903c95f63ec0e7))
+* **ui:** mover el póster de MediaDetails aún más a la izquierda ([#257](https://github.com/Angel-p-v/media-manager/issues/257)) ([563bb7a](https://github.com/Angel-p-v/media-manager/commit/563bb7aa39d0f7afc1ffc552ce7d49b4742469e2))
+* **ui:** mover el póster de MediaDetails hacia la izquierda ([#256](https://github.com/Angel-p-v/media-manager/issues/256)) ([c0943e0](https://github.com/Angel-p-v/media-manager/commit/c0943e0351be9da94c359375fb5c059dc3673f45))
+* **ui:** póster a la derecha y sinopsis real en vistas de detalles ([#233](https://github.com/Angel-p-v/media-manager/issues/233)) ([da294ac](https://github.com/Angel-p-v/media-manager/commit/da294acc8806e78a9a93ecd2553f0e4077d6d2c6))
+* **ui:** póster a la izquierda en play-details, sinopsis real, póster más grande al inicio ([#234](https://github.com/Angel-p-v/media-manager/issues/234)) ([230f63d](https://github.com/Angel-p-v/media-manager/commit/230f63d2f3c6c4447e53059fe6687514dda2f2af))
+* **ui:** póster alineado a la izquierda y relleno completo ([#264](https://github.com/Angel-p-v/media-manager/issues/264)) ([79ff080](https://github.com/Angel-p-v/media-manager/commit/79ff080a58ba93605fb0d9a445544478848b8cc3))
+* **ui:** póster más a la izquierda y sinopsis más ancha ([11e24e0](https://github.com/Angel-p-v/media-manager/commit/11e24e09f77c76eb5c9c2cc63f141ceaef6379c8))
+* **ui:** renderiza pósters en terminal con chafa y fallback ASCII ([#247](https://github.com/Angel-p-v/media-manager/issues/247)) ([d2f374d](https://github.com/Angel-p-v/media-manager/commit/d2f374d7ea88ac0772c27aa10b1f6419e20ec1e8))
+* **ui:** renderizado de póster con chafa y flags específicas para aspect ratio ([#269](https://github.com/Angel-p-v/media-manager/issues/269)) ([c6cf695](https://github.com/Angel-p-v/media-manager/commit/c6cf695dde1918162d01b761e6b017d08850be10))
+* **ui:** restaurar renderizado de póster ([a1951e3](https://github.com/Angel-p-v/media-manager/commit/a1951e312223532f3c55ca7f8f2a6e8572eeff26))
+* **ui:** sinopsis con lineas mas largas ([#266](https://github.com/Angel-p-v/media-manager/issues/266)) ([85d5e51](https://github.com/Angel-p-v/media-manager/commit/85d5e516223c49ccc05540727f5b7ffe8f0ed9b5))
+
 ## [3.3.0](https://github.com/Angel-p-v/media-manager/compare/v3.2.0...v3.3.0) (2026-10-27)
 
 
