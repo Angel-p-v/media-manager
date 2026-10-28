@@ -7,6 +7,9 @@
  *
  * Si `chafa` no está instalado o la imagen no existe, se devuelve una cadena
  * vacía y el llamante debe mostrar un placeholder.
+ *
+ * Soporta cancelación mediante `AbortSignal`: si el usuario navega a otro
+ * título antes de que chafa termine, el proceso se mata y la promesa se rechaza.
  */
 
 import { execFile } from 'node:child_process';
@@ -32,12 +35,18 @@ export async function isChafaAvailable(): Promise<boolean> {
  * mostrar directamente en la terminal (incluido dentro de un `<Text>` de Ink).
  *
  * Devuelve cadena vacía si `chafa` no está disponible o la imagen no existe.
+ *
+ * @param signal - `AbortSignal` opcional para cancelar la ejecución de chafa.
  */
 export async function renderImageToAnsi(
   imagePath: string,
-  options: { width?: number; height?: number } = {},
+  options: { width?: number; height?: number; signal?: AbortSignal } = {},
 ): Promise<string> {
-  const { width = DEFAULT_POSTER_SIZE.width, height = DEFAULT_POSTER_SIZE.height } = options;
+  const {
+    width = DEFAULT_POSTER_SIZE.width,
+    height = DEFAULT_POSTER_SIZE.height,
+    signal,
+  } = options;
 
   try {
     await access(imagePath);
@@ -46,15 +55,54 @@ export async function renderImageToAnsi(
   }
 
   try {
-    const { stdout } = await execFilePromise(
+    const { stdout } = await execFilePromiseWithAbort(
       'chafa',
       ['--format=ansi', '--colors=256', `--size=${width}x${height}`, '--animate=false', imagePath],
       { encoding: 'utf-8' },
+      signal,
     );
     return stdout;
   } catch {
     return '';
   }
+}
+
+/**
+ * Ejecuta `execFile` envuelto en una promesa con soporte para `AbortSignal`.
+ * Si se emite 'abort', se mata el proceso hijo y se rechaza la promesa.
+ */
+function execFilePromiseWithAbort(
+  file: string,
+  args: string[],
+  options: { encoding: string },
+  signal?: AbortSignal,
+): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolve, reject) => {
+    const child = execFile(file, args, options, (error, stdout, stderr) => {
+      if (error) {
+        reject(error instanceof Error ? error : new Error('Error ejecutando chafa'));
+      } else {
+        resolve({ stdout: String(stdout), stderr: String(stderr) });
+      }
+    });
+
+    if (signal) {
+      const onAbort = () => {
+        try {
+          child.kill('SIGKILL');
+        } catch {
+          // El proceso ya puede haber terminado.
+        }
+        reject(new Error('Renderizado cancelado por el usuario.'));
+      };
+
+      if (signal.aborted) {
+        onAbort();
+      } else {
+        signal.addEventListener('abort', onAbort, { once: true });
+      }
+    }
+  });
 }
 
 /** Ejecuta `execFile` envuelto en una promesa (para facilitar tests). */

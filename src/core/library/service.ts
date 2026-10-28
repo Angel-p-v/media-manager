@@ -1,4 +1,4 @@
-import { AmbiguousError, NotFoundError } from '../../shared/errors.js';
+import { AmbiguousError, NotFoundError, formatError } from '../../shared/errors.js';
 
 import type { Logger } from '../../shared/logger.js';
 import type { MediaType, MetadataConfig } from '../config/schema.js';
@@ -350,6 +350,12 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 provider,
                 mediaType,
               );
+              logger?.debug('metadata.fetch.by-id.ok', {
+                mediaId,
+                provider,
+                externalId: details.externalId,
+                title: details.title,
+              });
               return metadataRepo.set({
                 mediaId,
                 provider,
@@ -364,7 +370,12 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 localPosterPath: details.localPosterPath ?? null,
                 updatedAt: now.toISOString(),
               });
-            } catch {
+            } catch (error) {
+              logger?.debug('metadata.fetch.by-id.fail', {
+                mediaId,
+                provider,
+                error: formatError(error),
+              });
               // Si falla un proveedor, probar el siguiente
               continue;
             }
@@ -387,53 +398,104 @@ export function createLibraryService(repositories: LibraryRepositories): Library
             mediaType,
           });
 
-          try {
-            const searchResults = await metadataService.search(searchQuery);
-            const result = searchResults.find(
-              (
-                r,
-              ): r is {
-                provider: 'tvmaze' | 'jikan' | 'default';
-                externalId: number;
-                title: string;
-                overview: string | null;
-                posterPath: string | null;
-                backdropPath: string | null;
-                voteAverage: number | null;
-                releaseDate: string | null;
-                originalLanguage: string | null;
-                localPosterPath: string | null;
-              } => r.provider === 'tvmaze' || r.provider === 'jikan',
-            );
-            if (result) {
-              const details = await metadataService.getDetails(
-                result.externalId,
-                result.provider,
-                mediaType,
-              );
-              // Si el proveedor no devolvió título (proveedor local sin API key),
-              // usamos el título del resultado de búsqueda (título del usuario).
-              const title = details.title || result.title;
-              return metadataRepo.set({
+          // Lista de consultas a probar: primero la limpia, luego la original como fallback
+          const queriesToTry = [searchQuery];
+          if (searchQuery !== media.title) {
+            queriesToTry.push(media.title);
+          }
+
+          for (const query of queriesToTry) {
+            logger?.debug('metadata.search.attempt', {
+              mediaId,
+              query,
+              mediaType,
+            });
+
+            try {
+              const searchResults = await metadataService.search(query);
+              logger?.debug('metadata.search.results', {
                 mediaId,
-                provider: result.provider,
-                externalId: details.externalId,
-                title,
-                overview: details.overview,
-                posterPath: details.posterPath,
-                backdropPath: details.backdropPath,
-                voteAverage: details.voteAverage,
-                releaseDate: details.releaseDate,
-                originalLanguage: details.originalLanguage,
-                localPosterPath: details.localPosterPath ?? null,
-                updatedAt: now.toISOString(),
+                query,
+                totalResults: searchResults.length,
+                providers: searchResults.map((r) => r.provider),
+              });
+
+              const result = searchResults.find(
+                (
+                  r,
+                ): r is {
+                  provider: 'tvmaze' | 'jikan' | 'default';
+                  externalId: number;
+                  title: string;
+                  overview: string | null;
+                  posterPath: string | null;
+                  backdropPath: string | null;
+                  voteAverage: number | null;
+                  releaseDate: string | null;
+                  originalLanguage: string | null;
+                  localPosterPath: string | null;
+                } => r.provider === 'tvmaze' || r.provider === 'jikan',
+              );
+
+              if (result) {
+                logger?.debug('metadata.search.selected-result', {
+                  mediaId,
+                  query,
+                  provider: result.provider,
+                  externalId: result.externalId,
+                  title: result.title,
+                });
+
+                const details = await metadataService.getDetails(
+                  result.externalId,
+                  result.provider,
+                  mediaType,
+                );
+                // Si el proveedor no devolvió título (proveedor local sin API key),
+                // usamos el título del resultado de búsqueda (título del usuario).
+                const title = details.title || result.title;
+                logger?.debug('metadata.fetch.by-title.ok', {
+                  mediaId,
+                  provider: result.provider,
+                  externalId: details.externalId,
+                  title,
+                  hasPoster: !!details.localPosterPath,
+                });
+                return metadataRepo.set({
+                  mediaId,
+                  provider: result.provider,
+                  externalId: details.externalId,
+                  title,
+                  overview: details.overview,
+                  posterPath: details.posterPath,
+                  backdropPath: details.backdropPath,
+                  voteAverage: details.voteAverage,
+                  releaseDate: details.releaseDate,
+                  originalLanguage: details.originalLanguage,
+                  localPosterPath: details.localPosterPath ?? null,
+                  updatedAt: now.toISOString(),
+                });
+              } else {
+                logger?.debug('metadata.search.no-real-results', {
+                  mediaId,
+                  query,
+                  hasDefaultResult: searchResults.some((r) => r.provider === 'default'),
+                });
+              }
+            } catch (error) {
+              logger?.debug('metadata.search.attempt.fail', {
+                mediaId,
+                query,
+                error: formatError(error),
               });
             }
-          } catch {
-            // Si falla la búsqueda, continuar para retornar existing (o undefined)
           }
         }
       }
+
+      logger?.debug('metadata.search.no-metadata-found', {
+        mediaId,
+      });
 
       return existing;
     },

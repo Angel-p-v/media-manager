@@ -5,9 +5,13 @@
  * Se usa tanto en la vista de detalles de reproducción (PlayDetails) como en el
  * panel de detalles de la biblioteca (MediaDetails).
  *
- * El renderizado es asíncrono y no bloqueante: si el usuario navega rápidamente
- * entre títulos, las peticiones de póster obsoletas se cancelan con
- * `AbortController` y solo se procesa el elemento actualmente seleccionado.
+ * El renderizado es totalmente asíncrono y desacoplado del ciclo de render de Ink:
+ * - Al cambiar el título seleccionado, la UI se actualiza inmediatamente y el
+ *   póster muestra "[ Cargando póster…]" mientras chafa se ejecuta en segundo
+ *   plano.
+ * - Las peticiones de chafa obsoletas se cancelan con AbortController: si el
+ *   usuario navega a otro título antes de que chafa termine, el resultado se
+ *   descarta sin bloquear la navegación con el teclado.
  */
 
 import { Box, Text, useStdout } from 'ink';
@@ -50,7 +54,7 @@ export function PosterImage({
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
 
-    // Cancelar cualquier petición de póster previa.
+    // Cancelar cualquier petición de chafa previa inmediatamente.
     abortRef.current?.abort();
     const abortController = new AbortController();
     abortRef.current = abortController;
@@ -61,9 +65,22 @@ export function PosterImage({
       return;
     }
 
+    // Estado inmediato: mostrar "[ Cargando póster…]" sin esperar a chafa.
     setLoading(true);
+
+    // Desacoplar del ciclo síncrono de render de Ink. Esto permite que la UI
+    // procese la siguiente tecla (flecha arriba/abajo) antes de que chafa
+    // empiece a consumir CPU.
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    if (!mountedRef.current || abortController.signal.aborted) return;
+
     try {
-      const art = await renderImageToAnsi(imagePath, { width, height });
+      const art = await renderImageToAnsi(imagePath, {
+        width,
+        height,
+        signal: abortController.signal,
+      });
       // Si la petición fue cancelada (navegó a otro título), ignorar el resultado.
       if (abortController.signal.aborted || !mountedRef.current) return;
 
@@ -85,6 +102,7 @@ export function PosterImage({
 
   useEffect(() => {
     mountedRef.current = true;
+    // Lanzar renderizado sin await: la UI no debe bloquearse esperando chafa.
     void renderPoster();
 
     return () => {
