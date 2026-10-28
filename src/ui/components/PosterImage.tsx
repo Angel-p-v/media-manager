@@ -142,6 +142,7 @@ export function PosterImage({
   }
 
   if (ansiArt) {
+    const lines = ansiArt.split('\n');
     return (
       <Box
         borderStyle="round"
@@ -149,10 +150,11 @@ export function PosterImage({
         width={width}
         height={height}
         flexShrink={0}
-        alignItems="flex-start"
-        justifyContent="flex-start"
+        flexDirection="column"
       >
-        <Text>{ansiArt}</Text>
+        {lines.map((line, index) => (
+          <Text key={index}>{line}</Text>
+        ))}
       </Box>
     );
   }
