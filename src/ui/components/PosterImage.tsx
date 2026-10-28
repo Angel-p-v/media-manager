@@ -15,6 +15,10 @@
  * Cuando el terminal NO soporta gráficos nativos, usa chafa con
  * --format=symbols --symbols=sextant (fallback ANSI tradicional) y renderiza
  * el resultado como líneas de texto normales dentro del Box.
+ *
+ * Todas las operaciones de escritura a stdout y codificación de imágenes están
+ * envueltas en try/catch para evitar que un error en el renderizado del póster
+ * rompa toda la TUI.
  */
 
 import { Box, Text, useStdout } from 'ink';
@@ -59,7 +63,7 @@ export function PosterImage({
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   const imageIdRef = useRef<number | null>(null);
-  const columns = process.stdout.columns ?? 80;
+  const columns: number = process.stdout.columns ?? 80;
 
   // Offsets y márgenes para posicionamiento (configurables vía variables de entorno)
   const offsetX = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_X ?? '0');
@@ -67,16 +71,16 @@ export function PosterImage({
   const marginRight = Number(process.env.MEDIA_MANAGER_POSTER_MARGIN_RIGHT ?? '1');
 
   // Cálculo de coordenadas absolutas para el overlay nativo (derecha superior)
-  const posterX = Math.max(0, columns - width - marginRight) + offsetX;
-  const posterY = Math.max(1, 1 + offsetY);
+  const posterX: number = Math.max(0, columns - width - marginRight) + offsetX;
+  const posterY: number = Math.max(1, 1 + offsetY);
 
-  const nativeFormat = detectNativeFormat();
+  const nativeFormat: GraphicsFormat = detectNativeFormat();
 
   // ── Ruta nativa: protocolo gráfico de Kitty (crudo) ──────────────────────
 
   if (nativeFormat === 'native' && imagePath) {
     // Generar un ID único para esta imagen (se usa en el borrado al desmontar).
-    const imageId = Math.floor(Math.random() * 10000);
+    const imageId: number = Math.floor(Math.random() * 10000);
     imageIdRef.current = imageId;
 
     // Bypass de Ink: escribir directamente a stdout para evitar que el Virtual
@@ -85,19 +89,20 @@ export function PosterImage({
       let cancelled = false;
 
       const run = async (): Promise<void> => {
-        // Desacoplar del ciclo síncrono de render de Ink.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        if (cancelled || !mountedRef.current) return;
-
         try {
-          const frames = await encodeKittyGraphic({
-            imagePath,
-            widthPx: width * 10, // aproximación: 10 px por columna
-            heightPx: height * 20, // aproximación: 20 px por fila
-            columns: width,
-            rows: height,
-            imageId,
-          });
+          // Desacoplar del ciclo síncrono de render de Ink.
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          if (cancelled || !mountedRef.current) return;
+
+          const frames: { sequence: string; isLast: boolean }[] =
+            (await encodeKittyGraphic({
+              imagePath,
+              widthPx: width * 10, // aproximación: 10 px por columna
+              heightPx: height * 20, // aproximación: 20 px por fila
+              columns: width,
+              rows: height,
+              imageId,
+            })) ?? [];
 
           if (cancelled || !mountedRef.current) return;
 
@@ -107,8 +112,10 @@ export function PosterImage({
 
           try {
             stdout.write(hideCursor);
-            for (const frame of frames ?? []) {
-              stdout.write(moveCursor + frame.sequence);
+            for (const frame of frames) {
+              if (frame?.sequence) {
+                stdout.write(moveCursor + frame.sequence);
+              }
             }
             stdout.write(showCursor);
           } catch {
@@ -241,7 +248,8 @@ export function PosterImage({
   }
 
   if (poster?.output) {
-    const lines = poster.output.split('\n');
+    const output: string = poster.output;
+    const lines: string[] = output.split('\n');
     return (
       <Box
         borderStyle="round"
@@ -252,7 +260,7 @@ export function PosterImage({
         flexDirection="column"
         overflow="hidden"
       >
-        {lines.map((line, index) => (
+        {lines.map((line: string, index: number) => (
           <Text key={index} wrap="truncate-end">
             {line}
           </Text>
@@ -272,7 +280,7 @@ export function PosterImage({
       <Text>{theme.muted('  [ PÓSTER ]')}</Text>
       <Text>{theme.muted('  (imagen no disponible)')}</Text>
       <Text> </Text>
-      {FALLBACK_ASCII.split('\n').map((line, i) => (
+      {FALLBACK_ASCII.split('\n').map((line: string, i: number) => (
         <Text key={i}>{theme.muted(`  ${line}`)}</Text>
       ))}
     </Box>

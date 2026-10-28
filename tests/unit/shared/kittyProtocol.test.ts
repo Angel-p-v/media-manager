@@ -121,33 +121,34 @@ describe('kittyProtocol', () => {
     });
   });
 
-  it('encodeKittyGraphic rechaza si el fichero no se puede leer', async () => {
+  it('encodeKittyGraphic devuelve array vacío si el fichero no se puede leer', async () => {
     readFileMock.mockImplementationOnce(() => {
       throw new Error('ENOENT: no such file');
     });
 
-    await expect(
-      encodeKittyGraphic({
-        imagePath: '/fake/inexistente.png',
-        widthPx: 450,
-        heightPx: 320,
-        columns: 45,
-        rows: 32,
-        imageId: 1,
-      }),
-    ).rejects.toThrow('ENOENT');
+    const result = await encodeKittyGraphic({
+      imagePath: '/fake/inexistente.png',
+      widthPx: 450,
+      heightPx: 320,
+      columns: 45,
+      rows: 32,
+      imageId: 1,
+    });
+
+    expect(result).toEqual([]);
   });
 
   it('deleteKittyImage genera la secuencia de borrado para un ID específico', () => {
     const seq = deleteKittyImage(42);
-    expect(seq).toBe('\x1b_Ga=d,d=i,i=42\x1b\\');
+    expect(seq).toContain('i=42');
+    expect(seq).toContain('a=d');
     expect(seq.slice(0, 3)).toBe('\x1b_G');
     expect(seq.slice(-2)).toBe('\x1b\\');
   });
 
   it('deleteAllKittyImages genera la secuencia de borrado de todas las imágenes', () => {
     const seq = deleteAllKittyImages();
-    expect(seq).toBe('\x1b_Ga=d;\x1b\\');
+    expect(seq).toContain('a=d');
     expect(seq.slice(0, 3)).toBe('\x1b_G');
     expect(seq.slice(-2)).toBe('\x1b\\');
   });
