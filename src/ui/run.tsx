@@ -1,4 +1,5 @@
 import { render } from 'ink';
+import { InkPictureProvider } from 'ink-picture';
 import React from 'react';
 
 import { App } from './App.js';
@@ -34,12 +35,14 @@ export async function runTui(config: AppConfig, configPath?: string): Promise<vo
   enterAlternateScreen();
   try {
     const instance = render(
-      <App
-        config={config}
-        library={opened.library}
-        {...(configPath ? { configPath } : {})}
-        onIndex={indexLibraryNow}
-      />,
+      <InkPictureProvider>
+        <App
+          config={config}
+          library={opened.library}
+          {...(configPath ? { configPath } : {})}
+          onIndex={indexLibraryNow}
+        />
+      </InkPictureProvider>,
       { exitOnCtrlC: false },
     );
     await instance.waitUntilExit();
