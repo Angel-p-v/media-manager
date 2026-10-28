@@ -216,12 +216,22 @@ export class MetadataService {
     url.searchParams.set('q', query);
     url.searchParams.set('embed', 'episodes');
 
+    this.logger.debug('[METADATA API] TVMaze búsqueda', {
+      provider: 'tvmaze',
+      query,
+      url: url.toString(),
+    });
+
     const response = await fetch(url.toString(), {
       headers: { Accept: 'application/json' },
     });
 
     // TVMaze devuelve 404 cuando no encuentra nada: devolver array vacío
     if (response.status === 404) {
+      this.logger.debug('[METADATA API] TVMaze sin resultados', {
+        provider: 'tvmaze',
+        query,
+      });
       return [];
     }
 
@@ -231,20 +241,15 @@ export class MetadataService {
 
     const data = (await response.json()) as TvMazeShow;
 
-    const posterPath = data.image?.original ?? data.image?.medium ?? null;
-    if (posterPath) {
-      this.logger.info('[METADATA API] Poster URL encontrada:', {
-        provider: 'tvmaze',
-        title: data.name,
-        posterUrl: posterPath,
-      });
-    } else {
-      this.logger.warn('[METADATA API] No se encontró URL de póster para este título:', {
-        provider: 'tvmaze',
-        title: data.name,
-      });
-    }
+    this.logger.debug('[METADATA API] TVMaze resultado', {
+      provider: 'tvmaze',
+      query,
+      title: data.name,
+      id: data.id,
+      hasPoster: !!data.image,
+    });
 
+    const posterPath = data.image?.original ?? data.image?.medium ?? null;
     let localPosterPath: string | null = null;
     if (posterPath) {
       localPosterPath = await cachePoster(posterPath, data.name, 'tv', this.logger);
@@ -334,6 +339,12 @@ export class MetadataService {
     url.searchParams.set('q', query);
     url.searchParams.set('limit', '10');
 
+    this.logger.debug('[METADATA API] Jikan búsqueda', {
+      provider: 'jikan',
+      query,
+      url: url.toString(),
+    });
+
     const response = await fetch(url.toString(), {
       headers: { Accept: 'application/json' },
     });
@@ -343,6 +354,12 @@ export class MetadataService {
     }
 
     const data = (await response.json()) as JikanSearchResponse;
+
+    this.logger.debug('[METADATA API] Jikan resultado', {
+      provider: 'jikan',
+      query,
+      resultsCount: data.data.length,
+    });
 
     const results: MetadataSearchResult[] = [];
     for (const item of data.data) {
