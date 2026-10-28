@@ -1,21 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { supportsKittyGraphics } from '../../../../src/shared/terminalImage.js';
+import { detectGraphicsCapability } from '../../../../src/shared/terminalCapabilities.js';
 import {
   computePosterSize,
   PosterImage,
   type PosterImageProps,
 } from '../../../../src/ui/components/PosterImage.js';
 
-vi.mock('../../../../src/shared/terminalImage.js', () => ({
-  supportsKittyGraphics: vi.fn(() => false),
-  renderImageToAnsi: vi.fn(),
+vi.mock('../../../../src/shared/terminalCapabilities.js', () => ({
+  detectGraphicsCapability: vi.fn(() => 'symbols'),
 }));
 
 beforeEach(() => {
-  vi.mocked(supportsKittyGraphics).mockReturnValue(false);
-  // Forzar modo símbolos en tests para evitar detección nativa del entorno
-  process.env.MEDIA_MANAGER_GRAPHICS = 'symbols';
+  vi.mocked(detectGraphicsCapability).mockReturnValue('symbols');
   process.stdout.columns = 80;
   process.stdout.rows = 24;
 });
@@ -62,15 +59,15 @@ describe('PosterImage', () => {
     height: 20,
   };
 
-  it('renderiza FallbackPosterImage cuando el terminal no soporta Kitty', () => {
-    vi.mocked(supportsKittyGraphics).mockReturnValue(false);
+  it('renderiza ChafaPosterImage cuando el terminal no soporta Kitty', () => {
+    vi.mocked(detectGraphicsCapability).mockReturnValue('symbols');
     const element = PosterImage(defaultProps);
     expect(element).toBeDefined();
     expect(element.type).toBeDefined();
   });
 
   it('renderiza NativePosterImage cuando el terminal soporta Kitty y hay imagen', () => {
-    vi.mocked(supportsKittyGraphics).mockReturnValue(true);
+    vi.mocked(detectGraphicsCapability).mockReturnValue('native');
     const element = PosterImage({ ...defaultProps, imagePath: '/fake/poster.jpg' });
     expect(element).toBeDefined();
     expect(element.type).toBeDefined();
