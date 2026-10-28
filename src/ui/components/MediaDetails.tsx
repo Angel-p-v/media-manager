@@ -70,7 +70,7 @@ export function MediaDetails({
                 <Text key={file.id}>
                   {'  '}
                   {theme.muted(`#${file.id}`)} {theme.primary(label.padEnd(6))}{' '}
-                  {shortenPath(file.filePath, 64)}
+                  {shortenPath(file.filePath, 35)}
                 </Text>
               );
             })
@@ -109,7 +109,7 @@ export function MediaDetails({
         </Box>
 
         {/* ==================== Derecha: póster ==================== */}
-        <Box flexDirection="column" alignItems="flex-end" flexShrink={0}>
+        <Box flexDirection="column" alignSelf="flex-end" flexShrink={0}>
           <PosterImage imagePath={metadata?.localPosterPath ?? null} width={36} height={27} />
         </Box>
       </Box>
