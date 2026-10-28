@@ -1,34 +1,31 @@
 /**
- * Componente que renderiza un póster de imagen en la terminal usando `chafa`.
+ * Componente que renderiza un póster de imagen en la terminal.
  *
- * Si `chafa` no está disponible o no hay imagen, muestra un placeholder de texto.
- * Se usa tanto en la vista de detalles de reproducción (PlayDetails) como en el
- * panel de detalles de la biblioteca (MediaDetails).
+ * Cuando el terminal soporta protocolo gráfico nativo (Ghostty, Kitty, WezTerm),
+ * se implementa el Protocolo Gráfico de Kitty (SGP) de forma cruda en TypeScript
+ * (sin librerías de terceros ni subprocesos). El componente:
  *
- * El renderizado es totalmente asíncrono y desacoplado del ciclo de render de Ink:
- * - Al cambiar el título seleccionado, la UI se actualiza inmediatamente y el
- *   póster muestra "[ Cargando póster…]" mientras chafa se ejecuta en segundo
- *   plano.
- * - Las peticiones de chafa obsoletas se cancelan con AbortController: si el
- *   usuario navega a otro título antes de que chafa termine, el resultado se
- *   descarta sin bloquear la navegación con el teclado.
+ * 1. Renderiza un <Box> vacío con borde para reservar espacio en el layout de Ink.
+ * 2. En un useEffect, codifica la imagen a Base64, la fragmenta en bloques de
+ *    4096 bytes y escribe las secuencias de escape directamente a stdout vía
+ *    `useStdout()`, posicionando el cursor sobre el Box.
+ * 3. Al desmontar o cambiar de imagen, envía obligatoriamente la secuencia de
+ *    borrado de Kitty para ese ID único (evita artefactos flotantes).
  *
- * Soporta dos modos de renderizado:
- * 1. **Protocolo gráfico nativo (Kitty SGP)**: Cuando el terminal lo soporta
- *    (Ghostty, Kitty, WezTerm, etc.), se ejecuta `chafa -f kitty` y la salida
- *    se escribe directamente a stdout (bypasseando el Virtual DOM de Ink) para
- *    evitar que Ink corrompa los buffers de escape gráfico. Se renderiza un
- *    <Box> vacío con borde para reservar el espacio, y el gráfico se proyecta
- *    directamente sobre esas coordenadas absolutas.
- * 2. **Modo símbolos ANSI**: Fallback para terminales tradicionales. Usa
- *    `--symbols=sextant` (6 sub-píxeles por carácter) para máxima resolución
- *    en modo texto.
+ * Cuando el terminal NO soporta gráficos nativos, usa chafa con
+ * --format=symbols --symbols=sextant (fallback ANSI tradicional) y renderiza
+ * el resultado como líneas de texto normales dentro del Box.
  */
 
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { renderImageToAnsi, type GraphicsFormat } from '../../shared/terminalImage.js';
+import { deleteKittyImage, encodeKittyGraphic } from '../../shared/kittyProtocol.js';
+import {
+  detectNativeFormat,
+  type GraphicsFormat,
+  renderImageToAnsi,
+} from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
 export type PosterImageProps = {
@@ -43,10 +40,10 @@ export type PosterImageProps = {
 /** Arte ASCII de fallback cuando chafa no está disponible o falla. */
 const FALLBACK_ASCII = `
 ██████╗ ███████╗██╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
-██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║████╗ ███║██╔══██╗██╔══██╗
+██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║███╗ ███║██╔══██╗██╔══██╗
 ██████╔╝██████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██║█████╔██║███████║██████╔╝
-██╔═══╝ █████╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔═══╝
-██║     ███████╗██║ ╚██║╚██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
+██╔═══╝ █████╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔══╝
+██║     ███████╗██║ ╚██║╚═██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
 ╚═════╝ ╚═════╝ ╚╝  ⚐╝╚╝  ⚐╝╚═╝     ⚐═╝╚═╝  ⚐╝
 `.trim();
 
@@ -56,10 +53,12 @@ export function PosterImage({
   width = 30,
   height = 20,
 }: PosterImageProps): React.JSX.Element {
+  const stdout = useStdout();
   const [poster, setPoster] = useState<{ output: string; format: GraphicsFormat } | null>(null);
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
+  const imageIdRef = useRef<number | null>(null);
   const columns = process.stdout.columns ?? 80;
 
   // Offsets y márgenes para posicionamiento (configurables vía variables de entorno)
@@ -67,14 +66,85 @@ export function PosterImage({
   const offsetY = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_Y ?? '0');
   const marginRight = Number(process.env.MEDIA_MANAGER_POSTER_MARGIN_RIGHT ?? '1');
 
-  // Cálculo de coordenadas absolutas para el overlay nativo
+  // Cálculo de coordenadas absolutas para el overlay nativo (derecha superior)
   const posterX = Math.max(0, columns - width - marginRight) + offsetX;
   const posterY = Math.max(1, 1 + offsetY);
+
+  const nativeFormat = detectNativeFormat();
+
+  // ── Ruta nativa: protocolo gráfico de Kitty (crudo) ──────────────────────
+
+  if (nativeFormat === 'native' && imagePath) {
+    // Generar un ID único para esta imagen (se usa en el borrado al desmontar).
+    const imageId = Math.floor(Math.random() * 10000);
+    imageIdRef.current = imageId;
+
+    // Bypass de Ink: escribir directamente a stdout para evitar que el Virtual
+    // DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
+    useEffect(() => {
+      let cancelled = false;
+
+      const run = async (): Promise<void> => {
+        // Desacoplar del ciclo síncrono de render de Ink.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (cancelled || !mountedRef.current) return;
+
+        try {
+          const frames = await encodeKittyGraphic({
+            imagePath,
+            widthPx: width * 10, // aproximación: 10 px por columna
+            heightPx: height * 20, // aproximación: 20 px por fila
+            columns: width,
+            rows: height,
+            imageId,
+          });
+
+          if (cancelled || !mountedRef.current) return;
+
+          const hideCursor = '\x1b[?25l';
+          const showCursor = '\x1b[?25h';
+          const moveCursor = `\x1b[${posterY};${posterX}H`;
+
+          stdout.write(hideCursor);
+          for (const frame of frames) {
+            stdout.write(moveCursor + frame.sequence);
+          }
+          stdout.write(showCursor);
+        } catch {
+          // Si falla el codificado nativo, se queda sin póster (sin fallback a chafa
+          // en modo nativo: el modo nativo es exclusivo de terminales gráficas).
+        }
+      };
+
+      void run();
+
+      return () => {
+        cancelled = true;
+        // CRÍTICO: borrar la imagen gráfica de Kitty para este ID al desmontar
+        // o cambiar de imagen, evitando artefactos flotantes.
+        if (imageIdRef.current !== null) {
+          stdout.write(deleteKittyImage(imageIdRef.current));
+        }
+        stdout.write('\x1b[?25h');
+      };
+    }, [imagePath, width, height, posterX, posterY, imageId, stdout]);
+
+    return (
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        width={width}
+        height={height}
+        flexShrink={0}
+      />
+    );
+  }
+
+  // ── Ruta fallback: chafa ANSI (modo símbolos) ────────────────────────────
 
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
 
-    // Cancelar cualquier petición de chafa previa inmediatamente.
     abortRef.current?.abort();
     const abortController = new AbortController();
     abortRef.current = abortController;
@@ -85,12 +155,8 @@ export function PosterImage({
       return;
     }
 
-    // Estado inmediato: mostrar "[ Cargando póster…]" sin esperar a chafa.
     setLoading(true);
 
-    // Desacoplar del ciclo síncrono de render de Ink. Esto permite que la UI
-    // procese la siguiente tecla (flecha arriba/abajo) antes de que chafa
-    // empiece a consumir CPU.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     if (!mountedRef.current || abortController.signal.aborted) return;
@@ -101,7 +167,6 @@ export function PosterImage({
         height,
         signal: abortController.signal,
       });
-      // Si la petición fue cancelada (navegó a otro título), ignorar el resultado.
       if (abortController.signal.aborted || !mountedRef.current) return;
 
       if (result.output) {
@@ -118,10 +183,8 @@ export function PosterImage({
     }
   }, [imagePath, width, height]);
 
-  // useEffect principal para montaje y renderizado de chafa
   useEffect(() => {
     mountedRef.current = true;
-    // Lanzar renderizado sin await: la UI no debe bloquearse esperando chafa.
     void renderPoster();
 
     return () => {
@@ -129,45 +192,6 @@ export function PosterImage({
       abortRef.current?.abort();
     };
   }, [renderPoster]);
-
-  // Bypass de Ink para protocolo gráfico nativo (Kitty SGP).
-  // Escribir directamente a stdout para evitar que el Virtual DOM de Ink
-  // corrompa los buffers de escape gráfico.
-  useEffect(() => {
-    if (!poster?.output || poster.format !== 'native') return;
-
-    const timer = setTimeout(() => {
-      const hideCursor = '\x1b[?25l';
-      const showCursor = '\x1b[?25h';
-      const moveCursor = `\x1b[${posterY};${posterX}H`;
-
-      // Inyectar Z-Index z=1 para que el gráfico Kitty se dibuje por encima
-      // del texto/base de Ink (capa z=0).
-      const esc = String.fromCharCode(27);
-      const kittyOutputWithZ = poster.output.replace(new RegExp(`${esc}_G`, 'g'), `${esc}_Gz=1,`);
-
-      // Limpieza estricta: borrar imágenes Kitty previas usando la secuencia
-      // de delete all del protocolo Kitty. Escribir espacios ya no basta
-      // cuando la imagen está en z=1.
-      process.stdout.write(`${esc}_Ga=d;${esc}\\`);
-
-      // Pequeña pausa para que el borrado se procese antes de proyectar.
-      setTimeout(() => {
-        process.stdout.write(hideCursor);
-        process.stdout.write(moveCursor);
-        process.stdout.write(kittyOutputWithZ);
-        process.stdout.write(showCursor);
-      }, 10);
-    }, 50);
-
-    return () => {
-      clearTimeout(timer);
-      // Limpieza al desmontar el componente o al cambiar de imagen.
-      const esc2 = String.fromCharCode(27);
-      process.stdout.write(`${esc2}_Ga=d;${esc2}\\`);
-      process.stdout.write('\x1b[?25h');
-    };
-  }, [poster?.output, poster?.format, posterX, posterY, width, height]);
 
   if (!imagePath) {
     return (
@@ -200,24 +224,6 @@ export function PosterImage({
   }
 
   if (poster?.output) {
-    const { format } = poster;
-
-    // Protocolo gráfico nativo (Kitty/iTerm2/Sixel): renderizar Box vacío con borde.
-    // El gráfico se escribe directamente a stdout en el useEffect de bypass.
-    if (format === 'native') {
-      return (
-        <Box
-          borderStyle="round"
-          borderColor={theme.border}
-          width={width}
-          height={height}
-          flexShrink={0}
-        />
-      );
-    }
-
-    // Modo símbolos ANSI: dividir por líneas para evitar interlineado
-    // intercalado en Ink. Cada línea se renderiza en un <Text> independiente.
     const lines = poster.output.split('\n');
     return (
       <Box
@@ -238,7 +244,6 @@ export function PosterImage({
     );
   }
 
-  // Fallback: chafa no disponible o error al renderizar → arte ASCII informativo.
   return (
     <Box
       borderStyle="round"

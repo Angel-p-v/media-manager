@@ -1,13 +1,8 @@
 /**
- * Utilidad para renderizar imágenes en la terminal.
+ * Utilidad para renderizar imágenes en la terminal en modo ANSI (fallback).
  *
- * Cuando el terminal lo soporta (Kitty, WezTerm, Ghostty), se usa el
- * protocolo gráfico nativo (Kitty SGP) para obtener calidad de imagen
- * fotográfica real. La salida del protocolo se escribe directamente a
- * stdout (bypasseando el Virtual DOM de Ink) para evitar que Ink
- * corrompa los buffers de escape gráfico.
- *
- * De lo contrario, se usa el modo símbolos de chafa con
+ * Cuando el terminal NO soporta protocolo gráfico nativo (Ghostty, Kitty,
+ * WezTerm), se usa el modo símbolos de chafa con
  * `--symbols=sextant` (6 sub-píxeles por carácter, 3× más resolución
  * vertical que medios bloques) y `--dither=none` para colores sólidos
  * puros sin ruido.
@@ -27,11 +22,11 @@ export const DEFAULT_POSTER_SIZE = { width: 22, height: 12 };
 /** Protocolo de renderizado detectado. */
 export type GraphicsFormat = 'symbols' | 'native';
 
-/** Resultado del renderizado de una imagen con chafa. */
+/** Resultado del renderizado de una imagen en modo ANSI. */
 export type RenderResult = {
-  /** Salida de chafa (secuencias ANSI o protocolo gráfico nativo). */
+  /** Salida de chafa (secuencias ANSI). */
   output: string;
-  /** Protocolo de renderizado utilizado. */
+  /** Protocolo de renderizado utilizado. Siempre 'symbols' en este módulo. */
   format: GraphicsFormat;
 };
 
@@ -47,19 +42,25 @@ export async function isChafaAvailable(): Promise<boolean> {
 
 /**
  * Detecta si el terminal actual soporta protocolo gráfico nativo
- * (Kitty SGP, usado por Ghostty, Kitty, WezTerm, Konsole).
+ * (Kitty SGP, usado por Ghostty, Kitty, WezTerm, etc.).
  *
  * Orden de prioridad:
  * 1. Variable de entorno MEDIA_MANAGER_GRAPHICS (forzado explícito)
  * 2. GHOSTTY_RESOURCES_DIR (Ghostty)
  * 3. KITTY_WINDOW_ID o TERM_PROGRAM=Kitty/WezTerm/Ghostty (Kitty SGP)
  *
- * Devuelve 'kitty' si se detecta soporte nativo, 'symbols' en caso contrario.
+ * Devuelve 'native' si se detecta soporte nativo, 'symbols' en caso contrario.
  */
 export function detectNativeFormat(): GraphicsFormat {
   const forced = process.env.MEDIA_MANAGER_GRAPHICS ?? '';
   const forcedLower = forced.toLowerCase();
-  if (forcedLower === 'kitty') return 'native';
+  if (
+    forcedLower === 'native' ||
+    forcedLower === 'kitty' ||
+    forcedLower === 'iterm' ||
+    forcedLower === 'sixel'
+  )
+    return 'native';
   if (forcedLower === 'symbols' || forcedLower === 'ansi' || forcedLower === 'none')
     return 'symbols';
 
@@ -72,63 +73,14 @@ export function detectNativeFormat(): GraphicsFormat {
   if (termProgram === 'kitty') return 'native';
   if (termProgram === 'WezTerm') return 'native';
   if (termProgram === 'Ghostty') return 'native';
+  if (termProgram === 'iTerm.app') return 'native';
   if (kittyWindowId) return 'native';
   if (term.toLowerCase().includes('ghostty')) return 'native';
   if (term.toLowerCase().includes('kitty')) return 'native';
+  if (term.toLowerCase().includes('iterm')) return 'native';
+  if (term === 'sixel') return 'native';
 
   return 'symbols';
-}
-
-/**
- * Renderiza una imagen usando el protocolo gráfico nativo Kitty.
- *
- * Ejecuta `chafa -f kitty` que genera secuencias de escape del protocolo
- * Kitty Graphics Protocol (SGP). Estas secuencias NO se pueden renderizar
- * dentro de componentes <Text> de Ink porque el motor de Ink las corrompe.
- * Deben escribirse directamente a stdout con process.stdout.write().
- *
- * @returns La salida de chafa en formato protocolo Kitty, o cadena vacía si falla.
- */
-export async function renderKittyGraphic(
-  imagePath: string,
-  options: { width?: number; height?: number; signal?: AbortSignal } = {},
-): Promise<string> {
-  const {
-    width = DEFAULT_POSTER_SIZE.width,
-    height = DEFAULT_POSTER_SIZE.height,
-    signal,
-  } = options;
-
-  try {
-    await access(imagePath);
-  } catch {
-    return '';
-  }
-
-  try {
-    const args: string[] = [
-      '--format=kitty',
-      '--colors=full',
-      '--stretch',
-      '--scale=max',
-      '--align=top,left',
-      `--size=${width}x${height}`,
-      `--view-size=${width}x${height}`,
-      '--animate=false',
-      imagePath,
-    ];
-
-    // Passthrough para multiplexores como Tmux: chafa envuelve los escapes
-    // gráficamente para que el protocolo Kitty sobreviva al multiplexor.
-    if (process.env.TMUX) {
-      args.splice(args.length - 1, 0, '--passthrough=tmux');
-    }
-
-    const { stdout } = await execFilePromiseWithAbort('chafa', args, { encoding: 'utf-8' }, signal);
-    return stdout.trimEnd();
-  } catch {
-    return '';
-  }
 }
 
 /**
@@ -148,6 +100,8 @@ export async function renderKittyGraphic(
  * mostrar directamente en la terminal (incluido dentro de un `<Text>` de Ink).
  *
  * Devuelve cadena vacía si `chafa` no está disponible o la imagen no existe.
+ *
+ * @param signal - `AbortSignal` opcional para cancelar la ejecución de chafa.
  */
 export async function renderImageToAnsi(
   imagePath: string,
@@ -158,17 +112,6 @@ export async function renderImageToAnsi(
     height = DEFAULT_POSTER_SIZE.height,
     signal,
   } = options;
-
-  const nativeFormat = detectNativeFormat();
-
-  if (nativeFormat === 'native') {
-    const output = await renderKittyGraphic(imagePath, {
-      width,
-      height,
-      ...(signal ? { signal } : {}),
-    });
-    return { output, format: 'native' };
-  }
 
   try {
     await access(imagePath);
