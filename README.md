@@ -89,32 +89,34 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ## ✨ Características principales
 
-| Capacidad                                                          | Estado |
-| ------------------------------------------------------------------ | ------ |
-| 🖥️ TUI navegable (Ink + React)                                     | ✅     |
-| 🗃️ Índice local en SQLite con FTS5                                 | ✅     |
-| 🔄 Indexación recursiva + incremental                              | ✅     |
-| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`)   | ✅     |
-| 🔍 Búsqueda instantánea (CLI + TUI)                                | ✅     |
-| 🎮 Reproducción con `mpv` / `vlc`                                  | ✅     |
-| ⚙️ Configuración YAML validada con Zod                             | ✅     |
-| 👀 Modo _watch_ (reindexado automático)                            | ✅     |
-| 📤 Salida `--json` para scripts                                    | ✅     |
-| 📝 Logs estructurados, `--verbose`, errores con código             | ✅     |
-| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                    | ✅     |
-| ✅ Instalador verificado, checksums, distribución portable         | ✅     |
-| ▶️ Estado de reproducción (continuar, historial, marcas)           | ✅     |
-| 📡 Tracker IPC mpv (reanudación automática y guardado de posición) | ✅     |
-| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`    | ✅     |
-| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`            | ✅     |
-| 🔄 Auto-actualización con `self-update`                            | ✅     |
-| 📋 Sección "Continuar" en la TUI                                   | ✅     |
-| 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)   | ✅     |
-| 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
-| 🎞️ Metadatos externos TMDB/Jikan (sinopsis, póster, calificación)  | ✅     |
-| 🖼️ Renderizado de pósters en terminal (Kitty SGP + chafa fallback) | ✅     |
-| 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
-| 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)          | ✅     |
+| Capacidad                                                           | Estado |
+| ------------------------------------------------------------------- | ------ |
+| 🖥️ TUI navegable (Ink + React)                                      | ✅     |
+| 🗃️ Índice local en SQLite con FTS5                                  | ✅     |
+| 🔄 Indexación recursiva + incremental                               | ✅     |
+| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`)    | ✅     |
+| 🔍 Búsqueda instantánea (CLI + TUI)                                 | ✅     |
+| 🎮 Reproducción con `mpv` / `vlc`                                   | ✅     |
+| ⚙️ Configuración YAML validada con Zod                              | ✅     |
+| 👀 Modo _watch_ (reindexado automático)                             | ✅     |
+| 📤 Salida `--json` para scripts                                     | ✅     |
+| 📝 Logs estructurados, `--verbose`, errores con código              | ✅     |
+| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                     | ✅     |
+| ✅ Instalador verificado, checksums, distribución portable          | ✅     |
+| ▶️ Estado de reproducción (continuar, historial, marcas)            | ✅     |
+| 📡 Tracker IPC mpv (reanudación automática y guardado de posición)  | ✅     |
+| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`     | ✅     |
+| 📃 Comando `playlist` (reproduce varios títulos en secuencia)       | ✅     |
+| 🗄️ Comandos `db stats`, `db optimize`, `db backup`, `db restore`    | ✅     |
+| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`             | ✅     |
+| 🔄 Auto-actualización con `self-update`                             | ✅     |
+| 📋 Sección "Continuar" en la TUI                                    | ✅     |
+| 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)    | ✅     |
+| 🧪 Tests E2E con IPC falso y `--dry-run`                            | ✅     |
+| 🎞️ Metadatos externos TVMaze/Jikan (sinopsis, póster, calificación) | ✅     |
+| 🖼️ Renderizado de pósters en terminal (Kitty SGP + chafa fallback)  | ✅     |
+| 🔄 Sincronización automática de metadatos con TTL                   | ✅     |
+| 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)           | ✅     |
 
 ## 🚀 Instalación rápida
 
@@ -167,7 +169,7 @@ mm --version
 
 #### macOS (x64, arm64)
 
-> **Nota:** No hay assets oficiales de macOS en v3.1.0. Consulta [`installers/macos/README.md`](./installers/macos/README.md) para más información.
+> **Nota:** No hay assets oficiales de macOS en las releases públicas (pendiente de runners de GitHub Actions con macOS). Consulta [`installers/macos/README.md`](./installers/macos/README.md) para compilar e instalar en macOS.
 
 Para compilar en macOS:
 
@@ -209,6 +211,29 @@ Si `chafa` no está disponible, la aplicación funciona normalmente pero muestra
 - **Linux**: el instalador (`installers/linux/install.sh`) intenta instalar `chafa` automáticamente con el gestor de paquetes del sistema (`apt`, `dnf`, `yum`, `pacman`, `apk` o `brew`). Si no puede (por falta de privilegios), se muestra un aviso y puedes instalarlo manualmente (por ejemplo, `sudo apt install chafa`).
 - **Windows**: el instalador (`installers/windows/install.ps1`) intenta instalar `chafa` mediante `winget` o `chocolatey`.
 - **macOS**: instala `chafa` manualmente (por ejemplo, `brew install chafa`).
+
+---
+
+## 🔧 Dependencias del sistema
+
+Además del binario `mm` (que ya incluye Node.js embalado en las distribuciones oficiales), media-manager necesita algunos programas del sistema para funcionar al 100 %:
+
+| Dependencia      | Para qué sirve                                          | Obligatoria         | Instalación                                                                        |
+| ---------------- | ------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------- |
+| **mpv**          | Reproductor principal (recomendado)                     | ❌ (una de mpv/vlc) | `sudo apt install mpv` / `winget install mpv` / `brew install mpv`                 |
+| **vlc**          | Reproductor alternativo                                 | ❌ (una de mpv/vlc) | `sudo apt install vlc` / `winget install videolan.vlc` / `brew install --cask vlc` |
+| **chafa**        | Renderizado de pósters en terminal (fallback ANSI)      | ❌                  | `sudo apt install chafa` / `winget install chafa` / `brew install chafa`           |
+| **Node.js ≥ 22** | Solo si clonás el repo y corrés desde fuente (`npm ci`) | ⚠️ Solo modo fuente | [`nodejs.org`](https://nodejs.org/) o tu gestor de versión                         |
+
+> 💡 Ninguna de estas dependencias es estrictamente obligatoria para usar la TUI o buscar: si no tenés reproductor, `mm play` te avisará; si no tenés `chafa`, verás un placeholder de texto en lugar del póster.
+
+### Ver qué falta en tu sistema
+
+```bash
+mm doctor
+```
+
+`mm doctor` te dice qué reproductores, herramientas y entradas del índice están disponibles o faltan, y puede limpiar entradas rotas con `--prune-missing`.
 
 ---
 
@@ -278,8 +303,8 @@ mm self-update --check             # comprueba si hay actualización
 mm self-update                     # descarga e instala la nueva versión
 mm self-update --dry-run           # muestra qué se haría sin instalar
 
-# 🎞️ Metadatos externos (TMDB/Jikan)
-mm metadata search "cowboy bebop"  # busca en TMDB/Jikan
+# 🎞️ Metadatos externos (TVMaze/Jikan)
+mm metadata search "cowboy bebop"  # busca en TVMaze/Jikan
 mm metadata fetch 12345            # obtiene y guarda metadatos por ID
 mm metadata clear                  # limpia metadatos de un título
 ```
@@ -402,7 +427,7 @@ keybindings:
 
 ### 🤖 Metadatos automáticos (tipo Sonarr/Radarr)
 
-Si activas `metadata.autoFetch: true`, al abrir la TUI se buscarán automáticamente los metadatos de **todos los títulos que no los tienen aún**, usando proveedores públicos gratuitos (TMDB para series/películas, Jikan para anime), sin que tengas que pulsar `r` en cada uno individualmente.
+Si activas `metadata.autoFetch: true`, al abrir la TUI se buscarán automáticamente los metadatos de **todos los títulos que no los tienen aún**, usando proveedores públicos gratuitos (TVMaze para series/películas, Jikan para anime), sin que tengas que pulsar `r` en cada uno individualmente.
 
 ```yaml
 metadata:
@@ -460,37 +485,47 @@ flowchart TD
     B -->|TUI| C[["Interfaz TUI<br/>Ink + React"]]
     B -->|CLI| D[["CLI headless<br/>Commander"]]
 
-    C --> E[["Hooks de biblioteca"]]
-    D --> F[["Subcomandos<br/>index, search, show, list, play, tag, metadata"]]
+    C --> E[["Hooks de biblioteca<br/>useLibrary / useMediaDetails"]]
+    D --> F[["Subcomandos<br/>index, search, show, list, play, tag, metadata, doctor, watch, self-update"]]
 
     E --> G[["Servicio de biblioteca<br/>LibraryService"]]
     F --> G
 
-    G --> H{"Operacion"}
+    G --> H{"Operación"}
 
-    H -->|Listar / Buscar| I[["Repositorio de medios<br/>SQLite + FTS5"]]
-    H -->|Reproducir| J[["Lanzador de reproductor<br/>mpv / vlc"]]
+    H -->|Listar / Buscar / Mostrar| I[["Repositorio de medios<br/>mediaRepo (SQLite + FTS5)"]]
+    H -->|Reproducir| J[["Lanzador de reproductor<br/>mpv / vlc (spawn sin shell)"]]
     H -->|Etiquetas| K[["Repositorio de etiquetas<br/>tagRepo"]]
-    H -->|Estado reproduccion| L[["Repositorio de reproduccion<br/>playbackRepo"]]
+    H -->|Estado reproducción| L[["Repositorio de reproducción<br/>playbackRepo / preferencesRepo"]]
+    H -->|Metadatos externos| N[["MetadataService<br/>TVMaze / Jikan + caché de pósters"]]
+    H -->|Diagnóstico / Mantenimiento| O[["doctor / db stats / db optimize / backup / restore"]]
 
-    I --> M[["Base de datos SQLite<br/>WAL + FTS5"]]
-    J --> N[["Proceso reproductor<br/>spawn sin shell"]]
+    I --> M[["Base de datos SQLite<br/>WAL + FTS5 + media_metadata + tags"]]
+    J --> P[["Proceso reproductor<br/>mpv o vlc, detached por defecto"]]
     K --> M
     L --> M
+    N --> M
+    O --> M
 
-    N --> O[["Tracker IPC mpv<br/>Guarda posicion cada 5s"]]
-    O --> P[["Estado de reproduccion<br/>playback_state"]]
-    P --> M
+    P --> Q[["Tracker IPC mpv<br/>guarda posición cada 5 s (socket / named pipe)"]]
+    Q --> L
 
-    Q[["Indexacion automatica<br/>mm watch / mm index"]] --> R[["Scanner + Clasificador<br/>src/core/indexer/"]]
-    R --> S[["Parsers: episodio / pelicula<br/>S01E02, 1x02, T1E2..."]]
-    S --> M
+    R[["Indexación automática<br/>mm index / mm watch (chokidar)"]] --> S[["Scanner + Clasificador<br/>src/core/indexer/"]]
+    S --> T[["Parsers de nombre<br/>S01E02 · 1x02 · T1E2 · 1080p BluRay…"]]
+    T --> M
+
+    N --> U[["API externas públicas<br/>TVMaze (series/películas) · Jikan (anime)"]]
+    U --> N
+
+    V[["Auto-actualización<br/>mm self-update"]] --> W[["GitHub Releases API<br/>descarga + SHA-256 + reemplazo atómico"]]
 
     style A fill:#f9f,stroke:#333
     style M fill:#bbf,stroke:#333
     style J fill:#ffb,stroke:#333
     style C fill:#bfb,stroke:#333
     style D fill:#bfb,stroke:#333
+    style N fill:#ffd,stroke:#333
+    style V fill:#dfd,stroke:#333
 ```
 
 ---
