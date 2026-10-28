@@ -13,7 +13,7 @@
  * tiene su propio orden fijo de hooks, nunca condicional.
  */
 
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { deleteKittyImage, encodeKittyGraphic } from '../../shared/kittyProtocol.js';
@@ -62,7 +62,6 @@ function NativePosterImage({
   width: number;
   height: number;
 }): React.JSX.Element {
-  const stdout = useStdout();
   const mountedRef = useRef(true);
   const imageIdRef = useRef<number | null>(null);
   const columns: number = process.stdout.columns ?? 80;
@@ -78,8 +77,18 @@ function NativePosterImage({
   const imageId: number = Math.floor(Math.random() * 10000);
   imageIdRef.current = imageId;
 
-  // Bypass de Ink: escribir directamente a stdout para evitar que el Virtual
-  // DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
+  // Diagnosticar a stderr para saber qué está pasando en entornos reales.
+  try {
+    process.stderr.write(
+      `[mm] NativePosterImage: imagePath=${imagePath} width=${width} height=${height} ` +
+        `columns=${columns} posterX=${posterX} posterY=${posterY} imageId=${imageId}\n`,
+    );
+  } catch {
+    // No hay nada más que hacer.
+  }
+
+  // Bypass de Ink: escribir directamente a process.stdout para evitar que el
+  // Virtual DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
   useEffect(() => {
     let cancelled = false;
 
@@ -88,6 +97,24 @@ function NativePosterImage({
         // Desacoplar del ciclo síncrono de render de Ink.
         await new Promise((resolve) => setTimeout(resolve, 0));
         if (cancelled || !mountedRef.current) return;
+
+        // Verificar que el fichero existe antes de intentar codificarlo.
+        let fileAccessible = false;
+        try {
+          await import('node:fs/promises').then(({ access }) => access(imagePath));
+          fileAccessible = true;
+        } catch {
+          fileAccessible = false;
+        }
+
+        if (!fileAccessible) {
+          try {
+            process.stderr.write(`[mm] NativePosterImage: fichero no accesible: ${imagePath}\n`);
+          } catch {
+            // No hay nada más que hacer.
+          }
+          return;
+        }
 
         let frames: { sequence: string; isLast: boolean }[] = [];
         try {
@@ -104,10 +131,27 @@ function NativePosterImage({
           frames = [];
         }
 
+        try {
+          process.stderr.write(`[mm] NativePosterImage: frames generados=${frames.length}\n`);
+        } catch {
+          // No hay nada más que hacer.
+        }
+
         if (cancelled || !mountedRef.current) return;
 
         if (!Array.isArray(frames)) {
           frames = [];
+        }
+
+        if (frames.length === 0) {
+          try {
+            process.stderr.write(
+              `[mm] NativePosterImage: no se generaron frames, imagen no renderizada\n`,
+            );
+          } catch {
+            // No hay nada más que hacer.
+          }
+          return;
         }
 
         const hideCursor = '\x1b[?25l';
@@ -115,20 +159,29 @@ function NativePosterImage({
         const moveCursor = `\x1b[${posterY};${posterX}H`;
 
         try {
-          if (typeof stdout?.write === 'function') {
-            stdout.write(hideCursor);
-            for (const frame of frames) {
-              if (frame && typeof frame.sequence === 'string') {
-                stdout.write(moveCursor + frame.sequence);
-              }
+          process.stdout.write(hideCursor);
+          for (const frame of frames) {
+            if (frame && typeof frame.sequence === 'string') {
+              process.stdout.write(moveCursor + frame.sequence);
             }
-            stdout.write(showCursor);
+          }
+          process.stdout.write(showCursor);
+
+          try {
+            process.stderr.write(
+              `[mm] NativePosterImage: ${frames.length} frames escritos a stdout\n`,
+            );
+          } catch {
+            // No hay nada más que hacer.
           }
         } catch {
           try {
-            if (typeof stdout?.write === 'function') {
-              stdout.write(showCursor);
-            }
+            process.stdout.write(showCursor);
+          } catch {
+            // No hay nada más que hacer.
+          }
+          try {
+            process.stderr.write(`[mm] NativePosterImage: error escribiendo frames a stdout\n`);
           } catch {
             // No hay nada más que hacer.
           }
@@ -151,22 +204,18 @@ function NativePosterImage({
       // o cambiar de imagen, evitando artefactos flotantes.
       if (imageIdRef.current !== null) {
         try {
-          if (typeof stdout?.write === 'function') {
-            stdout.write(deleteKittyImage(imageIdRef.current));
-          }
+          process.stdout.write(deleteKittyImage(imageIdRef.current));
         } catch {
           // Si el borrado falla, se ignora.
         }
       }
       try {
-        if (typeof stdout?.write === 'function') {
-          stdout.write('\x1b[?25h');
-        }
+        process.stdout.write('\x1b[?25h');
       } catch {
         // No hay nada más que hacer.
       }
     };
-  }, [imagePath, width, height, posterX, posterY, imageId, stdout]);
+  }, [imagePath, width, height, posterX, posterY, imageId]);
 
   return (
     <Box
