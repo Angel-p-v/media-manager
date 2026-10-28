@@ -8,9 +8,9 @@
  * Cuando el terminal lo soporta (Kitty, WezTerm, Ghostty, iTerm2, Foot),
  * se usa el protocolo gráfico nativo (Kitty SGP, iTerm2 IIP o Sixel) para
  * obtener calidad de imagen fotográfica real. De lo contrario, se usa el
- * modo símbolos de chafa con `--symbols=sextant` (6 sub-píxeles por carácter,
- * 3× más resolución vertical que medios bloques) y `--dither=none` para
- * colores sólidos puros sin ruido.
+ * modo símbolos de chafa con `--symbols=all` (chafa elige los mejores
+ * símbolos según la fuente instalada) y `--dither=none` para colores
+ * sólidos puros sin ruido.
  *
  * Si `chafa` no está instalado o la imagen no existe, se devuelve una cadena
  * vacía y el llamante debe mostrar un placeholder.
@@ -24,6 +24,17 @@ import { access } from 'node:fs/promises';
 
 /** Tamaño por defecto del póster en la vista de detalles (ancho x alto en caracteres). */
 export const DEFAULT_POSTER_SIZE = { width: 22, height: 12 };
+
+/** Protocolo de renderizado detectado o forzado. */
+export type GraphicsFormat = 'symbols' | 'kitty' | 'iterm' | 'sixel';
+
+/** Resultado del renderizado de una imagen con chafa. */
+export type RenderResult = {
+  /** Salida de chafa (secuencias ANSI o protocolo gráfico nativo). */
+  output: string;
+  /** Protocolo de renderizado utilizado. */
+  format: GraphicsFormat;
+};
 
 /** Comprueba si `chafa` está disponible en el sistema. */
 export async function isChafaAvailable(): Promise<boolean> {
@@ -40,26 +51,48 @@ export async function isChafaAvailable(): Promise<boolean> {
  * permita a chafa renderizar la imagen con calidad fotográfica real en
  * lugar de símbolos ANSI.
  *
- * Devuelve el valor de `--format` adecuado ('kitty', 'iterm', 'sixel') o
- * `undefined` si no se detecta ninguna capacidad nativa (se usará el modo
- * símbolos por defecto).
+ * Orden de prioridad:
+ * 1. Variable de entorno MEDIA_MANAGER_GRAPHICS (forzado explícito)
+ * 2. GHOSTTY_RESOURCES_DIR (Ghostty)
+ * 3. KITTY_WINDOW_ID o TERM_PROGRAM=Kitty/WezTerm/Ghostty (Kitty SGP)
+ * 4. TERM_PROGRAM=iTerm.app (iTerm2 IIP)
+ * 5. TERM=sixel o TERM_PROGRAM=foot (Sixel)
+ *
+ * Devuelve el valor de `--format` adecuado o `undefined` si no se detecta
+ * ninguna capacidad nativa (se usará el modo símbolos por defecto).
  */
-function detectNativeFormat(): string | undefined {
-  const termProgram = process.env.TERM_PROGRAM ?? '';
+export function detectNativeFormat(): GraphicsFormat | undefined {
+  // 1. Forzado explícito por el usuario
+  const forced = process.env.MEDIA_MANAGER_GRAPHICS ?? '';
+  const forcedLower = forced.toLowerCase();
+  if (forcedLower === 'kitty') return 'kitty';
+  if (forcedLower === 'iterm' || forcedLower === 'iterm2') return 'iterm';
+  if (forcedLower === 'sixel') return 'sixel';
+  if (forcedLower === 'symbols' || forcedLower === 'ansi' || forcedLower === 'none')
+    return undefined;
+
+  // 2. Ghostty (detecta por directorio de recursos o TERM)
+  const ghosttyResources = process.env.GHOSTTY_RESOURCES_DIR ?? '';
   const term = process.env.TERM ?? '';
+  const termProgram = process.env.TERM_PROGRAM ?? '';
   const kittyWindowId = process.env.KITTY_WINDOW_ID ?? '';
 
-  // Kitty Graphics Protocol (KGP): Kitty, WezTerm, Ghostty, Konsole (con KGP)
+  if (ghosttyResources) return 'kitty';
+  if (term.toLowerCase().includes('ghostty')) return 'kitty';
+  if (term.toLowerCase().includes('kitty')) return 'kitty';
+
+  // 3. Kitty Graphics Protocol (KGP)
   if (kittyWindowId) return 'kitty';
   if (termProgram === 'kitty') return 'kitty';
   if (termProgram === 'WezTerm') return 'kitty';
   if (termProgram === 'Ghostty') return 'kitty';
 
-  // iTerm2 Inline Images Protocol (IIP)
+  // 4. iTerm2 Inline Images Protocol (IIP)
   if (termProgram === 'iTerm.app') return 'iterm';
 
-  // Sixel graphics protocol: Foot, Windows Terminal, xterm (vt340), Rio
-  if (term === 'sixel' || termProgram === 'foot') return 'sixel';
+  // 5. Sixel graphics protocol
+  if (term === 'sixel') return 'sixel';
+  if (termProgram === 'foot') return 'sixel';
 
   return undefined;
 }
@@ -67,11 +100,10 @@ function detectNativeFormat(): string | undefined {
 /**
  * Convierte una imagen a arte Unicode o protocolo gráfico nativo usando `chafa`.
  *
- * Usa `--format=symbols` con `--symbols=sextant` para que cada carácter de
- * la terminal mapee 6 sub-píxeles (2 columnas × 3 filas), triplicando la
- * resolución vertical respecto a medios bloques. Cuando se detecta una
- * terminal con protocolo gráfico nativo (Kitty, iTerm2, Sixel), se usa ese
- * formato para obtener calidad fotográfica real.
+ * Usa `--format=symbols` con `--symbols=all` para que chafa combine los
+ * mejores símbolos de bloque según la fuente instalada. Cuando se detecta
+ * una terminal con protocolo gráfico nativo (Kitty, iTerm2, Sixel), se usa
+ * ese formato para obtener calidad fotográfica real.
  *
  * `--colors=full` para TrueColor (24-bit), `--dither=none` para evitar el
  * punteado aleatorio que añade ruido a caras y letras pequeñas, y `--stretch`
@@ -81,17 +113,18 @@ function detectNativeFormat(): string | undefined {
  * El resultado se limpia con `.trimEnd()` para eliminar saltos de línea o
  * retornos de carro finales que descuadren la última fila del Box de Ink.
  *
- * Devuelve una cadena de texto con secuencias de escape ANSI (o protocolo
- * gráfico nativo) que se puede mostrar directamente en la terminal.
+ * Devuelve un objeto con la salida de chafa y el formato de renderizado
+ * utilizado, para que el llamante pueda decidir cómo mostrarlo en la UI.
  *
- * Devuelve cadena vacía si `chafa` no está disponible o la imagen no existe.
+ * Devuelve cadena vacía y formato 'symbols' si `chafa` no está disponible
+ * o la imagen no existe.
  *
  * @param signal - `AbortSignal` opcional para cancelar la ejecución de chafa.
  */
 export async function renderImageToAnsi(
   imagePath: string,
   options: { width?: number; height?: number; signal?: AbortSignal } = {},
-): Promise<string> {
+): Promise<RenderResult> {
   const {
     width = DEFAULT_POSTER_SIZE.width,
     height = DEFAULT_POSTER_SIZE.height,
@@ -101,7 +134,7 @@ export async function renderImageToAnsi(
   try {
     await access(imagePath);
   } catch {
-    return '';
+    return { output: '', format: 'symbols' };
   }
 
   const nativeFormat = detectNativeFormat();
@@ -113,7 +146,7 @@ export async function renderImageToAnsi(
       [
         formatFlag,
         '--colors=full',
-        nativeFormat ? undefined : '--symbols=sextant',
+        nativeFormat ? undefined : '--symbols=all',
         '--dither=none',
         '--stretch',
         '--align=top,left',
@@ -124,9 +157,12 @@ export async function renderImageToAnsi(
       { encoding: 'utf-8' },
       signal,
     );
-    return stdout.trimEnd();
+    return {
+      output: stdout.trimEnd(),
+      format: nativeFormat ?? 'symbols',
+    };
   } catch {
-    return '';
+    return { output: '', format: 'symbols' };
   }
 }
 
