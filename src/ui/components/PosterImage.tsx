@@ -17,13 +17,15 @@
  * 1. **Protocolo gráfico nativo (Kitty SGP)**: Cuando el terminal lo soporta
  *    (Ghostty, Kitty, WezTerm, etc.), se ejecuta `chafa -f kitty` y la salida
  *    se escribe directamente a stdout (bypasseando el Virtual DOM de Ink) para
- *    evitar que Ink corrompa los buffers de escape gráfico.
+ *    evitar que Ink corrompa los buffers de escape gráfico. Se renderiza un
+ *    <Box> vacío con borde para reservar el espacio, y el gráfico se proyecta
+ *    directamente sobre esas coordenadas absolutas.
  * 2. **Modo símbolos ANSI**: Fallback para terminales tradicionales. Usa
  *    `--symbols=sextant` (6 sub-píxeles por carácter) para máxima resolución
  *    en modo texto.
  */
 
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { renderImageToAnsi, type GraphicsFormat } from '../../shared/terminalImage.js';
@@ -58,12 +60,22 @@ export function PosterImage({
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
-  const { write } = useStdout();
+  const columns = process.stdout.columns ?? 80;
 
-  // Offsets para posicionar el gráfico nativo sobre el Box del póster.
-  // Se pueden ajustar mediante variables de entorno si el layout cambia.
+  // Offsets y márgenes para posicionamiento (configurables vía variables de entorno)
   const offsetX = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_X ?? '0');
   const offsetY = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_Y ?? '0');
+  const marginRight = Number(process.env.MEDIA_MANAGER_POSTER_MARGIN_RIGHT ?? '1');
+
+  // Cálculo de coordenadas absolutas para el overlay nativo
+  const posterX = Math.max(0, columns - width - marginRight) + offsetX;
+  const posterY = Math.max(1, 1 + offsetY);
+
+  // Refs para limpieza del área anterior antes de escribir un nuevo gráfico
+  const lastXRef = useRef<number | null>(null);
+  const lastYRef = useRef<number | null>(null);
+  const lastWidthRef = useRef<number | null>(null);
+  const lastHeightRef = useRef<number | null>(null);
 
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
@@ -101,8 +113,6 @@ export function PosterImage({
       if (result.output) {
         setPoster(result);
         setLoading(false);
-        // Forzar volcado inmediato a la terminal tras renderizar el póster.
-        write('');
       } else {
         setPoster(null);
         setLoading(false);
@@ -112,8 +122,9 @@ export function PosterImage({
       setPoster(null);
       setLoading(false);
     }
-  }, [imagePath, width, height, write]);
+  }, [imagePath, width, height]);
 
+  // useEffect principal para montaje y renderizado de chafa
   useEffect(() => {
     mountedRef.current = true;
     // Lanzar renderizado sin await: la UI no debe bloquearse esperando chafa.
@@ -133,15 +144,56 @@ export function PosterImage({
 
     const hideCursor = '\x1b[?25l';
     const showCursor = '\x1b[?25h';
-    // Posicionar cursor en la esquina superior izquierda del Box interior.
-    // Los offsets se pueden ajustar mediante variables de entorno.
-    const moveCursor = `\x1b[${1 + offsetY};${1 + offsetX}H`;
-    write(hideCursor);
-    write(moveCursor);
-    write(poster.output);
-    write(showCursor);
-    // No hay limpieza necesaria: el gráfico persiste hasta que se re-renderice.
-  }, [poster?.output, poster?.format, offsetX, offsetY, write]);
+    const moveCursor = `\x1b[${posterY};${posterX}H`;
+
+    // Limpiar el área anterior antes de escribir el nuevo gráfico.
+    // Escribir espacios en blanco sobre el área del póster previo para
+    // borrar el gráfico anterior (Kitty SGP imprime imágenes en el buffer,
+    // escribir texto sobre ellas las cubre visualmente).
+    if (
+      lastXRef.current !== null &&
+      lastYRef.current !== null &&
+      lastWidthRef.current !== null &&
+      lastHeightRef.current !== null
+    ) {
+      const clearLines: string[] = [];
+      for (let r = 0; r < lastHeightRef.current; r += 1) {
+        const clearMove = `\x1b[${lastYRef.current + r};${lastXRef.current}H`;
+        clearLines.push(clearMove + ' '.repeat(lastWidthRef.current));
+      }
+      process.stdout.write(clearLines.join(''));
+    }
+
+    // Escribir el nuevo gráfico nativo directamente a stdout.
+    process.stdout.write(hideCursor);
+    process.stdout.write(moveCursor);
+    process.stdout.write(poster.output);
+    process.stdout.write(showCursor);
+
+    // Guardar coordenadas para limpieza futura cuando cambie la imagen.
+    lastXRef.current = posterX;
+    lastYRef.current = posterY;
+    lastWidthRef.current = width;
+    lastHeightRef.current = height;
+
+    return () => {
+      // Limpieza al desmontar el componente o al cambiar de imagen.
+      if (
+        lastXRef.current !== null &&
+        lastYRef.current !== null &&
+        lastWidthRef.current !== null &&
+        lastHeightRef.current !== null
+      ) {
+        const clearLines: string[] = [];
+        for (let r = 0; r < lastHeightRef.current; r += 1) {
+          const clearMove = `\x1b[${lastYRef.current + r};${lastXRef.current}H`;
+          clearLines.push(clearMove + ' '.repeat(lastWidthRef.current));
+        }
+        process.stdout.write(clearLines.join(''));
+        process.stdout.write(showCursor);
+      }
+    };
+  }, [poster?.output, poster?.format, posterX, posterY, width, height]);
 
   if (!imagePath) {
     return (
@@ -177,7 +229,7 @@ export function PosterImage({
     const { format } = poster;
 
     // Protocolo gráfico nativo (Kitty SGP): renderizar Box vacío con borde.
-    // El gráfico se escribe directamente a stdout en el useEffect de arriba.
+    // El gráfico se escribe directamente a stdout en el useEffect de bypass.
     if (format === 'kitty') {
       return (
         <Box
@@ -190,8 +242,8 @@ export function PosterImage({
       );
     }
 
-    // Modo símbolos ANSI: dividir por líneas para evitar interlineado intercalado
-    // en Ink. Cada línea se renderiza en un <Text> independiente.
+    // Modo símbolos ANSI: dividir por líneas para evitar interlineado
+    // intercalado en Ink. Cada línea se renderiza en un <Text> independiente.
     const lines = poster.output.split('\n');
     return (
       <Box
