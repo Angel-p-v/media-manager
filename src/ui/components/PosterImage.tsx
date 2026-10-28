@@ -116,13 +116,21 @@ function NativePosterImage({
           return;
         }
 
+        // Limitar dimensiones de píxeles para evitar generar demasiados
+        // frames (el protocolo Kitty requiere chunks de 4096 bytes; una
+        // imagen muy grande produce miles de frames y satura el buffer de
+        // stdout). Usamos un máximo de 400x400 px para el póster.
+        const maxPx = 400;
+        const safeWidthPx = Math.min(width * 10, maxPx);
+        const safeHeightPx = Math.min(height * 20, maxPx);
+
         let frames: { sequence: string; isLast: boolean }[] = [];
         try {
           frames =
             (await encodeKittyGraphic({
               imagePath,
-              widthPx: width * 10, // aproximación: 10 px por columna
-              heightPx: height * 20, // aproximación: 20 px por fila
+              widthPx: safeWidthPx,
+              heightPx: safeHeightPx,
               columns: width,
               rows: height,
               imageId,
@@ -158,15 +166,18 @@ function NativePosterImage({
         const showCursor = '\x1b[?25h';
         const moveCursor = `\x1b[${posterY};${posterX}H`;
 
-        try {
-          process.stdout.write(hideCursor);
-          for (const frame of frames) {
-            if (frame && typeof frame.sequence === 'string') {
-              process.stdout.write(moveCursor + frame.sequence);
-            }
+        // Concatenar todos los frames en una sola escritura a stdout para
+        // evitar saturar el buffer con cientos de write() individuales.
+        let fullOutput = hideCursor;
+        for (const frame of frames) {
+          if (frame && typeof frame.sequence === 'string') {
+            fullOutput += moveCursor + frame.sequence;
           }
-          process.stdout.write(showCursor);
+        }
+        fullOutput += showCursor;
 
+        try {
+          process.stdout.write(fullOutput);
           try {
             process.stderr.write(
               `[mm] NativePosterImage: ${frames.length} frames escritos a stdout\n`,
