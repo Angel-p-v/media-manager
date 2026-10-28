@@ -31,10 +31,10 @@ export async function isChafaAvailable(): Promise<boolean> {
 /**
  * Convierte una imagen a arte Unicode con colores ANSI usando `chafa`.
  *
- * Usa `--format=symbols` con `--symbols=braille` para obtener bloques Unicode
- * de alta resolución (cada carácter representa una matriz 2×4 píxeles), y
- * `--font-ratio=2/1` para compensar la proporción no cuadrada de los
- * caracteres de terminal, evitando que el póster se deforme.
+ * Usa `--format=symbols` con `--symbols=block+border+space` para bloques
+ * sólidos uniformes, `--colors=full` para TrueColor (24-bit), y `--stretch`
+ * junto a `--size=WxH` para forzar que chafa ocupe el 100% del canvas del Box
+ * contenedor sin dejar huecos a la derecha ni comprimir el ancho.
  *
  * Devuelve una cadena de texto con secuencias de escape ANSI que se puede
  * mostrar directamente en la terminal (incluido dentro de un `<Text>` de Ink).
@@ -64,9 +64,9 @@ export async function renderImageToAnsi(
       'chafa',
       [
         '--format=symbols',
-        '--colors=256',
-        '--symbols=braille',
-        '--font-ratio=2/1',
+        '--colors=full',
+        '--symbols=block+border+space',
+        '--stretch',
         '--align=top,left',
         `--size=${width}x${height}`,
         '--animate=false',
