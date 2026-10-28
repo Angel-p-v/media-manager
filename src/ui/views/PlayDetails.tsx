@@ -73,19 +73,15 @@ export function PlayDetails({
 }: PlayDetailsProps): React.JSX.Element {
   const { exit } = useApp();
 
-  if (details === null) {
-    return (
-      <Box flexGrow={1} flexDirection="column" paddingX={1}>
-        <Text>{theme.error('No se cargaron los detalles del título.')}</Text>
-        <Text>{theme.muted('Vuelve a la biblioteca y selecciona un título.')}</Text>
-      </Box>
-    );
-  }
+  // Datos del título (pueden ser undefined cuando details es null).
+  const media = details?.media ?? null;
+  const files: readonly MediaFileRow[] = details?.files ?? [];
 
-  const { media, files } = details;
-  const year = media.year === null ? '' : ` (${media.year})`;
-  const typeLabel =
-    media.type === 'series' ? 'serie' : media.type === 'anime' ? 'anime' : 'película';
+  // -------------------------------------------------------------------------
+  // REGLAS DE HOOKS: todos los hooks van ANTES de cualquier return
+  // condicional, para que el orden y la cantidad sean idénticos en cada
+  // render, incluso cuando `details` sea null.
+  // -------------------------------------------------------------------------
 
   const [selectedFileIndex, setSelectedFileIndex] = useState(0);
   const [visibleStart, setVisibleStart] = useState(0);
@@ -107,6 +103,19 @@ export function PlayDetails({
   /** Metadatos externos (TMDB/TVDB/AniList) del título. */
   const [metadata, setMetadata] = useState<MediaMetadataRow | null>(null);
 
+  if (details === null || media === null) {
+    return (
+      <Box flexGrow={1} flexDirection="column" paddingX={1}>
+        <Text>{theme.error('No se cargaron los detalles del título.')}</Text>
+        <Text>{theme.muted('Vuelve a la biblioteca y selecciona un título.')}</Text>
+      </Box>
+    );
+  }
+
+  const year = media.year === null ? '' : ` (${media.year})`;
+  const typeLabel =
+    media.type === 'series' ? 'serie' : media.type === 'anime' ? 'anime' : 'película';
+
   const selectedFile = files[selectedFileIndex];
   const selectedAudio = audioTracks[selectedAudioIndex ?? -1];
   const selectedSubtitle = subtitleTracks[selectedSubtitleIndex ?? -1];
@@ -126,16 +135,16 @@ export function PlayDetails({
 
   /** Obtiene los metadatos externos (sinopsis, carátula, etc.) de la API pública. */
   const handleFetchMetadata = useCallback(async (): Promise<void> => {
-    if (details === null) return;
+    if (media === null) return;
 
     setFetchingMetadata(true);
     setExternalMetadataError(null);
     try {
       // Forzar refresco: el usuario pulsó "r" explícitamente, ignorar TTL.
-      await library.getOrFetchMetadata(details.media.id, { forceRefresh: true });
+      await library.getOrFetchMetadata(media.id, { forceRefresh: true });
 
       // Refrescar estado local desde el repositorio tras la obtención.
-      const saved = library.getMetadata(details.media.id);
+      const saved = library.getMetadata(media.id);
       setMetadata(saved ?? null);
       setPosterPath(saved?.localPosterPath ?? null);
     } catch (error) {
@@ -145,7 +154,7 @@ export function PlayDetails({
     } finally {
       setFetchingMetadata(false);
     }
-  }, [details, library]);
+  }, [media, library]);
 
   /** Carga los metadatos reales (audio/subtítulos/vídeo) del fichero seleccionado con ffprobe. */
   const loadFileMetadata = useCallback(async (file: MediaFileRow | undefined): Promise<void> => {
@@ -194,19 +203,20 @@ export function PlayDetails({
 
   // Obtener el póster cacheado del título cuando cambian los detalles.
   useEffect(() => {
-    if (details === null) {
+    if (media === null) {
       setPosterPath(null);
       return;
     }
-    const saved = library.getMetadata(details.media.id);
+    const saved = library.getMetadata(media.id);
     setPosterPath(saved?.localPosterPath ?? null);
-  }, [details, library]);
+  }, [media, library]);
 
   // Obtener la sinopsis de los metadatos externos (TMDB/TVDB/AniList).
   useEffect(() => {
-    const saved = library.getMetadata(details.media.id);
+    if (media === null) return;
+    const saved = library.getMetadata(media.id);
     setMetadata(saved ?? null);
-  }, [details, library]);
+  }, [media, library]);
 
   /** Ajusta la ventana visible para que el índice seleccionado siempre esté visible. */
   const ensureVisible = useCallback(
@@ -318,7 +328,7 @@ export function PlayDetails({
       <Box flexGrow={1} flexDirection="row">
         {/* Izquierda: póster grande */}
         <Box flexDirection="column" paddingX={1} paddingY={1} flexShrink={0}>
-          <PosterImage imagePath={posterPath} width={32} height={24} />
+          <PosterImage imagePath={posterPath} />
         </Box>
 
         {/* Centro: metadatos y episodios */}
@@ -363,8 +373,8 @@ export function PlayDetails({
                   ? theme.value(metadata.overview)
                   : theme.muted(
                       files.length > 0
-                        ? `Serie con ${files.length} fichero(s) indexado(s). Pulsa «r» para obtener metadatos.`
-                        : 'Sin sinopsis disponible. Pulsa «r» para obtener metadatos.',
+                        ? `${files.length} fichero(s). Pulsa «r» para obtener metadatos.`
+                        : 'Sin sinopsis. Pulsa «r».',
                     )}
           </Text>
           <Text> </Text>
@@ -441,7 +451,7 @@ export function PlayDetails({
                         track.channels !== null ? ` ${track.channels}ch` : ''
                       }${track.sampleRate ? ` ${track.sampleRate}Hz` : ''}${
                         track.title ? ` - ${track.title}` : ''
-                      })`}
+                      }`}
                     </Text>
                   );
                 })
@@ -464,7 +474,7 @@ export function PlayDetails({
                     >
                       {`${active ? '▸ ' : '   '}${track.language} (${track.codec}${
                         track.title ? ` - ${track.title}` : ''
-                      })`}
+                      }`}
                     </Text>
                   );
                 })

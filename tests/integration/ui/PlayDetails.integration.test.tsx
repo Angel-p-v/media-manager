@@ -88,9 +88,9 @@ describe('PlayDetails (flujo de metadatos)', () => {
 
     // Estado inicial: sin metadatos, muestra placeholder
     let frame = lastFrame() ?? '';
-    expect(frame).toContain('Pulsa «r» para');
-    expect(frame).toContain('obtener');
-    expect(frame).toContain('metadatos');
+    const normalized = frame.replace(/\s+/g, ' ');
+    expect(normalized).toContain('Pulsa «r»');
+    expect(normalized).toContain('para obtener metadatos');
     expect(frame).not.toContain('Jiro Azuma');
 
     // Pulsar "r" para obtener metadatos

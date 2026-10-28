@@ -22,6 +22,19 @@ export function MediaDetails({
   library,
   metadataRefreshKey,
 }: MediaDetailsProps): React.JSX.Element {
+  // Los Hooks van ANTES de cualquier return condicional para respetar las
+  // Reglas de Hooks: el orden y la cantidad de hooks deben ser idénticos en
+  // cada render, incluso cuando `details` sea null.
+  const mediaId: number | null = details === null ? null : details.media.id;
+  const [metadata, setMetadata] = useState<MediaMetadataRow | null>(null);
+
+  // Cargar metadatos existentes al montar o al refrescar metadatos externos.
+  useEffect(() => {
+    if (mediaId === null) return;
+    const saved = library.getMetadata(mediaId);
+    setMetadata(saved ?? null);
+  }, [library, mediaId, metadataRefreshKey]);
+
   if (details === null) {
     return (
       <Box paddingX={1} marginTop={1}>
@@ -32,13 +45,6 @@ export function MediaDetails({
 
   const { media, files } = details;
   const year = media.year === null ? '' : ` (${media.year})`;
-  const [metadata, setMetadata] = useState<MediaMetadataRow | null>(null);
-
-  // Cargar metadatos existentes al montar o al refrescar metadatos externos.
-  useEffect(() => {
-    const saved = library.getMetadata(media.id);
-    setMetadata(saved ?? null);
-  }, [library, media.id, metadataRefreshKey]);
 
   return (
     <Box
@@ -110,7 +116,7 @@ export function MediaDetails({
 
         {/* ==================== Derecha: póster ==================== */}
         <Box flexDirection="column" marginLeft={4} flexShrink={0}>
-          <PosterImage imagePath={metadata?.localPosterPath ?? null} width={45} height={32} />
+          <PosterImage imagePath={metadata?.localPosterPath ?? null} />
         </Box>
       </Box>
     </Box>
