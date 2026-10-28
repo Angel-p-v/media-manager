@@ -50,12 +50,12 @@ export async function processImage(
   imagePath: string,
   dimensions: ImageDimensions,
 ): Promise<Buffer> {
-  const sharpInstance = await import('sharp');
-  return sharpInstance
-    .default(imagePath)
+  const sharpModule = await import('sharp');
+  const sharpFn = sharpModule.default;
+  return sharpFn(imagePath)
     .resize(dimensions.widthPx, dimensions.heightPx, {
       fit: 'fill',
-      kernel: sharpInstance.kernel.lanczos3,
+      kernel: sharpFn.kernel.lanczos3,
     })
     .toFormat('png')
     .toBuffer();

@@ -87,7 +87,7 @@ export function encodeKittyGraphic(options: KittyEncodeOptions): KittyFrame[] {
     // Todos los fragmentos llevan los parámetros completos; `f=100` (PNG)
     // porque Sharp siempre emite PNG. `c=` y `r=` expresan celdas de
     // terminal, no píxeles (los píxeles se fijan al redimensionar con Sharp).
-    const params = `a=T,f=${FORMAT_PNG},c=${columns},r=${rows},i=${imageId},z=1,m=${message}`;
+    const params = `a=T,f=${FORMAT_PNG},t=d,c=${columns},r=${rows},i=${imageId},z=1,m=${message}`;
     const sequence = `\x1b_G${params};${chunk}\x1b\\`;
     frames.push({ sequence, isLast });
   }

@@ -36,11 +36,14 @@ describe('kittyProtocol', () => {
     // Parámetros obligatorios del protocolo Kitty (según especificación).
     expect(seq).toContain('a=T');
     expect(seq).toContain('f=100'); // formato PNG (Sharp)
+    expect(seq).toContain('t=d'); // datos directos (no ruta de fichero)
     expect(seq).toContain('c=45'); // columnas
     expect(seq).toContain('r=32'); // filas
     expect(seq).toContain('i=42'); // ID único
     expect(seq).toContain('z=1'); // Z-index
     expect(seq).toContain('m=0'); // mensaje final (único fragmento)
+    // No debe indicar ruta de fichero (t=f), solo datos directos (t=d).
+    expect(seq).not.toContain('t=f');
 
     // Los datos van después del punto y coma, en Base64.
     const payload = seq.split(';')[1] ?? '';
@@ -72,10 +75,13 @@ describe('kittyProtocol', () => {
     for (const frame of frames) {
       expect(frame.sequence).toContain('a=T');
       expect(frame.sequence).toContain('f=100');
+      expect(frame.sequence).toContain('t=d');
       expect(frame.sequence).toContain('c=45');
       expect(frame.sequence).toContain('r=32');
       expect(frame.sequence).toContain('i=7');
       expect(frame.sequence).toContain('z=1');
+      // No debe indicar ruta de fichero (t=f), solo datos directos (t=d).
+      expect(frame.sequence).not.toContain('t=f');
     }
 
     // Cada fragmento es una secuencia válida.

@@ -142,7 +142,7 @@ function NativePosterImage({
           // No hay nada más que hacer.
         }
       }
-    }, 50);
+    }, 150);
   }, [imagePath, width, height, stdout]);
 
   useEffect(() => {
@@ -168,7 +168,9 @@ function NativePosterImage({
   }, [imagePath, width, height, stdout, drawPoster]);
 
   // Return únicamente un placeholder vacío; la imagen se dibuja sobre él vía stdout.
-  return <Box borderStyle="round" flexShrink={0} height={height} width={width} />;
+  return (
+    <Box borderColor="gray" borderStyle="round" flexShrink={0} height={height} width={width} />
+  );
 }
 
 /**
