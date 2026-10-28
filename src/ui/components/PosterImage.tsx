@@ -12,12 +12,21 @@
  * - Las peticiones de chafa obsoletas se cancelan con AbortController: si el
  *   usuario navega a otro título antes de que chafa termine, el resultado se
  *   descarta sin bloquear la navegación con el teclado.
+ *
+ * Soporta dos modos de renderizado:
+ * 1. **Protocolo gráfico nativo (Kitty SGP)**: Cuando el terminal lo soporta
+ *    (Ghostty, Kitty, WezTerm, etc.), se ejecuta `chafa -f kitty` y la salida
+ *    se escribe directamente a stdout (bypasseando el Virtual DOM de Ink) para
+ *    evitar que Ink corrompa los buffers de escape gráfico.
+ * 2. **Modo símbolos ANSI**: Fallback para terminales tradicionales. Usa
+ *    `--symbols=sextant` (6 sub-píxeles por carácter) para máxima resolución
+ *    en modo texto.
  */
 
 import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { renderImageToAnsi } from '../../shared/terminalImage.js';
+import { renderImageToAnsi, type GraphicsFormat } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
 export type PosterImageProps = {
@@ -32,11 +41,11 @@ export type PosterImageProps = {
 /** Arte ASCII de fallback cuando chafa no está disponible o falla. */
 const FALLBACK_ASCII = `
 ██████╗ ███████╗██╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
-██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║████╗ ████║██╔══██╗██╔══██╗
+██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║████╗ ███║██╔══██╗██╔══██╗
 ██████╔╝██████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██║█████╔██║███████║██████╔╝
 ██╔═══╝ █████╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔═══╝
-██║     ███████╗██║ ╚████║╚██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
-╚═════╝ ╚═════╝ ╚╝  ╚═══╝ ╚╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝
+██║     ███████╗██║ ╚██║╚██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
+╚═════╝ ╚═════╝ ╚╝  ⚐╝╚╝  ⚐╝╚═╝     ⚐═╝╚═╝  ⚐╝
 `.trim();
 
 /** Componente que renderiza un póster de imagen en la terminal. */
@@ -45,11 +54,16 @@ export function PosterImage({
   width = 30,
   height = 20,
 }: PosterImageProps): React.JSX.Element {
-  const [ansiArt, setAnsiArt] = useState<string>('');
+  const [poster, setPoster] = useState<{ output: string; format: GraphicsFormat } | null>(null);
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
   const { write } = useStdout();
+
+  // Offsets para posicionar el gráfico nativo sobre el Box del póster.
+  // Se pueden ajustar mediante variables de entorno si el layout cambia.
+  const offsetX = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_X ?? '0');
+  const offsetY = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_Y ?? '0');
 
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
@@ -60,7 +74,7 @@ export function PosterImage({
     abortRef.current = abortController;
 
     if (!imagePath) {
-      setAnsiArt('');
+      setPoster(null);
       setLoading(false);
       return;
     }
@@ -76,7 +90,7 @@ export function PosterImage({
     if (!mountedRef.current || abortController.signal.aborted) return;
 
     try {
-      const art = await renderImageToAnsi(imagePath, {
+      const result = await renderImageToAnsi(imagePath, {
         width,
         height,
         signal: abortController.signal,
@@ -84,18 +98,18 @@ export function PosterImage({
       // Si la petición fue cancelada (navegó a otro título), ignorar el resultado.
       if (abortController.signal.aborted || !mountedRef.current) return;
 
-      if (art) {
-        setAnsiArt(art);
+      if (result.output) {
+        setPoster(result);
         setLoading(false);
         // Forzar volcado inmediato a la terminal tras renderizar el póster.
         write('');
       } else {
-        setAnsiArt('');
+        setPoster(null);
         setLoading(false);
       }
     } catch {
       if (abortController.signal.aborted || !mountedRef.current) return;
-      setAnsiArt('');
+      setPoster(null);
       setLoading(false);
     }
   }, [imagePath, width, height, write]);
@@ -110,6 +124,24 @@ export function PosterImage({
       abortRef.current?.abort();
     };
   }, [renderPoster]);
+
+  // Bypass de Ink para protocolo gráfico nativo (Kitty SGP).
+  // Escribir directamente a stdout para evitar que el Virtual DOM de Ink
+  // corrompa los buffers de escape gráfico.
+  useEffect(() => {
+    if (!poster?.output || poster.format !== 'kitty') return;
+
+    const hideCursor = '\x1b[?25l';
+    const showCursor = '\x1b[?25h';
+    // Posicionar cursor en la esquina superior izquierda del Box interior.
+    // Los offsets se pueden ajustar mediante variables de entorno.
+    const moveCursor = `\x1b[${1 + offsetY};${1 + offsetX}H`;
+    write(hideCursor);
+    write(moveCursor);
+    write(poster.output);
+    write(showCursor);
+    // No hay limpieza necesaria: el gráfico persiste hasta que se re-renderice.
+  }, [poster?.output, poster?.format, offsetX, offsetY, write]);
 
   if (!imagePath) {
     return (
@@ -141,8 +173,26 @@ export function PosterImage({
     );
   }
 
-  if (ansiArt) {
-    const lines = ansiArt.split('\n');
+  if (poster?.output) {
+    const { format } = poster;
+
+    // Protocolo gráfico nativo (Kitty SGP): renderizar Box vacío con borde.
+    // El gráfico se escribe directamente a stdout en el useEffect de arriba.
+    if (format === 'kitty') {
+      return (
+        <Box
+          borderStyle="round"
+          borderColor={theme.border}
+          width={width}
+          height={height}
+          flexShrink={0}
+        />
+      );
+    }
+
+    // Modo símbolos ANSI: dividir por líneas para evitar interlineado intercalado
+    // en Ink. Cada línea se renderiza en un <Text> independiente.
+    const lines = poster.output.split('\n');
     return (
       <Box
         borderStyle="round"
