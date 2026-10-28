@@ -1,60 +1,70 @@
 /**
  * Componente que renderiza un póster de imagen en la terminal.
  *
- * Cuando el terminal soporta protocolo gráfico nativo (Ghostty, Kitty, WezTerm),
- * se implementa el Protocolo Gráfico de Kitty (SGP) de forma cruda en TypeScript
- * (sin librerías de terceros ni subprocesos).
+ * Cuando el terminal soporta protocolo gráfico nativo de Kitty (Ghostty, Kitty,
+ * WezTerm), se usa `<Image protocol="kitty">` de `ink-picture`, que se encarga
+ * de decodificar JPEG/PNG, redimensionar, transmitir la imagen una vez,
+ * recolocarla tras cada render de Ink y borrarla al desmontar.
  *
- * Cuando el terminal NO soporta gráficos nativos, usa chafa con
- * --format=symbols --symbols=sextant (fallback ANSI tradicional).
+ * Cuando el terminal NO soporta gráficos nativos, se usa `chafa` con
+ * --format=symbols --symbols=sextant como fallback ANSI.
  *
- * Arquitectura: dos componentes separados para garantizar que el orden de
- * los Hooks de React sea siempre consistente (Reglas de Hooks). Cada modo
- * tiene su propio orden fijo de hooks, nunca condicional.
- *
- * Ningún mensaje de depuración se escribe a stdout/stderr. Todo queda
- * silenciado para no romper la interfaz de Ink.
+ * Ningún mensaje de depuración se escribe a stdout/stderr.
  */
 
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text } from 'ink';
+import Image from 'ink-picture';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { deleteKittyImage, encodeKittyGraphic } from '../../shared/kittyProtocol.js';
-import {
-  detectNativeFormat,
-  type GraphicsFormat,
-  renderImageToAnsi,
-} from '../../shared/terminalImage.js';
+import { renderImageToAnsi, supportsKittyGraphics } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
 export type PosterImageProps = {
   /** Ruta local al archivo de imagen (póster cacheado). Puede ser null. */
   imagePath: string | null;
-  /** Ancho del póster en caracteres de terminal. */
+  /** Ancho del póster en caracteres de terminal. Si se omite, se calcula de forma responsiva. */
   width?: number;
-  /** Alto del póster en caracteres de terminal. */
+  /** Alto del póster en caracteres de terminal. Si se omite, se calcula de forma responsiva. */
   height?: number;
 };
 
-/** Arte ASCII de fallback cuando chafa no está disponible o falla. */
-const FALLBACK_ASCII = `
-██████╗ ███████╗██╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
-██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║███╗ ███║██╔══██╗██╔══██╗
-██████╔╝██████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██║█████╔██║███████║██████╔╝
-██╔═══╝ █████╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔══╝
-██║     ███████╗██║ ╚██║╚═██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
-╚═════╝ ╚═════╝ ╚╝  ⚐╝╚╝  ⚐╝╚═╝     ⚐═╝╚═╝  ⚐╝
-`.trim();
-
-/** Tamaño por defecto del póster. */
+/** Dimensiones por defecto del póster cuando no se puede calcular de forma responsiva. */
 const DEFAULT_WIDTH = 30;
 const DEFAULT_HEIGHT = 20;
 
 /**
- * Componente para modo nativo (Kitty SGP).
+ * Calcula dimensiones responsivas para el póster basándose en el tamaño de la
+ * terminal, reservando espacio para la cabecera, la barra de estado y los
+ * márgenes. El ancho limita el póster a un tercio de la terminal; el alto se
+ * usa como referencia para el `<Image>` (el Box no fija altura para no
+ * restringir la columna contigua en layouts flex).
  *
- * Renderiza un <Box> vacío para reservar espacio y proyecta el gráfico
- * Kitty directamente a stdout. Tiene su propio orden fijo de hooks.
+ * Exportado para tests.
+ */
+export function computePosterSize(): { width: number; height: number } {
+  const terminalRows: number = process.stdout.rows ?? 24;
+  const terminalCols: number = process.stdout.columns ?? 80;
+
+  // El póster vive en un panel lateral: ocupa como máximo un tercio del ancho.
+  const availableCols = Math.max(10, Math.floor(terminalCols / 3) - 4);
+  // Cabecera (1 fila) + barra de estado (1 fila) + márgenes y padding (≈2 filas).
+  const availableRows = Math.max(6, terminalRows - 4);
+
+  return {
+    width: Math.min(DEFAULT_WIDTH, availableCols),
+    height: Math.min(DEFAULT_HEIGHT, availableRows),
+  };
+}
+
+/**
+ * Componente para modo nativo (Kitty SGP) mediante ink-picture.
+ *
+ * Delegada toda la complejidad del protocolo (codificación, chunking,
+ * posicionamiento, repintado tras cada render de Ink y borrado al desmontar)
+ * a la librería. No hay encoder propio ni cursor manual.
+ *
+ * El Box no fija altura: se estira con la columna vecina para no recortar
+ * el contenido de la vista. El `<Image>` recibe la altura como referencia.
  */
 function NativePosterImage({
   imagePath,
@@ -65,96 +75,6 @@ function NativePosterImage({
   width: number;
   height: number;
 }): React.JSX.Element {
-  const stdout = useStdout();
-  const mountedRef = useRef(true);
-  const imageIdRef = useRef<number | null>(null);
-
-  // Generar un ID único para esta imagen (se usa en el borrado al desmontar).
-  const imageId: number = Math.floor(Math.random() * 10000);
-  imageIdRef.current = imageId;
-
-  // Bypass de Ink: escribir directamente a stdout vía useStdout() para evitar
-  // que el Virtual DOM de Ink corrompa los buffers de escape gráfico del
-  // protocolo Kitty. No movemos el cursor: dejamos que el protocolo Kitty
-  // (parámetros c= y r=) posicione la imagen sobre el Box vacío.
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = async (): Promise<void> => {
-      try {
-        // Desacoplar del ciclo síncrono de render de Ink.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-        if (cancelled || !mountedRef.current) return;
-
-        let frames: { sequence: string; isLast: boolean }[] = [];
-        try {
-          frames =
-            (await encodeKittyGraphic({
-              imagePath,
-              widthPx: width * 10, // aproximación: 10 px por columna
-              heightPx: height * 20, // aproximación: 20 px por fila
-              columns: width,
-              rows: height,
-              imageId,
-              maxFrames: 10, // limitar para no saturar stdout
-            })) ?? [];
-        } catch {
-          frames = [];
-        }
-
-        if (cancelled || !mountedRef.current) return;
-
-        if (!Array.isArray(frames) || frames.length === 0) {
-          return;
-        }
-
-        const hideCursor = '\x1b[?25l';
-        const showCursor = '\x1b[?25h';
-
-        // Concatenar todos los frames en una sola escritura a stdout.
-        let fullOutput = hideCursor;
-        for (const frame of frames) {
-          if (frame && typeof frame.sequence === 'string') {
-            fullOutput += frame.sequence;
-          }
-        }
-        fullOutput += showCursor;
-
-        try {
-          stdout.write(fullOutput);
-        } catch {
-          try {
-            stdout.write(showCursor);
-          } catch {
-            // No hay nada más que hacer.
-          }
-        }
-      } catch {
-        // El póster simplemente no se renderiza en modo nativo.
-      }
-    };
-
-    void run();
-
-    return () => {
-      cancelled = true;
-      // CRÍTICO: borrar la imagen gráfica de Kitty para este ID al desmontar
-      // o cambiar de imagen, evitando artefactos flotantes.
-      if (imageIdRef.current !== null) {
-        try {
-          stdout.write(deleteKittyImage(imageIdRef.current));
-        } catch {
-          // Si el borrado falla, se ignora.
-        }
-      }
-      try {
-        stdout.write('\x1b[?25h');
-      } catch {
-        // No hay nada más que hacer.
-      }
-    };
-  }, [imagePath, width, height, imageId, stdout]);
-
   return (
     <Box
       borderStyle="round"
@@ -162,15 +82,25 @@ function NativePosterImage({
       width={width}
       height={height}
       flexShrink={0}
-    />
+      overflow="hidden"
+    >
+      <Image
+        src={imagePath}
+        width={width}
+        height={height}
+        alt="Póster del título"
+        objectFit="contain"
+        protocol="kitty"
+      />
+    </Box>
   );
 }
 
 /**
  * Componente para modo fallback ANSI (chafa símbolos).
  *
- * Tiene su propio orden fijo de hooks (useState + useCallback + useEffect),
- * nunca condicional.
+ * Renderiza el arte Unicode de chafa dentro del Box. Tiene su propio orden
+ * fijo de Hooks (useState + useCallback + useEffect), nunca condicional.
  */
 function FallbackPosterImage({
   imagePath,
@@ -181,7 +111,7 @@ function FallbackPosterImage({
   width: number;
   height: number;
 }): React.JSX.Element {
-  const [poster, setPoster] = useState<{ output: string; format: GraphicsFormat } | null>(null);
+  const [poster, setPoster] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
@@ -214,7 +144,7 @@ function FallbackPosterImage({
       if (abortController.signal.aborted || !mountedRef.current) return;
 
       if (result.output) {
-        setPoster(result);
+        setPoster(result.output);
         setLoading(false);
       } else {
         setPoster(null);
@@ -245,6 +175,7 @@ function FallbackPosterImage({
         width={width}
         height={height}
         flexShrink={0}
+        overflow="hidden"
       >
         <Text>{theme.muted('  [ PÓSTER ]')}</Text>
         <Text>{theme.muted('  (sin imagen)')}</Text>
@@ -260,6 +191,7 @@ function FallbackPosterImage({
         width={width}
         height={height}
         flexShrink={0}
+        overflow="hidden"
       >
         <Text>{theme.muted('  [ PÓSTER ]')}</Text>
         <Text>{theme.muted('  Cargando póster…')}</Text>
@@ -267,9 +199,8 @@ function FallbackPosterImage({
     );
   }
 
-  if (poster?.output) {
-    const output: string = poster.output ?? '';
-    const lines: string[] = output.split('\n');
+  if (poster) {
+    const lines: string[] = poster.split('\n');
     return (
       <Box
         borderStyle="round"
@@ -277,8 +208,8 @@ function FallbackPosterImage({
         width={width}
         height={height}
         flexShrink={0}
-        flexDirection="column"
         overflow="hidden"
+        flexDirection="column"
       >
         {lines.map((line: string, index: number) => (
           <Text key={index} wrap="truncate-end">
@@ -296,30 +227,30 @@ function FallbackPosterImage({
       width={width}
       height={height}
       flexShrink={0}
+      overflow="hidden"
     >
       <Text>{theme.muted('  [ PÓSTER ]')}</Text>
       <Text>{theme.muted('  (imagen no disponible)')}</Text>
-      <Text> </Text>
-      {FALLBACK_ASCII.split('\n').map((line: string, i: number) => (
-        <Text key={i}>{theme.muted(`  ${line}`)}</Text>
-      ))}
     </Box>
   );
 }
 
-/** Componente principal: decide qué modo renderizar. */
-export function PosterImage({
-  imagePath,
-  width = DEFAULT_WIDTH,
-  height = DEFAULT_HEIGHT,
-}: PosterImageProps): React.JSX.Element {
-  const nativeFormat: GraphicsFormat = detectNativeFormat();
+/** Componente principal: decide Kitty nativo o fallback chafa. */
+export function PosterImage({ imagePath, width, height }: PosterImageProps): React.JSX.Element {
+  const { width: posterWidth, height: posterHeight } = computePosterSize();
+  const resolvedWidth: number = width ?? posterWidth;
+  const resolvedHeight: number = height ?? posterHeight;
 
-  // Decidir qué componente renderizar. Cada componente tiene su propio orden
-  // fijo de hooks, nunca condicional, así que no hay violación de Reglas de Hooks.
-  if (nativeFormat === 'native' && typeof imagePath === 'string' && imagePath.length > 0) {
-    return <NativePosterImage imagePath={imagePath} width={width} height={height} />;
+  const isKittyTerminal: boolean = supportsKittyGraphics();
+
+  // Kitty nativo solo cuando el terminal lo soporta y hay imagen.
+  if (isKittyTerminal && typeof imagePath === 'string' && imagePath.length > 0) {
+    return (
+      <NativePosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />
+    );
   }
 
-  return <FallbackPosterImage imagePath={imagePath} width={width} height={height} />;
+  return (
+    <FallbackPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />
+  );
 }
