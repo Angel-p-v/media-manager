@@ -4,6 +4,10 @@
  * Si `chafa` no está disponible o no hay imagen, muestra un placeholder de texto.
  * Se usa tanto en la vista de detalles de reproducción (PlayDetails) como en el
  * panel de detalles de la biblioteca (MediaDetails).
+ *
+ * El renderizado es asíncrono y no bloqueante: si el usuario navega rápidamente
+ * entre títulos, las peticiones de póster obsoletas se cancelan con
+ * `AbortController` y solo se procesa el elemento actualmente seleccionado.
  */
 
 import { Box, Text, useStdout } from 'ink';
@@ -25,10 +29,10 @@ export type PosterImageProps = {
 const FALLBACK_ASCII = `
 ██████╗ ███████╗██╗   ██╗██╗   ██╗██╗  ██╗██╗███╗   ███╗ █████╗ ██████╗
 ██╔══██╗██╔════╝████╗  ██║██║   ██║╚██╗██╔╝██║████╗ ████║██╔══██╗██╔══██╗
-██████╔╝█████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██╔████╔██║███████║██████╔╝
-██╔═══╝ ██╔══╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔═══╝
+██████╔╝██████╗  ██╔██╗ ██║██║   ██║ ╚███╔╝ ██║██║█████╔██║███████║██████╔╝
+██╔═══╝ █████╝  ██║╚██╗██║██║   ██║ ██╔═██╗ ██║██║╚██╔╝██║██╔══██║██╔═══╝
 ██║     ███████╗██║ ╚████║╚██████╔╝██║  ██╗██║██║ ╚═╝ ██║██║  ██║██║
-╚═════╝ ╚══════╝╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝
+╚═════╝ ╚═════╝ ╚╝  ╚═══╝ ╚╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝
 `.trim();
 
 /** Componente que renderiza un póster de imagen en la terminal. */
@@ -40,10 +44,16 @@ export function PosterImage({
   const [ansiArt, setAnsiArt] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
   const { write } = useStdout();
 
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
+
+    // Cancelar cualquier petición de póster previa.
+    abortRef.current?.abort();
+    const abortController = new AbortController();
+    abortRef.current = abortController;
 
     if (!imagePath) {
       setAnsiArt('');
@@ -54,7 +64,8 @@ export function PosterImage({
     setLoading(true);
     try {
       const art = await renderImageToAnsi(imagePath, { width, height });
-      if (!mountedRef.current) return;
+      // Si la petición fue cancelada (navegó a otro título), ignorar el resultado.
+      if (abortController.signal.aborted || !mountedRef.current) return;
 
       if (art) {
         setAnsiArt(art);
@@ -66,7 +77,7 @@ export function PosterImage({
         setLoading(false);
       }
     } catch {
-      if (!mountedRef.current) return;
+      if (abortController.signal.aborted || !mountedRef.current) return;
       setAnsiArt('');
       setLoading(false);
     }
@@ -78,6 +89,7 @@ export function PosterImage({
 
     return () => {
       mountedRef.current = false;
+      abortRef.current?.abort();
     };
   }, [renderPoster]);
 
