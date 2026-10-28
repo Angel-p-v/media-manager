@@ -11,6 +11,9 @@
  * Proporciona control total sobre el buffer, Z-index y ciclo de vida de la
  * imagen dentro de una TUI reactiva (Ink).
  *
+ * Nunca lanza excepciones: si la imagen no se puede leer o codificar, retorna
+ * un array vacío para que el llamante siga funcionando sin póster.
+ *
  * Referencia: https://sw.kovidgoyal.net/kitty/graphics-protocol/
  */
 
@@ -51,23 +54,36 @@ export type KittyFrame = {
  * máximo 4096 bytes. Cada bloque lleva su propio encabezado de parámetros
  * (t=f para todos excepto el último, t=T para el último).
  *
+ * Nunca lanza: si la imagen no se puede leer o codificar, retorna [].
+ *
  * @param options - Parámetros de codificación (ruta, dimensiones, ID).
  * @returns Array de secuencias de escape listas para escribirse a stdout.
- * @throws Error si el fichero no existe o no se puede leer.
  */
 export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<KittyFrame[]> {
   const { imagePath, widthPx, heightPx, columns, rows, imageId } = options;
 
   // Validación defensiva: la ruta debe ser un string no vacío.
   if (typeof imagePath !== 'string' || imagePath.length === 0) {
-    throw new Error('Ruta de imagen inválida: se esperaba un string no vacío.');
+    return [];
   }
 
-  // Leer el fichero como Buffer.
-  const buffer = await readFileBuffer(imagePath);
+  let buffer: Buffer;
+  try {
+    buffer = await readFileBuffer(imagePath);
+  } catch {
+    return [];
+  }
+
+  if (!buffer || buffer.length === 0) {
+    return [];
+  }
 
   // Codificar a Base64 (estándar RFC 4648, sin saltos de línea).
-  const base64 = buffer.toString('base64');
+  const base64: string = buffer.toString('base64');
+
+  if (base64.length === 0) {
+    return [];
+  }
 
   // Dividir en fragmentos de como máximo CHUNK_SIZE bytes del Base64.
   const chunks: string[] = [];
@@ -76,14 +92,15 @@ export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<K
   }
 
   const frames: KittyFrame[] = [];
-  const lastIndex = chunks.length - 1;
+  const lastIndex: number = chunks.length - 1;
 
-  chunks.forEach((chunk, index) => {
-    const isLast = index === lastIndex;
+  for (let index = 0; index < chunks.length; index += 1) {
+    const chunk: string = chunks[index] ?? '';
+    const isLast: boolean = index === lastIndex;
     // t=T (Transmit) en el último fragmento, t=f (fragment) en los anteriores.
-    const transmission = isLast ? 'T' : 'f';
+    const transmission: string = isLast ? 'T' : 'f';
     // m=1 indica que este es el mensaje final (último fragmento).
-    const message = isLast ? '1' : '0';
+    const message: string = isLast ? '1' : '0';
 
     // Construir la secuencia de escape Kitty.
     // Formato: ESC _ G a=T,<params> ;<data> ESC \
@@ -91,7 +108,7 @@ export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<K
     const sequence = `\x1b_G${params};${chunk}\x1b\\`;
 
     frames.push({ sequence, isLast });
-  });
+  }
 
   return frames;
 }
@@ -108,7 +125,7 @@ export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<K
  * @returns Secuencia de escape de borrado Kitty.
  */
 export function deleteKittyImage(imageId: number): string {
-  return `\x1b_Ga=d,d=i,i=${imageId}\x1b\\`;
+  return `\x1b_Ga=d,d,i,i=${imageId}\x1b\\`;
 }
 
 /**
@@ -132,7 +149,11 @@ function readFileBuffer(imagePath: string): Promise<Buffer> {
       chunks.push(chunk);
     });
     stream.on('end', () => {
-      resolve(Buffer.concat(chunks));
+      try {
+        resolve(Buffer.concat(chunks));
+      } catch (error) {
+        reject(error instanceof Error ? error : new Error(String(error)));
+      }
     });
     stream.on('error', reject);
   });
