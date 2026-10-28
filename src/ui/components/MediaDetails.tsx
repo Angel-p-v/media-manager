@@ -88,7 +88,7 @@ export function MediaDetails({
               </Text>
               {metadata.title && <Text>{`  Título: ${metadata.title}`}</Text>}
               {metadata.overview && (
-                <Box maxWidth={80} paddingX={1} marginBottom={1}>
+                <Box maxWidth={100} paddingX={1} marginBottom={1}>
                   <Text wrap="wrap">{`  Sinopsis: ${metadata.overview}`}</Text>
                 </Box>
               )}
@@ -109,7 +109,7 @@ export function MediaDetails({
         </Box>
 
         {/* ==================== Derecha: póster ==================== */}
-        <Box flexDirection="column" alignSelf="flex-end" flexShrink={0}>
+        <Box flexDirection="column" marginLeft={4} flexShrink={0}>
           <PosterImage imagePath={metadata?.localPosterPath ?? null} width={36} height={27} />
         </Box>
       </Box>

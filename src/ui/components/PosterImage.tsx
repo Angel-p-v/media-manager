@@ -143,7 +143,15 @@ export function PosterImage({
 
   if (ansiArt) {
     return (
-      <Box borderStyle="round" borderColor={theme.border} flexShrink={0}>
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        width={width}
+        height={height}
+        flexShrink={0}
+        alignItems="flex-start"
+        justifyContent="flex-start"
+      >
         <Text>{ansiArt}</Text>
       </Box>
     );
