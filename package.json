@@ -73,8 +73,8 @@
     "chokidar": "^6.0.0",
     "commander": "^15.0.0",
     "ink": "^8.0.0",
-    "ink-picture": "^2.1.0",
     "picocolors": "^1.1.1",
+    "sharp": "^0.34.0",
     "react": "^19.3.1",
     "tinyglobby": "^0.2.17",
     "yaml": "^2.9.1",
@@ -94,6 +94,8 @@
     "husky": "^9.1.7",
     "ink-testing-library": "^4.0.0",
     "lint-staged": "^17.6.0",
+    "node-addon-api": "^8.0.0",
+    "node-gyp": "^12.0.0",
     "node-pty": "^1.1.0",
     "prettier": "^3.9.10",
     "prettier-plugin-sort-package-json": "^1.1.0",
@@ -105,6 +107,7 @@
   "allowScripts": {
     "better-sqlite3": true,
     "esbuild": true,
+    "sharp": true,
     "unrs-resolver": true,
     "node-pty@1.1.0": true
   }

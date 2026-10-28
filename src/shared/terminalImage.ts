@@ -33,8 +33,8 @@ export type RenderResult = {
 /** Entornos de terminal que implementan el protocolo gráfico de Kitty (SGP).
  *
  * iTerm2 y Sixel se excluyen deliberadamente: este proyecto solo transmite
- * mediante el encoder Kitty de `ink-picture`, así que no debe anunciarse
- * soporte para protocolos que no se ejercitan activamente.
+ * mediante su propio encoder Kitty (véase `kittyProtocol.ts`), así que no debe
+ * anunciarse soporte para protocolos que no se ejercitan activamente.
  */
 const KITTY_TERMINAL_PROGRAMS = ['kitty', 'WezTerm', 'Ghostty'];
 

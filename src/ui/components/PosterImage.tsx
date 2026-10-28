@@ -1,21 +1,30 @@
 /**
  * Componente que renderiza un póster de imagen en la terminal.
  *
- * Cuando el terminal soporta protocolo gráfico nativo de Kitty (Ghostty, Kitty,
- * WezTerm), se usa `<Image protocol="kitty">` de `ink-picture`, que se encarga
- * de decodificar JPEG/PNG, redimensionar, transmitir la imagen una vez,
- * recolocarla tras cada render de Ink y borrarla al desmontar.
+ * Modo nativo (Ghostty / Kitty / WezTerm):
+ *  - El `return` es únicamente un `<Box>` vacío (placeholder) que Ink pinta
+ *    normalmente. Sobre ese box se dibuja la imagen mediante el protocolo
+ *    Kitty escrito directamente a `stdout` vía `useStdout()`, evitando que el
+ *    Virtual DOM de Ink corrompa los buffers de escape gráfico.
+ *  - Un `useEffect` procesa la imagen con Sharp, obtiene la secuencia Kitty y
+ *    la escribe envuelta en `setTimeout(50 ms)`, justo después de que Ink
+ *    pinte la caja y limpie el fondo.
+ *  - El `return` del `useEffect` ejecuta la secuencia de borrado del ID de la
+ *    imagen para que no queden artefactos flotantes al cambiar de vista.
  *
- * Cuando el terminal NO soporta gráficos nativos, se usa `chafa` con
- * --format=symbols --symbols=sextant como fallback ANSI.
+ * Modo fallback ANSI (terminales estándar):
+ *  - Se usa `child_process.exec()` a `chafa --format=symbols --symbols=sextant`
+ *    y la salida se divide por líneas (`.split('\n')`) para renderizarla como
+ *    texto estándar dentro de un `<Box>`.
  *
  * Ningún mensaje de depuración se escribe a stdout/stderr.
  */
 
-import { Box, Text } from 'ink';
-import Image from 'ink-picture';
+import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { computePixelDimensions, processImage } from '../../shared/imageProcessor.js';
+import { deleteKittyImage, encodeKittyGraphic } from '../../shared/kittyProtocol.js';
 import { renderImageToAnsi, supportsKittyGraphics } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
@@ -35,11 +44,7 @@ const DEFAULT_HEIGHT = 20;
 /**
  * Calcula dimensiones responsivas para el póster basándose en el tamaño de la
  * terminal, reservando espacio para la cabecera, la barra de estado y los
- * márgenes. El ancho limita el póster a un tercio de la terminal; el alto se
- * usa como referencia para el `<Image>` (el Box no fija altura para no
- * restringir la columna contigua en layouts flex).
- *
- * Exportado para tests.
+ * márgenes. Exportado para tests.
  */
 export function computePosterSize(): { width: number; height: number } {
   const terminalRows: number = process.stdout.rows ?? 24;
@@ -57,14 +62,28 @@ export function computePosterSize(): { width: number; height: number } {
 }
 
 /**
- * Componente para modo nativo (Kitty SGP) mediante ink-picture.
+ * Posición absoluta aproximada del póster en la terminal.
  *
- * Delegada toda la complejidad del protocolo (codificación, chunking,
- * posicionamiento, repintado tras cada render de Ink y borrado al desmontar)
- * a la librería. No hay encoder propio ni cursor manual.
- *
- * El Box no fija altura: se estira con la columna vecina para no recortar
- * el contenido de la vista. El <Image> recibe la altura como referencia.
+ * Ink no expone las coordenadas de pantalla de un componente, por lo que se
+ * calcula una estimación razonable a partir del tamaño de la terminal. Se
+ * usa para mover el cursor antes de escribir la secuencia Kitty (overlay
+ * directo sobre el placeholder).
+ */
+function computeAbsolutePosition(width: number, height: number): { x: number; y: number } {
+  const terminalCols: number = process.stdout.columns ?? 80;
+  const terminalRows: number = process.stdout.rows ?? 24;
+
+  // Alinear a la derecha, cerca del borde superior, dejando un margen de 1
+  // celda para no sobresalir de la pantalla alternativa.
+  const x: number = Math.max(0, terminalCols - width - 1);
+  const y: number = Math.max(1, Math.floor(terminalRows / 2) - Math.floor(height / 2));
+
+  return { x, y };
+}
+
+/**
+ * Componente modo nativo (Kitty SGP). Bypass de Ink: escribe directamente a
+ * `stdout` para no corromper los buffers de escape gráfico.
  */
 function NativePosterImage({
   imagePath,
@@ -75,32 +94,88 @@ function NativePosterImage({
   width: number;
   height: number;
 }): React.JSX.Element {
-  return (
-    <Box
-      borderStyle="round"
-      borderColor={theme.border}
-      width={width}
-      height={height}
-      flexShrink={0}
-      overflow="hidden"
-    >
-      <Image
-        src={imagePath}
-        width={width}
-        height={height}
-        alt="Póster del título"
-        objectFit="contain"
-        protocol="kitty"
-      />
-    </Box>
-  );
+  const stdout = useStdout();
+  const mountedRef = useRef(true);
+  const imageIdRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const drawPoster = useCallback(async (): Promise<void> => {
+    const imageId: number = Math.floor(Math.random() * 100000);
+    imageIdRef.current = imageId;
+
+    const pixels = computePixelDimensions(width, height);
+    let buffer: Buffer;
+    try {
+      buffer = await processImage(imagePath, pixels);
+    } catch {
+      return;
+    }
+    if (!mountedRef.current) return;
+
+    const frames = encodeKittyGraphic({
+      buffer,
+      columns: width,
+      rows: height,
+      imageId,
+    });
+    if (!mountedRef.current || frames.length === 0) return;
+
+    const { x, y } = computeAbsolutePosition(width, height);
+    const moveCursor = `\x1b[${y};${x}H`;
+    const hideCursor = '\x1b[?25l';
+    const showCursor = '\x1b[?25h';
+
+    // Sincronización: escribir 50 ms después de que Ink pinte el placeholder
+    // y limpie el fondo, para que la imagen quede sobre la caja vacía.
+    timerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      try {
+        stdout.write(hideCursor);
+        for (const frame of frames) {
+          stdout.write(moveCursor + frame.sequence);
+        }
+        stdout.write(showCursor);
+      } catch {
+        try {
+          stdout.write(showCursor);
+        } catch {
+          // No hay nada más que hacer.
+        }
+      }
+    }, 50);
+  }, [imagePath, width, height, stdout]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void drawPoster();
+
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      // Limpieza obligatoria: borrar la imagen por su ID para evitar
+      // artefactos flotantes al cambiar de vista.
+      if (imageIdRef.current !== null) {
+        try {
+          stdout.write(deleteKittyImage(imageIdRef.current));
+        } catch {
+          // Si el borrado falla, se ignora.
+        }
+      }
+    };
+  }, [imagePath, width, height, stdout, drawPoster]);
+
+  // Return únicamente un placeholder vacío; la imagen se dibuja sobre él vía stdout.
+  return <Box borderStyle="round" flexShrink={0} height={height} width={width} />;
 }
 
 /**
- * Componente para modo fallback ANSI (chafa símbolos).
+ * Componente modo fallback ANSI (chafa símbolos).
  *
- * Renderiza el arte Unicode de chafa dentro del Box. Tiene su propio orden
- * fijo de Hooks (useState + useCallback + useEffect), nunca condicional.
+ * Renderiza el arte Unicode de chafa dentro del Box. La salida se divide por
+ * líneas (`.split('\n')`) y cada línea se renderiza como un `<Text>`.
  */
 function FallbackPosterImage({
   imagePath,
@@ -175,7 +250,6 @@ function FallbackPosterImage({
         width={width}
         height={height}
         flexShrink={0}
-        overflow="hidden"
       >
         <Text>{theme.muted('  [ PÓSTER ]')}</Text>
         <Text>{theme.muted('  (sin imagen)')}</Text>
@@ -191,7 +265,6 @@ function FallbackPosterImage({
         width={width}
         height={height}
         flexShrink={0}
-        overflow="hidden"
       >
         <Text>{theme.muted('  [ PÓSTER ]')}</Text>
         <Text>{theme.muted('  Cargando póster…')}</Text>
@@ -208,7 +281,6 @@ function FallbackPosterImage({
         width={width}
         height={height}
         flexShrink={0}
-        overflow="hidden"
         flexDirection="column"
       >
         {lines.map((line: string, index: number) => (
@@ -227,7 +299,6 @@ function FallbackPosterImage({
       width={width}
       height={height}
       flexShrink={0}
-      overflow="hidden"
     >
       <Text>{theme.muted('  [ PÓSTER ]')}</Text>
       <Text>{theme.muted('  (imagen no disponible)')}</Text>

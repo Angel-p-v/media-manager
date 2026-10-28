@@ -35,7 +35,7 @@ import { runTagCommand, parseTagOptions } from './commands/tag.js';
 import { runWatchCommand } from './commands/watch.js';
 import { loadConfig, resolveConfigPath } from './core/config/loader.js';
 import { getVersion } from './shared/version.js';
-import { runTui } from './ui/run.js';
+import { runTui, defaultLogFile } from './ui/run.js';
 
 const program = new Command()
   .name('mm')
@@ -288,11 +288,18 @@ dbCommand
 
 async function main(): Promise<void> {
   // Sin subcomando se abre la interfaz interactiva; con subcomando, la CLI headless.
-  const args = process.argv.slice(2).filter((arg) => arg !== '--verbose' && arg !== '-v');
+  const rawArgs = process.argv.slice(2);
+  const verbose = rawArgs.includes('--verbose') || rawArgs.includes('-v');
+  const logFile = verbose ? defaultLogFile() : undefined;
+  const args = rawArgs.filter((arg) => arg !== '--verbose' && arg !== '-v');
   if (args.length === 0) {
     const configPath = resolveConfigPath();
     const config = await loadConfig({ configPath });
-    await runTui(config, configPath);
+    const tuiOptions: { verbose?: boolean; logFile?: string } = { verbose };
+    if (logFile !== undefined) {
+      tuiOptions.logFile = logFile;
+    }
+    await runTui(config, configPath, tuiOptions);
     return;
   }
 
