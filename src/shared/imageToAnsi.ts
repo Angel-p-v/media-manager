@@ -26,9 +26,16 @@ export type AnsiArtResult = {
  *
  * Sharp lee la imagen, la redimensiona al ancho y alto indicados (en
  * píxeles, mapeados 1:1 a celdas de terminal) preservando el aspect ratio
- * con `fit: 'contain'`, y extrae el color RGB de cada píxel. Cada píxel se
- * renderiza como un carácter de bloque lleno (`█`) con el color del píxel
- * como color de fondo ANSI truecolor (`\x1b[48;2;r;g;bm`).
+ * original con `fit: 'contain'`, y extrae el color RGB de cada píxel.
+ * Cada píxel se renderiza como un carácter de bloque lleno (`█`) con el
+ * color del píxel como color de fondo ANSI truecolor
+ * (`\x1b[48;2;r;g;bm`).
+ *
+ * Como las celdas de terminal son rectangulares (más altas que anchas,
+ * típicamente 16×32 píxeles), cada píxel de la imagen se renderiza como un
+ * bloque que ocupa toda la celda. Esto puede distorsionar ligeramente la
+ * imagen verticalmente, pero es la mejor aproximación posible sin usar
+ * protocolos gráficos nativos.
  *
  * El resultado es un array de líneas que puede renderizarse línea a línea
  * dentro de `<Text>` de Ink, por lo que el póster queda exactamente dentro
@@ -44,7 +51,6 @@ export async function imageToAnsi(options: ImageToAnsiOptions): Promise<AnsiArtR
   const { imagePath, width, height } = options;
 
   let data: Buffer;
-  let widthPx: number;
   try {
     const result = await sharp(imagePath)
       .resize(width, height, {
@@ -55,19 +61,20 @@ export async function imageToAnsi(options: ImageToAnsiOptions): Promise<AnsiArtR
       .raw()
       .toBuffer({ resolveWithObject: true });
     data = result.data;
-    widthPx = result.info.width ?? width;
   } catch {
     return { lines: [], width: 0, height: 0 };
   }
 
-  // `.raw()` tras `.flatten()` garantiza 3 canales RGB y las dimensiones
-  // solicitadas en `.resize()`, por tanto usamos width directamente.
+  // Sharp con fit: 'contain' devuelve exactamente width×height píxeles (con
+  // padding de background donde no llega el contenido escalado). Usamos
+  // width directamente para el índice, ya que es la dimensión real del
+  // buffer de salida.
   const channels = 3;
   const lines: string[] = [];
   for (let y = 0; y < height; y += 1) {
     const rowParts: string[] = [];
     for (let x = 0; x < width; x += 1) {
-      const idx: number = (y * widthPx + x) * channels;
+      const idx: number = (y * width + x) * channels;
       if (idx + 2 >= data.length) {
         rowParts.push(' ');
         continue;

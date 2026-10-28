@@ -55,11 +55,6 @@ export function MediaDetails({
       marginTop={1}
     >
       <Box flexDirection="row" flexGrow={1} justifyContent="space-between">
-        {/* ==================== Izquierda: póster ==================== */}
-        <Box flexDirection="column" flexShrink={0} marginRight={2}>
-          <PosterImage imagePath={metadata?.localPosterPath ?? null} />
-        </Box>
-
         {/* ==================== Derecha: información del título ==================== */}
         <Box flexDirection="column" flexGrow={1} flexShrink={1} maxWidth={100}>
           <Text>
@@ -117,6 +112,17 @@ export function MediaDetails({
               <Text>{theme.muted('  Pulsa «r» para obtener metadatos externos.')}</Text>
             </>
           )}
+        </Box>
+
+        {/* ==================== Izquierda: póster (abajo a la derecha) ==================== */}
+        <Box
+          flexDirection="column"
+          flexGrow={1}
+          flexShrink={0}
+          marginLeft={2}
+          justifyContent="flex-end"
+        >
+          <PosterImage imagePath={metadata?.localPosterPath ?? null} />
         </Box>
       </Box>
     </Box>
