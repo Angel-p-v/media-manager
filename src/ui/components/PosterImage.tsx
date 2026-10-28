@@ -3,22 +3,14 @@
  *
  * Cuando el terminal soporta protocolo gráfico nativo (Ghostty, Kitty, WezTerm),
  * se implementa el Protocolo Gráfico de Kitty (SGP) de forma cruda en TypeScript
- * (sin librerías de terceros ni subprocesos). El componente:
- *
- * 1. Renderiza un <Box> vacío con borde para reservar espacio en el layout de Ink.
- * 2. En un useEffect, codifica la imagen a Base64, la fragmenta en bloques de
- *    4096 bytes y escribe las secuencias de escape directamente a stdout vía
- *    `useStdout()`, posicionando el cursor sobre el Box.
- * 3. Al desmontar o cambiar de imagen, envía obligatoriamente la secuencia de
- *    borrado de Kitty para ese ID único (evita artefactos flotantes).
+ * (sin librerías de terceros ni subprocesos).
  *
  * Cuando el terminal NO soporta gráficos nativos, usa chafa con
- * --format=symbols --symbols=sextant (fallback ANSI tradicional) y renderiza
- * el resultado como líneas de texto normales dentro del Box.
+ * --format=symbols --symbols=sextant (fallback ANSI tradicional).
  *
- * Todas las operaciones de escritura a stdout y codificación de imágenes están
- * envueltas en try/catch para evitar que un error en el renderizado del póster
- * rompa toda la TUI.
+ * Arquitectura: dos componentes separados para garantizar que el orden de
+ * los Hooks de React sea siempre consistente (Reglas de Hooks). Cada modo
+ * tiene su propio orden fijo de hooks, nunca condicional.
  */
 
 import { Box, Text, useStdout } from 'ink';
@@ -51,50 +43,55 @@ const FALLBACK_ASCII = `
 ╚═════╝ ╚═════╝ ╚╝  ⚐╝╚╝  ⚐╝╚═╝     ⚐═╝╚═╝  ⚐╝
 `.trim();
 
-/** Componente que renderiza un póster de imagen en la terminal. */
-export function PosterImage({
+/** Tamaño por defecto del póster. */
+const DEFAULT_WIDTH = 30;
+const DEFAULT_HEIGHT = 20;
+
+/**
+ * Componente para modo nativo (Kitty SGP).
+ *
+ * Renderiza un <Box> vacío para reservar espacio y proyecta el gráfico
+ * Kitty directamente a stdout. Tiene su propio orden fijo de hooks.
+ */
+function NativePosterImage({
   imagePath,
-  width = 30,
-  height = 20,
-}: PosterImageProps): React.JSX.Element {
+  width,
+  height,
+}: {
+  imagePath: string;
+  width: number;
+  height: number;
+}): React.JSX.Element {
   const stdout = useStdout();
-  const [poster, setPoster] = useState<{ output: string; format: GraphicsFormat } | null>(null);
-  const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
-  const abortRef = useRef<AbortController | null>(null);
   const imageIdRef = useRef<number | null>(null);
   const columns: number = process.stdout.columns ?? 80;
 
-  // Offsets y márgenes para posicionamiento (configurables vía variables de entorno)
   const offsetX = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_X ?? '0');
   const offsetY = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_Y ?? '0');
   const marginRight = Number(process.env.MEDIA_MANAGER_POSTER_MARGIN_RIGHT ?? '1');
 
-  // Cálculo de coordenadas absolutas para el overlay nativo (derecha superior)
   const posterX: number = Math.max(0, columns - width - marginRight) + offsetX;
   const posterY: number = Math.max(1, 1 + offsetY);
 
-  const nativeFormat: GraphicsFormat = detectNativeFormat();
+  // Generar un ID único para esta imagen (se usa en el borrado al desmontar).
+  const imageId: number = Math.floor(Math.random() * 10000);
+  imageIdRef.current = imageId;
 
-  // ── Ruta nativa: protocolo gráfico de Kitty (crudo) ──────────────────────
+  // Bypass de Ink: escribir directamente a stdout para evitar que el Virtual
+  // DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
+  useEffect(() => {
+    let cancelled = false;
 
-  if (nativeFormat === 'native' && imagePath) {
-    // Generar un ID único para esta imagen (se usa en el borrado al desmontar).
-    const imageId: number = Math.floor(Math.random() * 10000);
-    imageIdRef.current = imageId;
+    const run = async (): Promise<void> => {
+      try {
+        // Desacoplar del ciclo síncrono de render de Ink.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (cancelled || !mountedRef.current) return;
 
-    // Bypass de Ink: escribir directamente a stdout para evitar que el Virtual
-    // DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
-    useEffect(() => {
-      let cancelled = false;
-
-      const run = async (): Promise<void> => {
+        let frames: { sequence: string; isLast: boolean }[] = [];
         try {
-          // Desacoplar del ciclo síncrono de render de Ink.
-          await new Promise((resolve) => setTimeout(resolve, 0));
-          if (cancelled || !mountedRef.current) return;
-
-          const frames: { sequence: string; isLast: boolean }[] =
+          frames =
             (await encodeKittyGraphic({
               imagePath,
               widthPx: width * 10, // aproximación: 10 px por columna
@@ -103,68 +100,104 @@ export function PosterImage({
               rows: height,
               imageId,
             })) ?? [];
+        } catch {
+          frames = [];
+        }
 
-          if (cancelled || !mountedRef.current) return;
+        if (cancelled || !mountedRef.current) return;
 
-          const hideCursor = '\x1b[?25l';
-          const showCursor = '\x1b[?25h';
-          const moveCursor = `\x1b[${posterY};${posterX}H`;
+        if (!Array.isArray(frames)) {
+          frames = [];
+        }
 
-          try {
+        const hideCursor = '\x1b[?25l';
+        const showCursor = '\x1b[?25h';
+        const moveCursor = `\x1b[${posterY};${posterX}H`;
+
+        try {
+          if (typeof stdout?.write === 'function') {
             stdout.write(hideCursor);
             for (const frame of frames) {
-              if (frame?.sequence) {
+              if (frame && typeof frame.sequence === 'string') {
                 stdout.write(moveCursor + frame.sequence);
               }
             }
             stdout.write(showCursor);
-          } catch {
-            // Si escribir a stdout falla (terminal cerrada, etc.), se ignora.
-            try {
-              stdout.write(showCursor);
-            } catch {
-              // No hay nada más que hacer.
-            }
           }
         } catch {
-          // Si falla el codificado nativo, se queda sin póster (sin fallback a chafa
-          // en modo nativo: el modo nativo es exclusivo de terminales gráficas).
-        }
-      };
-
-      void run();
-
-      return () => {
-        cancelled = true;
-        // CRÍTICO: borrar la imagen gráfica de Kitty para este ID al desmontar
-        // o cambiar de imagen, evitando artefactos flotantes.
-        if (imageIdRef.current !== null) {
           try {
-            stdout.write(deleteKittyImage(imageIdRef.current));
+            if (typeof stdout?.write === 'function') {
+              stdout.write(showCursor);
+            }
           } catch {
-            // Si el borrado falla, se ignora.
+            // No hay nada más que hacer.
           }
         }
+      } catch (err) {
+        // Escribir el error real a stderr para diagnóstico
         try {
-          stdout.write('\x1b[?25h');
+          process.stderr.write(`[mm] Error renderizando póster nativo: ${String(err)}\n`);
         } catch {
           // No hay nada más que hacer.
         }
-      };
-    }, [imagePath, width, height, posterX, posterY, imageId, stdout]);
+      }
+    };
 
-    return (
-      <Box
-        borderStyle="round"
-        borderColor={theme.border}
-        width={width}
-        height={height}
-        flexShrink={0}
-      />
-    );
-  }
+    void run();
 
-  // ── Ruta fallback: chafa ANSI (modo símbolos) ────────────────────────────
+    return () => {
+      cancelled = true;
+      // CRÍTICO: borrar la imagen gráfica de Kitty para este ID al desmontar
+      // o cambiar de imagen, evitando artefactos flotantes.
+      if (imageIdRef.current !== null) {
+        try {
+          if (typeof stdout?.write === 'function') {
+            stdout.write(deleteKittyImage(imageIdRef.current));
+          }
+        } catch {
+          // Si el borrado falla, se ignora.
+        }
+      }
+      try {
+        if (typeof stdout?.write === 'function') {
+          stdout.write('\x1b[?25h');
+        }
+      } catch {
+        // No hay nada más que hacer.
+      }
+    };
+  }, [imagePath, width, height, posterX, posterY, imageId, stdout]);
+
+  return (
+    <Box
+      borderStyle="round"
+      borderColor={theme.border}
+      width={width}
+      height={height}
+      flexShrink={0}
+    />
+  );
+}
+
+/**
+ * Componente para modo fallback ANSI (chafa símbolos).
+ *
+ * Tiene su propio orden fijo de hooks (useState + useCallback + useEffect),
+ * nunca condicional.
+ */
+function FallbackPosterImage({
+  imagePath,
+  width,
+  height,
+}: {
+  imagePath: string | null;
+  width: number;
+  height: number;
+}): React.JSX.Element {
+  const [poster, setPoster] = useState<{ output: string; format: GraphicsFormat } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
@@ -248,7 +281,7 @@ export function PosterImage({
   }
 
   if (poster?.output) {
-    const output: string = poster.output;
+    const output: string = poster.output ?? '';
     const lines: string[] = output.split('\n');
     return (
       <Box
@@ -285,4 +318,21 @@ export function PosterImage({
       ))}
     </Box>
   );
+}
+
+/** Componente principal: decide qué modo renderizar. */
+export function PosterImage({
+  imagePath,
+  width = DEFAULT_WIDTH,
+  height = DEFAULT_HEIGHT,
+}: PosterImageProps): React.JSX.Element {
+  const nativeFormat: GraphicsFormat = detectNativeFormat();
+
+  // Decidir qué componente renderizar. Cada componente tiene su propio orden
+  // fijo de hooks, nunca condicional, así que no hay violación de Reglas de Hooks.
+  if (nativeFormat === 'native' && typeof imagePath === 'string' && imagePath.length > 0) {
+    return <NativePosterImage imagePath={imagePath} width={width} height={height} />;
+  }
+
+  return <FallbackPosterImage imagePath={imagePath} width={width} height={height} />;
 }
