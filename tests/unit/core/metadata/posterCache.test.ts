@@ -8,8 +8,12 @@ import {
   cachePoster,
   clearPosterCache,
   getCachedPoster,
+  hasValidMagicBytes,
+  isAllowedContentType,
   sanitizeFileName,
 } from '../../../../src/core/metadata/posterCache.js';
+
+import type { Logger } from '../../../../src/shared/logger.js';
 
 const logger = {
   debug: vi.fn(),
@@ -120,5 +124,148 @@ describe('posterCache', () => {
 
     expect(result.deleted).toBe(2);
     expect(result.errors).toEqual([]);
+  });
+
+  describe('isAllowedContentType', () => {
+    it('devuelve true para Content-Type de imagen válido', () => {
+      expect(isAllowedContentType('image/jpeg')).toBe(true);
+      expect(isAllowedContentType('image/png')).toBe(true);
+      expect(isAllowedContentType('image/webp')).toBe(true);
+      expect(isAllowedContentType('image/gif')).toBe(true);
+      expect(isAllowedContentType('image/jpg; charset=utf-8')).toBe(true);
+    });
+
+    it('devuelve false para Content-Type no imagen o nulo', () => {
+      expect(isAllowedContentType(null)).toBe(false);
+      expect(isAllowedContentType('text/html')).toBe(false);
+      expect(isAllowedContentType('application/json')).toBe(false);
+      expect(isAllowedContentType('')).toBe(false);
+    });
+  });
+
+  describe('hasValidMagicBytes', () => {
+    it('devuelve true para JPEG con magic bytes válidos', () => {
+      const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10]);
+      expect(hasValidMagicBytes(jpeg, '.jpg')).toBe(true);
+      expect(hasValidMagicBytes(jpeg, '.jpeg')).toBe(true);
+    });
+
+    it('devuelve true para PNG con magic bytes válidos', () => {
+      const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]);
+      expect(hasValidMagicBytes(png, '.png')).toBe(true);
+    });
+
+    it('devuelve true para WEBP con magic bytes y marca válidos', () => {
+      const webp = Buffer.from([
+        0x52,
+        0x49,
+        0x46,
+        0x46, // RIFF
+        0x00,
+        0x00,
+        0x00,
+        0x00, // size
+        0x57,
+        0x45,
+        0x42,
+        0x50, // WEBP
+      ]);
+      expect(hasValidMagicBytes(webp, '.webp')).toBe(true);
+    });
+
+    it('devuelve false para WEBP sin marca WEBP', () => {
+      const notWebp = Buffer.from([
+        0x52,
+        0x49,
+        0x46,
+        0x46, // RIFF
+        0x00,
+        0x00,
+        0x00,
+        0x00, // size
+        0x41,
+        0x56,
+        0x49,
+        0x20, // AVI  (no WEBP)
+      ]);
+      expect(hasValidMagicBytes(notWebp, '.webp')).toBe(false);
+    });
+
+    it('devuelve false para GIF con magic bytes válidos', () => {
+      const gif = Buffer.from([0x47, 0x49, 0x46, 0x38, 0x39, 0x61]);
+      expect(hasValidMagicBytes(gif, '.gif')).toBe(true);
+    });
+
+    it('devuelve false para buffer vacío o demasiado corto', () => {
+      expect(hasValidMagicBytes(Buffer.from([0xff]), '.jpg')).toBe(false);
+      expect(hasValidMagicBytes(Buffer.alloc(0), '.jpg')).toBe(false);
+    });
+
+    it('devuelve false para extensión desconocida', () => {
+      expect(hasValidMagicBytes(Buffer.from([0xff, 0xd8, 0xff]), '.bmp')).toBe(false);
+    });
+
+    it('devuelve false para contenido que no es imagen', () => {
+      const html = Buffer.from('<html><body>fake</body></html>');
+      expect(hasValidMagicBytes(html, '.jpg')).toBe(false);
+    });
+  });
+
+  describe('cachePoster rechaza descargas inválidas', () => {
+    const logger = {
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      level: 'debug',
+      format: 'text',
+      child: vi.fn(),
+    } satisfies Logger;
+
+    beforeEach(function () {
+      const originalFetch = globalThis.fetch;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (url: string) => {
+          if (String(url).includes('invalid-type')) {
+            return new Response('<html>error</html>', {
+              headers: { 'content-type': 'text/html' },
+            });
+          }
+          if (String(url).includes('tiny-file')) {
+            return new Response('x'.repeat(50), {
+              headers: { 'content-type': 'image/jpeg' },
+            });
+          }
+          return originalFetch(url);
+        }),
+      );
+    });
+
+    afterEach(function () {
+      vi.unstubAllGlobals();
+    });
+
+    it('cachePoster rechaza Content-Type inválido', async () => {
+      const result = await cachePoster(
+        'https://example.com/invalid-type.jpg',
+        'test-title',
+        'tv',
+        logger,
+        workDir,
+      );
+      expect(result).toBe(null);
+    });
+
+    it('cachePoster rechaza archivo demasiado pequeño (< 100 bytes)', async () => {
+      const result = await cachePoster(
+        'https://example.com/tiny-file.jpg',
+        'test-title',
+        'tv',
+        logger,
+        workDir,
+      );
+      expect(result).toBe(null);
+    });
   });
 });

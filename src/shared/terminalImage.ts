@@ -30,6 +30,43 @@ export type RenderResult = {
   format: GraphicsFormat;
 };
 
+/** Entornos de terminal que implementan el protocolo gráfico de Kitty (SGP).
+ *
+ * iTerm2 y Sixel se excluyen deliberadamente: este proyecto solo transmite
+ * mediante el encoder Kitty de `ink-picture`, así que no debe anunciarse
+ * soporte para protocolos que no se ejercitan activamente.
+ */
+const KITTY_TERMINAL_PROGRAMS = ['kitty', 'WezTerm', 'Ghostty'];
+
+/** Comprueba si el terminal actual soporta el protocolo gráfico de Kitty (SGP).
+ *
+ * Orden de prioridad:
+ * 1. Variable de entorno MEDIA_MANAGER_GRAPHICS (forzado explícito a 'native' o 'kitty').
+ * 2. GHOSTTY_RESOURCES_DIR (Ghostty).
+ * 3. KITTY_WINDOW_ID o TERM_PROGRAM ∈ {kitty, WezTerm, Ghostty} o TERM que los mencione.
+ *
+ * @returns `true` si se debe usar Kitty SGP; `false` si se debe usar el fallback ANSI.
+ */
+export function supportsKittyGraphics(): boolean {
+  const forced = process.env.MEDIA_MANAGER_GRAPHICS ?? '';
+  const forcedLower = forced.toLowerCase();
+  if (forcedLower === 'native' || forcedLower === 'kitty') return true;
+  if (forcedLower === 'symbols' || forcedLower === 'ansi' || forcedLower === 'none') return false;
+
+  const ghosttyResources = process.env.GHOSTTY_RESOURCES_DIR ?? '';
+  const termProgram = process.env.TERM_PROGRAM ?? '';
+  const kittyWindowId = process.env.KITTY_WINDOW_ID ?? '';
+  const term = process.env.TERM ?? '';
+
+  if (ghosttyResources) return true;
+  if (KITTY_TERMINAL_PROGRAMS.includes(termProgram)) return true;
+  if (kittyWindowId) return true;
+  if (term.toLowerCase().includes('ghostty')) return true;
+  if (term.toLowerCase().includes('kitty')) return true;
+
+  return false;
+}
+
 /** Comprueba si `chafa` está disponible en el sistema. */
 export async function isChafaAvailable(): Promise<boolean> {
   try {
@@ -52,35 +89,9 @@ export async function isChafaAvailable(): Promise<boolean> {
  * Devuelve 'native' si se detecta soporte nativo, 'symbols' en caso contrario.
  */
 export function detectNativeFormat(): GraphicsFormat {
-  const forced = process.env.MEDIA_MANAGER_GRAPHICS ?? '';
-  const forcedLower = forced.toLowerCase();
-  if (
-    forcedLower === 'native' ||
-    forcedLower === 'kitty' ||
-    forcedLower === 'iterm' ||
-    forcedLower === 'sixel'
-  )
-    return 'native';
-  if (forcedLower === 'symbols' || forcedLower === 'ansi' || forcedLower === 'none')
-    return 'symbols';
-
-  const ghosttyResources = process.env.GHOSTTY_RESOURCES_DIR ?? '';
-  const termProgram = process.env.TERM_PROGRAM ?? '';
-  const kittyWindowId = process.env.KITTY_WINDOW_ID ?? '';
-  const term = process.env.TERM ?? '';
-
-  if (ghosttyResources) return 'native';
-  if (termProgram === 'kitty') return 'native';
-  if (termProgram === 'WezTerm') return 'native';
-  if (termProgram === 'Ghostty') return 'native';
-  if (termProgram === 'iTerm.app') return 'native';
-  if (kittyWindowId) return 'native';
-  if (term.toLowerCase().includes('ghostty')) return 'native';
-  if (term.toLowerCase().includes('kitty')) return 'native';
-  if (term.toLowerCase().includes('iterm')) return 'native';
-  if (term === 'sixel') return 'native';
-
-  return 'symbols';
+  // Solo Kitty SGP se considera "native": iTerm2 y Sixel no se implementan
+  // activamente y no deben anunciarse como soportados.
+  return supportsKittyGraphics() ? 'native' : 'symbols';
 }
 
 /**

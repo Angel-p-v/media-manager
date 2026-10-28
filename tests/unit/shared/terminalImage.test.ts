@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { renderImageToAnsi, isChafaAvailable } from '../../../src/shared/terminalImage.js';
+import {
+  renderImageToAnsi,
+  isChafaAvailable,
+  supportsKittyGraphics,
+} from '../../../src/shared/terminalImage.js';
 
 const execFileMock =
   vi.fn<
@@ -93,5 +97,37 @@ describe('terminalImage', () => {
     const [, cmdArgs] = execFileMock.mock.calls[execFileMock.mock.calls.length - 1]!;
     expect(cmdArgs).toContain('--size=40x20');
     expect(cmdArgs).toContain('/fake/path/poster.png');
+  });
+
+  it('supportsKittyGraphics devuelve true con GHOSTTY_RESOURCES_DIR', () => {
+    delete process.env.MEDIA_MANAGER_GRAPHICS;
+    process.env.GHOSTTY_RESOURCES_DIR = '/usr/share/ghostty';
+    expect(supportsKittyGraphics()).toBe(true);
+  });
+
+  it('supportsKittyGraphics devuelve true con TERM_PROGRAM=kitty', () => {
+    delete process.env.MEDIA_MANAGER_GRAPHICS;
+    delete process.env.GHOSTTY_RESOURCES_DIR;
+    process.env.TERM_PROGRAM = 'kitty';
+    expect(supportsKittyGraphics()).toBe(true);
+  });
+
+  it('supportsKittyGraphics devuelve true con MEDIA_MANAGER_GRAPHICS=native', () => {
+    process.env.MEDIA_MANAGER_GRAPHICS = 'native';
+    expect(supportsKittyGraphics()).toBe(true);
+  });
+
+  it('supportsKittyGraphics devuelve false con MEDIA_MANAGER_GRAPHICS=symbols', () => {
+    process.env.MEDIA_MANAGER_GRAPHICS = 'symbols';
+    expect(supportsKittyGraphics()).toBe(false);
+  });
+
+  it('supportsKittyGraphics devuelve false sin variables de terminal nativo', () => {
+    delete process.env.MEDIA_MANAGER_GRAPHICS;
+    delete process.env.GHOSTTY_RESOURCES_DIR;
+    delete process.env.TERM_PROGRAM;
+    delete process.env.KITTY_WINDOW_ID;
+    delete process.env.TERM;
+    expect(supportsKittyGraphics()).toBe(false);
   });
 });
