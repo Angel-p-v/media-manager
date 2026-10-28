@@ -21,18 +21,18 @@ describe('PosterImage', () => {
     cleanup();
   });
 
-  it('muestra "[ PÓSTER ] (sin imagen)" cuando no hay ruta de imagen', () => {
+  it('muestra "[ PÓSTER ] (sin póster)" cuando no hay ruta de imagen', () => {
     const { lastFrame } = renderPoster({ imagePath: null });
 
     const frame = normalizeFrame(lastFrame() ?? '');
     expect(frame).toContain('[ PÓSTER ]');
-    expect(frame).toContain('(sin imagen)');
+    expect(frame).toContain('(sin póster)');
   });
 
   it('no muestra contenido de póster cuando la ruta es null', () => {
     const { lastFrame } = renderPoster({ imagePath: null });
 
     const frame = normalizeFrame(lastFrame() ?? '');
-    expect(frame).toContain('(sin imagen)');
+    expect(frame).toContain('(sin póster)');
   });
 });

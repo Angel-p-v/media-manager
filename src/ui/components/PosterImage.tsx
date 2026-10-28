@@ -1,21 +1,25 @@
 /**
  * Componente que renderiza un póster de imagen en la terminal.
  *
- * Modo nativo (Ghostty / Kitty / WezTerm):
- *  - El `return` es únicamente un `<Box>` vacío (placeholder) que Ink pinta
- *    normalmente. Sobre ese box se dibuja la imagen mediante el protocolo
- *    Kitty escrito directamente a `stdout` vía `useStdout()`, evitando que el
- *    Virtual DOM de Ink corrompa los buffers de escape gráfico.
- *  - Un `useEffect` procesa la imagen con Sharp, obtiene la secuencia Kitty y
- *    la escribe envuelta en `setTimeout(50 ms)`, justo después de que Ink
- *    pinte la caja y limpie el fondo.
- *  - El `return` del `useEffect` ejecuta la secuencia de borrado del ID de la
- *    imagen para que no queden artefactos flotantes al cambiar de vista.
+ * El póster se renderiza SIEMPRE dentro del flujo de Ink (dentro de un
+ * `<Box>`), de modo que queda exactamente en la posición que el layout de
+ * Ink le asigne. No se escriben secuencias gráficas fuera de Ink que
+ * pudieran descolocarse al redibujar.
  *
- * Modo fallback ANSI (terminales estándar):
- *  - Se usa `child_process.exec()` a `chafa --format=symbols --symbols=sextant`
- *    y la salida se divide por líneas (`.split('\n')`) para renderizarla como
- *    texto estándar dentro de un `<Box>`.
+ * Modos de renderizado:
+ * - 'auto' (por defecto): usa Sharp para convertir la imagen a bloques de
+ *   color ANSI truecolor dentro del Box de Ink. Buena calidad (colores
+ *   reales 24-bit) y posicionamiento perfecto en cualquier terminal.
+ * - 'symbols': usa Chafa dentro del Box de Ink. Posicionamiento perfecto,
+ *   compatible con cualquier terminal, pero calidad limitada (arte ANSI).
+ * - 'native': usa el Protocolo Gráfico de Kitty como overlay directo sobre
+ *   stdout. Máxima calidad en Ghostty/Kitty/WezTerm, pero el posicionamiento
+ *   es aproximado (esquina basada en `placement`) porque Ink no expone las
+ *   coordenadas físicas de pantalla de sus componentes.
+ *
+ * Cada vista controla la posición mediante la estructura de componentes
+ * (dónde coloca el <PosterImage> en el árbol de React), no mediante
+ * coordenadas absolutas de terminal.
  *
  * Ningún mensaje de depuración se escribe a stdout/stderr.
  */
@@ -24,8 +28,9 @@ import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { computePixelDimensions, processImage } from '../../shared/imageProcessor.js';
-import { deleteKittyImage, encodeKittyGraphic } from '../../shared/kittyProtocol.js';
-import { renderImageToAnsi, supportsKittyGraphics } from '../../shared/terminalImage.js';
+import { imageToAnsi } from '../../shared/imageToAnsi.js';
+import { encodeKittyGraphic } from '../../shared/kittyProtocol.js';
+import { renderImageToAnsi } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
 export type PosterImageProps = {
@@ -35,6 +40,10 @@ export type PosterImageProps = {
   width?: number;
   /** Alto del póster en caracteres de terminal. Si se omite, se calcula de forma responsiva. */
   height?: number;
+  /** Modo de renderizado: 'auto' (Sharp truecolor dentro de Ink), 'symbols' (Chafa dentro de Ink) o 'native' (Kitty overlay sobre stdout). */
+  mode?: 'auto' | 'native' | 'symbols';
+  /** Posición relativa sugerida para el modo nativo (overlay). Ignorado en modos dentro de Ink. */
+  placement?: 'left' | 'right' | 'top' | 'bottom-right';
 };
 
 /** Dimensiones por defecto del póster cuando no se puede calcular de forma responsiva. */
@@ -62,88 +71,132 @@ export function computePosterSize(): { width: number; height: number } {
 }
 
 /**
- * Posición absoluta aproximada del póster en la terminal.
+ * Calcula una posición fija y predecible en la terminal para el modo nativo
+ * (overlay). Se usa solo cuando el usuario fuerza `mode='native'`, porque
+ * Ink no expone las coordenadas físicas de pantalla de sus componentes.
  *
- * Ink no expone las coordenadas de pantalla de un componente, por lo que se
- * calcula una estimación razonable a partir del tamaño de la terminal. Se
- * usa para mover el cursor antes de escribir la secuencia Kitty (overlay
- * directo sobre el placeholder).
+ * @param width - Ancho del póster en celdas de terminal.
+ * @param height - Alto del póster en celdas de terminal.
+ * @param placement - Posición relativa sugerida.
+ * @returns Coordenadas (x, y) absolutas de terminal.
  */
-function computeAbsolutePosition(width: number, height: number): { x: number; y: number } {
+function computeNativePosition(
+  width: number,
+  height: number,
+  placement: 'left' | 'right' | 'top' | 'bottom-right' = 'right',
+): { x: number; y: number } {
   const terminalCols: number = process.stdout.columns ?? 80;
   const terminalRows: number = process.stdout.rows ?? 24;
 
-  // Alinear a la derecha, cerca del borde superior, dejando un margen de 1
-  // celda para no sobresalir de la pantalla alternativa.
-  const x: number = Math.max(0, terminalCols - width - 1);
-  const y: number = Math.max(1, Math.floor(terminalRows / 2) - Math.floor(height / 2));
+  let x: number;
+  let y: number;
+
+  switch (placement) {
+    case 'left':
+      x = Math.max(0, 1);
+      y = Math.max(1, Math.floor(terminalRows / 4));
+      break;
+    case 'top':
+      x = Math.max(0, Math.floor((terminalCols - width) / 2));
+      y = Math.max(1, 1);
+      break;
+    case 'bottom-right':
+      x = Math.max(0, terminalCols - width - 1);
+      y = Math.max(1, terminalRows - height - 2);
+      break;
+    case 'right':
+    default:
+      x = Math.max(0, terminalCols - width - 1);
+      y = Math.max(1, Math.floor(terminalRows / 4));
+      break;
+  }
+
+  // Limitar para no salirse de la pantalla.
+  x = Math.min(x, Math.max(0, terminalCols - width));
+  y = Math.min(y, Math.max(1, terminalRows - height));
 
   return { x, y };
 }
 
 /**
- * Componente modo nativo (Kitty SGP). Bypass de Ink: escribe directamente a
- * `stdout` para no corromper los buffers de escape gráfico.
+ * Componente modo nativo (Kitty SGP). Overlay directo sobre stdout con
+ * coordenadas aproximadas. Solo se usa cuando el usuario fuerza
+ * `mode='native'`.
  */
 function NativePosterImage({
   imagePath,
   width,
   height,
+  placement,
 }: {
   imagePath: string;
   width: number;
   height: number;
+  placement: 'left' | 'right' | 'top' | 'bottom-right';
 }): React.JSX.Element {
   const stdout = useStdout();
   const mountedRef = useRef(true);
   const imageIdRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const hideCursor = '\x1b[?25l';
+  const showCursor = '\x1b[?25h';
+
   const drawPoster = useCallback(async (): Promise<void> => {
     const imageId: number = Math.floor(Math.random() * 100000);
     imageIdRef.current = imageId;
 
-    const pixels = computePixelDimensions(width, height);
-    let buffer: Buffer;
-    try {
-      buffer = await processImage(imagePath, pixels);
-    } catch {
-      return;
-    }
-    if (!mountedRef.current) return;
-
-    const frames = encodeKittyGraphic({
-      buffer,
-      columns: width,
-      rows: height,
-      imageId,
-    });
-    if (!mountedRef.current || frames.length === 0) return;
-
-    const { x, y } = computeAbsolutePosition(width, height);
+    const { x, y } = computeNativePosition(width, height, placement);
     const moveCursor = `\x1b[${y};${x}H`;
-    const hideCursor = '\x1b[?25l';
-    const showCursor = '\x1b[?25h';
 
-    // Sincronización: escribir 50 ms después de que Ink pinte el placeholder
-    // y limpie el fondo, para que la imagen quede sobre la caja vacía.
-    timerRef.current = setTimeout(() => {
+    try {
+      stdout.write(hideCursor);
+      stdout.write(moveCursor);
+    } catch {
+      // No hay nada más que hacer si no podemos escribir a stdout.
+    }
+
+    try {
+      const pixels = computePixelDimensions(width, height);
+      const buffer = await processImage(imagePath, pixels);
+
       if (!mountedRef.current) return;
-      try {
-        stdout.write(hideCursor);
-        for (const frame of frames) {
-          stdout.write(moveCursor + frame.sequence);
-        }
-        stdout.write(showCursor);
-      } catch {
+
+      const frames = encodeKittyGraphic({
+        buffer,
+        columns: width,
+        rows: height,
+        imageId,
+      });
+
+      for (let index = 0; index < frames.length; index += 1) {
+        const frame = frames[index] ?? { sequence: '', isLast: false };
+
         try {
-          stdout.write(showCursor);
+          if (index === 0) {
+            stdout.write(moveCursor);
+          }
+          stdout.write(frame.sequence);
         } catch {
-          // No hay nada más que hacer.
+          // Ignorar errores de escritura individual.
+        }
+
+        if (frame.isLast) {
+          try {
+            stdout.write(showCursor);
+          } catch {
+            // No hay nada más que hacer.
+          }
         }
       }
-    }, 150);
-  }, [imagePath, width, height, stdout]);
+    } catch {
+      try {
+        stdout.write(showCursor);
+      } catch {
+        // No hay nada más que hacer.
+      }
+    }
+  }, [imagePath, width, height, placement, stdout]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -155,17 +208,21 @@ function NativePosterImage({
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
-      // Limpieza obligatoria: borrar la imagen por su ID para evitar
-      // artefactos flotantes al cambiar de vista.
+      // Limpieza obligatoria: borrar la imagen por su ID.
       if (imageIdRef.current !== null) {
         try {
-          stdout.write(deleteKittyImage(imageIdRef.current));
+          stdout.write(`\x1b_Ga=d,d,i,i=${imageIdRef.current}\x1b\\`);
         } catch {
           // Si el borrado falla, se ignora.
         }
       }
+      try {
+        stdout.write(showCursor);
+      } catch {
+        // No hay nada más que hacer.
+      }
     };
-  }, [imagePath, width, height, stdout, drawPoster]);
+  }, [imagePath, width, height, placement, stdout, drawPoster]);
 
   // Return únicamente un placeholder vacío; la imagen se dibuja sobre él vía stdout.
   return (
@@ -174,12 +231,132 @@ function NativePosterImage({
 }
 
 /**
+ * Componente que renderiza el póster como bloques de color ANSI truecolor
+ * dentro del Box de Ink.
+ *
+ * Usa Sharp para procesar la imagen y generar bloques de color (█) con el
+ * color de fondo truecolor de cada píxel. Como se renderiza dentro del
+ * flujo de Ink, el póster queda exactamente en la posición que el layout de
+ * Ink le asigne.
+ */
+function SharpPosterImage({
+  imagePath,
+  width,
+  height,
+}: {
+  imagePath: string;
+  width: number;
+  height: number;
+}): React.JSX.Element {
+  const [lines, setLines] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(!!imagePath);
+  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const renderPoster = useCallback(async (): Promise<void> => {
+    if (!mountedRef.current) return;
+
+    abortRef.current?.abort();
+    const abortController = new AbortController();
+    abortRef.current = abortController;
+
+    if (!imagePath) {
+      setLines([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    if (!mountedRef.current || abortController.signal.aborted) return;
+
+    try {
+      const result = await imageToAnsi({ imagePath, width, height });
+      if (abortController.signal.aborted || !mountedRef.current) return;
+
+      if (result.lines.length > 0) {
+        setLines(result.lines);
+        setLoading(false);
+      } else {
+        setLines([]);
+        setLoading(false);
+      }
+    } catch {
+      if (abortController.signal.aborted || !mountedRef.current) return;
+      setLines([]);
+      setLoading(false);
+    }
+  }, [imagePath, width, height]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    void renderPoster();
+
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, [renderPoster]);
+
+  if (loading) {
+    return (
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        width={width}
+        height={height}
+        flexShrink={0}
+      >
+        <Text>{theme.muted('  [ PÓSTER ]')}</Text>
+        <Text>{theme.muted('  Cargando póster…')}</Text>
+      </Box>
+    );
+  }
+
+  if (lines.length > 0) {
+    return (
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        width={width}
+        height={height}
+        flexShrink={0}
+        flexDirection="column"
+      >
+        {lines.map((line: string, index: number) => (
+          <Text key={index} wrap="truncate-end">
+            {line}
+          </Text>
+        ))}
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      borderStyle="round"
+      borderColor={theme.border}
+      width={width}
+      height={height}
+      flexShrink={0}
+    >
+      <Text>{theme.muted('  [ PÓSTER ]')}</Text>
+      <Text>{theme.muted(imagePath ? '  (póster no disponible en disco)' : '  (sin póster)')}</Text>
+    </Box>
+  );
+}
+
+/**
  * Componente modo fallback ANSI (chafa símbolos).
  *
  * Renderiza el arte Unicode de chafa dentro del Box. La salida se divide por
- * líneas (`.split('\n')`) y cada línea se renderiza como un `<Text>`.
+ * líneas (`.split('\n')`) y cada línea se renderiza como un `<Text>`. Esto
+ * garantiza que el póster quede exactamente en la posición que Ink le asigne
+ * dentro del layout.
  */
-function FallbackPosterImage({
+function ChafaPosterImage({
   imagePath,
   width,
   height,
@@ -254,7 +431,7 @@ function FallbackPosterImage({
         flexShrink={0}
       >
         <Text>{theme.muted('  [ PÓSTER ]')}</Text>
-        <Text>{theme.muted('  (sin imagen)')}</Text>
+        <Text>{theme.muted('  (sin póster)')}</Text>
       </Box>
     );
   }
@@ -303,27 +480,42 @@ function FallbackPosterImage({
       flexShrink={0}
     >
       <Text>{theme.muted('  [ PÓSTER ]')}</Text>
-      <Text>{theme.muted('  (imagen no disponible)')}</Text>
+      <Text>{theme.muted('  (póster no disponible en disco)')}</Text>
     </Box>
   );
 }
 
-/** Componente principal: decide Kitty nativo o fallback chafa. */
-export function PosterImage({ imagePath, width, height }: PosterImageProps): React.JSX.Element {
+/** Componente principal: renderiza el póster dentro del Box de Ink. */
+export function PosterImage({
+  imagePath,
+  width,
+  height,
+  mode = 'auto',
+  placement = 'right',
+}: PosterImageProps): React.JSX.Element {
   const { width: posterWidth, height: posterHeight } = computePosterSize();
   const resolvedWidth: number = width ?? posterWidth;
   const resolvedHeight: number = height ?? posterHeight;
 
-  const isKittyTerminal: boolean = supportsKittyGraphics();
+  if (!imagePath) {
+    return <SharpPosterImage imagePath="" width={resolvedWidth} height={resolvedHeight} />;
+  }
 
-  // Kitty nativo solo cuando el terminal lo soporta y hay imagen.
-  if (isKittyTerminal && typeof imagePath === 'string' && imagePath.length > 0) {
+  if (mode === 'symbols') {
+    return <ChafaPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />;
+  }
+
+  if (mode === 'native') {
     return (
-      <NativePosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />
+      <NativePosterImage
+        imagePath={imagePath}
+        width={resolvedWidth}
+        height={resolvedHeight}
+        placement={placement}
+      />
     );
   }
 
-  return (
-    <FallbackPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />
-  );
+  // Modo 'auto' por defecto: Sharp truecolor dentro de Ink.
+  return <SharpPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />;
 }
