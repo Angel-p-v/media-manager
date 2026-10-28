@@ -15,8 +15,6 @@ const accessMock = vi.fn().mockResolvedValue(undefined);
 beforeEach(() => {
   execFileMock.mockReset();
   accessMock.mockResolvedValue(undefined);
-  // Forzar modo símbolos en tests para evitar detección nativa del entorno
-  process.env.MEDIA_MANAGER_GRAPHICS = 'symbols';
 });
 
 afterEach(() => {
@@ -63,13 +61,12 @@ describe('terminalImage', () => {
   it('renderImageToAnsi devuelve la salida de chafa', async () => {
     execFileMock.mockReturnValueOnce({ stdout: 'line1\nline2', stderr: '' });
     const result = await renderImageToAnsi('/fake/path/poster.png');
-    expect(result.output).toBe('line1\nline2');
-    expect(result.format).toBe('symbols');
+    expect(result).toBe('line1\nline2');
     const [file, cmdArgs] = execFileMock.mock.calls[execFileMock.mock.calls.length - 1]!;
     expect(file).toBe('chafa');
     expect(cmdArgs).toContain('--format=symbols');
     expect(cmdArgs).toContain('--colors=full');
-    expect(cmdArgs).toContain('--symbols=all');
+    expect(cmdArgs).toContain('--symbols=space+half');
     expect(cmdArgs).toContain('--dither=none');
     expect(cmdArgs).toContain('--stretch');
     expect(cmdArgs).toContain('--align=top,left');
@@ -83,7 +80,7 @@ describe('terminalImage', () => {
       throw new Error('error');
     });
     const result = await renderImageToAnsi('/fake/path/poster.png');
-    expect(result.output).toBe('');
+    expect(result).toBe('');
   });
 
   it('renderImageToAnsi usa tamaño personalizado en chafa', async () => {
