@@ -17,7 +17,7 @@
 import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { renderImageToAnsi, type GraphicsFormat } from '../../shared/terminalImage.js';
+import { renderImageToAnsi } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
 export type PosterImageProps = {
@@ -45,7 +45,7 @@ export function PosterImage({
   width = 30,
   height = 20,
 }: PosterImageProps): React.JSX.Element {
-  const [poster, setPoster] = useState<{ output: string; format: GraphicsFormat } | null>(null);
+  const [ansiArt, setAnsiArt] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const mountedRef = useRef(true);
   const abortRef = useRef<AbortController | null>(null);
@@ -60,7 +60,7 @@ export function PosterImage({
     abortRef.current = abortController;
 
     if (!imagePath) {
-      setPoster(null);
+      setAnsiArt('');
       setLoading(false);
       return;
     }
@@ -76,7 +76,7 @@ export function PosterImage({
     if (!mountedRef.current || abortController.signal.aborted) return;
 
     try {
-      const result = await renderImageToAnsi(imagePath, {
+      const art = await renderImageToAnsi(imagePath, {
         width,
         height,
         signal: abortController.signal,
@@ -84,18 +84,18 @@ export function PosterImage({
       // Si la petición fue cancelada (navegó a otro título), ignorar el resultado.
       if (abortController.signal.aborted || !mountedRef.current) return;
 
-      if (result.output) {
-        setPoster(result);
+      if (art) {
+        setAnsiArt(art);
         setLoading(false);
         // Forzar volcado inmediato a la terminal tras renderizar el póster.
         write('');
       } else {
-        setPoster(null);
+        setAnsiArt('');
         setLoading(false);
       }
     } catch {
       if (abortController.signal.aborted || !mountedRef.current) return;
-      setPoster(null);
+      setAnsiArt('');
       setLoading(false);
     }
   }, [imagePath, width, height, write]);
@@ -141,9 +141,8 @@ export function PosterImage({
     );
   }
 
-  if (poster?.output) {
-    const { output, format } = poster;
-    const isNativeGraphic = format !== 'symbols';
+  if (ansiArt) {
+    const lines = ansiArt.split('\n');
     return (
       <Box
         borderStyle="round"
@@ -154,20 +153,11 @@ export function PosterImage({
         flexDirection="column"
         overflow="hidden"
       >
-        {isNativeGraphic ? (
-          // Protocolos gráficos nativos (Kitty/iTerm2/Sixel): enviar como un
-          // único bloque sin dividir por líneas para no corromper las
-          // secuencias de escape gráficas.
-          <Text key="native-graphic">{output}</Text>
-        ) : (
-          // Modo símbolos ANSI: dividir por líneas para evitar interlineado
-          // intercalado en Ink.
-          output.split('\n').map((line, index) => (
-            <Text key={index} wrap="truncate-end">
-              {line}
-            </Text>
-          ))
-        )}
+        {lines.map((line, index) => (
+          <Text key={index} wrap="truncate-end">
+            {line}
+          </Text>
+        ))}
       </Box>
     );
   }
