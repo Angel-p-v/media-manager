@@ -36,6 +36,8 @@ export type KittyEncodeOptions = {
   rows: number;
   /** Identificador único de la imagen (para borrado selectivo). */
   imageId: number;
+  /** Máximo número de frames (para no saturar el buffer de stdout). */
+  maxFrames?: number;
 };
 
 /** Resultado del codificado: una lista de fragmentos de secuencia de escape. */
@@ -60,7 +62,7 @@ export type KittyFrame = {
  * @returns Array de secuencias de escape listas para escribirse a stdout.
  */
 export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<KittyFrame[]> {
-  const { imagePath, widthPx, heightPx, columns, rows, imageId } = options;
+  const { imagePath, widthPx, heightPx, columns, rows, imageId, maxFrames = 20 } = options;
 
   // Validación defensiva: la ruta debe ser un string no vacío.
   if (typeof imagePath !== 'string' || imagePath.length === 0) {
@@ -91,11 +93,14 @@ export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<K
     chunks.push(base64.slice(i, i + CHUNK_SIZE));
   }
 
-  const frames: KittyFrame[] = [];
-  const lastIndex: number = chunks.length - 1;
+  // Limitar a maxFrames para no saturar el buffer de stdout.
+  const limitedChunks = chunks.slice(0, maxFrames);
 
-  for (let index = 0; index < chunks.length; index += 1) {
-    const chunk: string = chunks[index] ?? '';
+  const frames: KittyFrame[] = [];
+  const lastIndex: number = limitedChunks.length - 1;
+
+  for (let index = 0; index < limitedChunks.length; index += 1) {
+    const chunk: string = limitedChunks[index] ?? '';
     const isLast: boolean = index === lastIndex;
     // t=T (Transmit) en el último fragmento, t=f (fragment) en los anteriores.
     const transmission: string = isLast ? 'T' : 'f';

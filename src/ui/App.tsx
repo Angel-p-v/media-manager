@@ -139,6 +139,12 @@ function AppImpl({
     setSelected(0);
   }, [view, section, query]);
 
+  // Limpiar la pantalla al cambiar de vista para evitar residuos visuales
+  // de la vista anterior en los bordes de la terminal.
+  useEffect(() => {
+    process.stdout.write('\x1b[2J\x1b[H');
+  }, [view]);
+
   // Sincronización automática de metadatos expirados al montar la TUI.
   // Si hay metadatos expirados y un proveedor configurado, se refrescan
   // automáticamente al abrir la biblioteca (M19.2).

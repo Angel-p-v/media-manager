@@ -11,6 +11,9 @@
  * Arquitectura: dos componentes separados para garantizar que el orden de
  * los Hooks de React sea siempre consistente (Reglas de Hooks). Cada modo
  * tiene su propio orden fijo de hooks, nunca condicional.
+ *
+ * Ningún mensaje de depuración se escribe a stdout/stderr. Todo queda
+ * silenciado para no romper la interfaz de Ink.
  */
 
 import { Box, Text } from 'ink';
@@ -77,16 +80,6 @@ function NativePosterImage({
   const imageId: number = Math.floor(Math.random() * 10000);
   imageIdRef.current = imageId;
 
-  // Diagnosticar a stderr para saber qué está pasando en entornos reales.
-  try {
-    process.stderr.write(
-      `[mm] NativePosterImage: imagePath=${imagePath} width=${width} height=${height} ` +
-        `columns=${columns} posterX=${posterX} posterY=${posterY} imageId=${imageId}\n`,
-    );
-  } catch {
-    // No hay nada más que hacer.
-  }
-
   // Bypass de Ink: escribir directamente a process.stdout para evitar que el
   // Virtual DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
   useEffect(() => {
@@ -98,67 +91,25 @@ function NativePosterImage({
         await new Promise((resolve) => setTimeout(resolve, 0));
         if (cancelled || !mountedRef.current) return;
 
-        // Verificar que el fichero existe antes de intentar codificarlo.
-        let fileAccessible = false;
-        try {
-          await import('node:fs/promises').then(({ access }) => access(imagePath));
-          fileAccessible = true;
-        } catch {
-          fileAccessible = false;
-        }
-
-        if (!fileAccessible) {
-          try {
-            process.stderr.write(`[mm] NativePosterImage: fichero no accesible: ${imagePath}\n`);
-          } catch {
-            // No hay nada más que hacer.
-          }
-          return;
-        }
-
-        // Limitar dimensiones de píxeles para evitar generar demasiados
-        // frames (el protocolo Kitty requiere chunks de 4096 bytes; una
-        // imagen muy grande produce miles de frames y satura el buffer de
-        // stdout). Usamos un máximo de 400x400 px para el póster.
-        const maxPx = 400;
-        const safeWidthPx = Math.min(width * 10, maxPx);
-        const safeHeightPx = Math.min(height * 20, maxPx);
-
         let frames: { sequence: string; isLast: boolean }[] = [];
         try {
           frames =
             (await encodeKittyGraphic({
               imagePath,
-              widthPx: safeWidthPx,
-              heightPx: safeHeightPx,
+              widthPx: width * 10, // aproximación: 10 px por columna
+              heightPx: height * 20, // aproximación: 20 px por fila
               columns: width,
               rows: height,
               imageId,
+              maxFrames: 20, // limitar para no saturar stdout
             })) ?? [];
         } catch {
           frames = [];
         }
 
-        try {
-          process.stderr.write(`[mm] NativePosterImage: frames generados=${frames.length}\n`);
-        } catch {
-          // No hay nada más que hacer.
-        }
-
         if (cancelled || !mountedRef.current) return;
 
-        if (!Array.isArray(frames)) {
-          frames = [];
-        }
-
-        if (frames.length === 0) {
-          try {
-            process.stderr.write(
-              `[mm] NativePosterImage: no se generaron frames, imagen no renderizada\n`,
-            );
-          } catch {
-            // No hay nada más que hacer.
-          }
+        if (!Array.isArray(frames) || frames.length === 0) {
           return;
         }
 
@@ -166,44 +117,26 @@ function NativePosterImage({
         const showCursor = '\x1b[?25h';
         const moveCursor = `\x1b[${posterY};${posterX}H`;
 
-        // Concatenar todos los frames en una sola escritura a stdout para
-        // evitar saturar el buffer con cientos de write() individuales.
-        let fullOutput = hideCursor;
-        for (const frame of frames) {
-          if (frame && typeof frame.sequence === 'string') {
-            fullOutput += moveCursor + frame.sequence;
-          }
-        }
-        fullOutput += showCursor;
-
+        // Escribir cada frame con pequeño delay para no saturar el buffer.
         try {
-          process.stdout.write(fullOutput);
-          try {
-            process.stderr.write(
-              `[mm] NativePosterImage: ${frames.length} frames escritos a stdout\n`,
-            );
-          } catch {
-            // No hay nada más que hacer.
+          process.stdout.write(hideCursor);
+          for (const frame of frames) {
+            if (cancelled || !mountedRef.current) return;
+            if (frame && typeof frame.sequence === 'string') {
+              process.stdout.write(moveCursor + frame.sequence);
+              await new Promise((resolve) => setTimeout(resolve, 5));
+            }
           }
+          process.stdout.write(showCursor);
         } catch {
           try {
             process.stdout.write(showCursor);
           } catch {
             // No hay nada más que hacer.
           }
-          try {
-            process.stderr.write(`[mm] NativePosterImage: error escribiendo frames a stdout\n`);
-          } catch {
-            // No hay nada más que hacer.
-          }
         }
-      } catch (err) {
-        // Escribir el error real a stderr para diagnóstico
-        try {
-          process.stderr.write(`[mm] Error renderizando póster nativo: ${String(err)}\n`);
-        } catch {
-          // No hay nada más que hacer.
-        }
+      } catch {
+        // El póster simplemente no se renderiza en modo nativo.
       }
     };
 
