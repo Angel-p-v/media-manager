@@ -134,7 +134,7 @@ export function PosterImage({
   // Escribir directamente a stdout para evitar que el Virtual DOM de Ink
   // corrompa los buffers de escape gráfico.
   useEffect(() => {
-    if (!poster?.output || poster.format !== 'kitty') return;
+    if (!poster?.output || poster.format !== 'native') return;
 
     const timer = setTimeout(() => {
       const hideCursor = '\x1b[?25l';
@@ -202,9 +202,9 @@ export function PosterImage({
   if (poster?.output) {
     const { format } = poster;
 
-    // Protocolo gráfico nativo (Kitty SGP): renderizar Box vacío con borde.
+    // Protocolo gráfico nativo (Kitty/iTerm2/Sixel): renderizar Box vacío con borde.
     // El gráfico se escribe directamente a stdout en el useEffect de bypass.
-    if (format === 'kitty') {
+    if (format === 'native') {
       return (
         <Box
           borderStyle="round"
