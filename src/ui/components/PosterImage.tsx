@@ -16,7 +16,7 @@
  * silenciado para no romper la interfaz de Ink.
  */
 
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { deleteKittyImage, encodeKittyGraphic } from '../../shared/kittyProtocol.js';
@@ -65,23 +65,18 @@ function NativePosterImage({
   width: number;
   height: number;
 }): React.JSX.Element {
+  const stdout = useStdout();
   const mountedRef = useRef(true);
   const imageIdRef = useRef<number | null>(null);
-  const columns: number = process.stdout.columns ?? 80;
-
-  const offsetX = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_X ?? '0');
-  const offsetY = Number(process.env.MEDIA_MANAGER_POSTER_OFFSET_Y ?? '0');
-  const marginRight = Number(process.env.MEDIA_MANAGER_POSTER_MARGIN_RIGHT ?? '1');
-
-  const posterX: number = Math.max(0, columns - width - marginRight) + offsetX;
-  const posterY: number = Math.max(1, 1 + offsetY);
 
   // Generar un ID único para esta imagen (se usa en el borrado al desmontar).
   const imageId: number = Math.floor(Math.random() * 10000);
   imageIdRef.current = imageId;
 
-  // Bypass de Ink: escribir directamente a process.stdout para evitar que el
-  // Virtual DOM de Ink corrompa los buffers de escape gráfico del protocolo Kitty.
+  // Bypass de Ink: escribir directamente a stdout vía useStdout() para evitar
+  // que el Virtual DOM de Ink corrompa los buffers de escape gráfico del
+  // protocolo Kitty. No movemos el cursor: dejamos que el protocolo Kitty
+  // (parámetros c= y r=) posicione la imagen sobre el Box vacío.
   useEffect(() => {
     let cancelled = false;
 
@@ -101,7 +96,7 @@ function NativePosterImage({
               columns: width,
               rows: height,
               imageId,
-              maxFrames: 20, // limitar para no saturar stdout
+              maxFrames: 10, // limitar para no saturar stdout
             })) ?? [];
         } catch {
           frames = [];
@@ -115,22 +110,21 @@ function NativePosterImage({
 
         const hideCursor = '\x1b[?25l';
         const showCursor = '\x1b[?25h';
-        const moveCursor = `\x1b[${posterY};${posterX}H`;
 
-        // Escribir cada frame con pequeño delay para no saturar el buffer.
-        try {
-          process.stdout.write(hideCursor);
-          for (const frame of frames) {
-            if (cancelled || !mountedRef.current) return;
-            if (frame && typeof frame.sequence === 'string') {
-              process.stdout.write(moveCursor + frame.sequence);
-              await new Promise((resolve) => setTimeout(resolve, 5));
-            }
+        // Concatenar todos los frames en una sola escritura a stdout.
+        let fullOutput = hideCursor;
+        for (const frame of frames) {
+          if (frame && typeof frame.sequence === 'string') {
+            fullOutput += frame.sequence;
           }
-          process.stdout.write(showCursor);
+        }
+        fullOutput += showCursor;
+
+        try {
+          stdout.write(fullOutput);
         } catch {
           try {
-            process.stdout.write(showCursor);
+            stdout.write(showCursor);
           } catch {
             // No hay nada más que hacer.
           }
@@ -148,18 +142,18 @@ function NativePosterImage({
       // o cambiar de imagen, evitando artefactos flotantes.
       if (imageIdRef.current !== null) {
         try {
-          process.stdout.write(deleteKittyImage(imageIdRef.current));
+          stdout.write(deleteKittyImage(imageIdRef.current));
         } catch {
           // Si el borrado falla, se ignora.
         }
       }
       try {
-        process.stdout.write('\x1b[?25h');
+        stdout.write('\x1b[?25h');
       } catch {
         // No hay nada más que hacer.
       }
     };
-  }, [imagePath, width, height, posterX, posterY, imageId]);
+  }, [imagePath, width, height, imageId, stdout]);
 
   return (
     <Box
