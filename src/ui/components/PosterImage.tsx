@@ -154,7 +154,7 @@ export function PosterImage({
         overflow="hidden"
       >
         {lines.map((line, index) => (
-          <Text key={index} wrap="hard">
+          <Text key={index} wrap="truncate-end">
             {line}
           </Text>
         ))}
