@@ -31,6 +31,11 @@ export async function isChafaAvailable(): Promise<boolean> {
 /**
  * Convierte una imagen a arte Unicode con colores ANSI usando `chafa`.
  *
+ * Usa `--format=symbols` con `--symbols=braille` para obtener bloques Unicode
+ * de alta resolución (cada carácter representa una matriz 2×4 píxeles), y
+ * `--font-ratio=2/1` para compensar la proporción no cuadrada de los
+ * caracteres de terminal, evitando que el póster se deforme.
+ *
  * Devuelve una cadena de texto con secuencias de escape ANSI que se puede
  * mostrar directamente en la terminal (incluido dentro de un `<Text>` de Ink).
  *
@@ -42,7 +47,11 @@ export async function renderImageToAnsi(
   imagePath: string,
   options: { width?: number; height?: number; signal?: AbortSignal } = {},
 ): Promise<string> {
-  const { signal } = options;
+  const {
+    width = DEFAULT_POSTER_SIZE.width,
+    height = DEFAULT_POSTER_SIZE.height,
+    signal,
+  } = options;
 
   try {
     await access(imagePath);
@@ -53,7 +62,16 @@ export async function renderImageToAnsi(
   try {
     const { stdout } = await execFilePromiseWithAbort(
       'chafa',
-      [imagePath],
+      [
+        '--format=symbols',
+        '--colors=256',
+        '--symbols=braille',
+        '--font-ratio=2/1',
+        '--align=top,left',
+        `--size=${width}x${height}`,
+        '--animate=false',
+        imagePath,
+      ],
       { encoding: 'utf-8' },
       signal,
     );

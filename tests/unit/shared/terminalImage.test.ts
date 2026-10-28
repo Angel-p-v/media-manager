@@ -64,6 +64,13 @@ describe('terminalImage', () => {
     expect(result).toBe('line1\nline2');
     const [file, cmdArgs] = execFileMock.mock.calls[execFileMock.mock.calls.length - 1]!;
     expect(file).toBe('chafa');
+    expect(cmdArgs).toContain('--format=symbols');
+    expect(cmdArgs).toContain('--colors=256');
+    expect(cmdArgs).toContain('--symbols=braille');
+    expect(cmdArgs).toContain('--font-ratio=2/1');
+    expect(cmdArgs).toContain('--align=top,left');
+    expect(cmdArgs).toContain('--size=22x12');
+    expect(cmdArgs).toContain('--animate=false');
     expect(cmdArgs).toContain('/fake/path/poster.png');
   });
 
@@ -75,10 +82,11 @@ describe('terminalImage', () => {
     expect(result).toBe('');
   });
 
-  it('renderImageToAnsi solo pasa la ruta de la imagen a chafa', async () => {
+  it('renderImageToAnsi usa tamaño personalizado en chafa', async () => {
     execFileMock.mockReturnValueOnce({ stdout: 'arte', stderr: '' });
     await renderImageToAnsi('/fake/path/poster.png', { width: 40, height: 20 });
     const [, cmdArgs] = execFileMock.mock.calls[execFileMock.mock.calls.length - 1]!;
-    expect(cmdArgs).toEqual(['/fake/path/poster.png']);
+    expect(cmdArgs).toContain('--size=40x20');
+    expect(cmdArgs).toContain('/fake/path/poster.png');
   });
 });
