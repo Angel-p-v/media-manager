@@ -87,7 +87,11 @@ export function MediaDetails({
                 {theme.label('Metadatos')} {theme.muted(`(${metadata.provider})`)}
               </Text>
               {metadata.title && <Text>{`  Título: ${metadata.title}`}</Text>}
-              {metadata.overview && <Text>{`  Sinopsis: ${metadata.overview}`}</Text>}
+              {metadata.overview && (
+                <Box maxWidth={60} paddingX={1} marginBottom={1}>
+                  <Text wrap="wrap">{`  Sinopsis: ${metadata.overview}`}</Text>
+                </Box>
+              )}
               {metadata.voteAverage !== null && (
                 <Text>{`  Calificación: ${metadata.voteAverage}/10`}</Text>
               )}
