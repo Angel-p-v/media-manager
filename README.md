@@ -89,34 +89,34 @@ mm index                 # re-escanea tus carpetas y actualiza el índice
 
 ## ✨ Características principales
 
-| Capacidad                                                          | Estado |
-| ------------------------------------------------------------------ | ------ |
-| 🖥️ TUI navegable (Ink + React)                                     | ✅     |
-| 🗃️ Índice local en SQLite con FTS5                                 | ✅     |
-| 🔄 Indexación recursiva + incremental                              | ✅     |
-| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`)   | ✅     |
-| 🔍 Búsqueda instantánea (CLI + TUI)                                | ✅     |
-| 🎮 Reproducción con `mpv` / `vlc`                                  | ✅     |
-| ⚙️ Configuración YAML validada con Zod                             | ✅     |
-| 👀 Modo _watch_ (reindexado automático)                            | ✅     |
-| 📤 Salida `--json` para scripts                                    | ✅     |
-| 📝 Logs estructurados, `--verbose`, errores con código             | ✅     |
-| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                    | ✅     |
-| ✅ Instalador verificado, checksums, distribución portable         | ✅     |
-| ▶️ Estado de reproducción (continuar, historial, marcas)           | ✅     |
-| 📡 Tracker IPC mpv (reanudación automática y guardado de posición) | ✅     |
-| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`    | ✅     |
-| 📃 Comando `playlist` (reproduce varios títulos en secuencia)      | ✅     |
-| 🗄️ Comandos `db stats`, `db optimize`, `db backup`, `db restore`  | ✅     |
-| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`            | ✅     |
-| 🔄 Auto-actualización con `self-update`                            | ✅     |
-| 📋 Sección "Continuar" en la TUI                                   | ✅     |
-| 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)   | ✅     |
-| 🧪 Tests E2E con IPC falso y `--dry-run`                           | ✅     |
-| 🎞️ Metadatos externos TVMaze/Jikan (sinopsis, póster, calificación)| ✅     |
-| 🖼️ Renderizado de pósters en terminal (Kitty SGP + chafa fallback) | ✅     |
-| 🔄 Sincronización automática de metadatos con TTL                  | ✅     |
-| 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)          | ✅     |
+| Capacidad                                                           | Estado |
+| ------------------------------------------------------------------- | ------ |
+| 🖥️ TUI navegable (Ink + React)                                      | ✅     |
+| 🗃️ Índice local en SQLite con FTS5                                  | ✅     |
+| 🔄 Indexación recursiva + incremental                               | ✅     |
+| 🎯 Parseo inteligente (`S01E02`, `1x02`, `T1E2`, `1080p BluRay`)    | ✅     |
+| 🔍 Búsqueda instantánea (CLI + TUI)                                 | ✅     |
+| 🎮 Reproducción con `mpv` / `vlc`                                   | ✅     |
+| ⚙️ Configuración YAML validada con Zod                              | ✅     |
+| 👀 Modo _watch_ (reindexado automático)                             | ✅     |
+| 📤 Salida `--json` para scripts                                     | ✅     |
+| 📝 Logs estructurados, `--verbose`, errores con código              | ✅     |
+| 🗄️ Mantenimiento SQLite (`optimize` / `VACUUM`)                     | ✅     |
+| ✅ Instalador verificado, checksums, distribución portable          | ✅     |
+| ▶️ Estado de reproducción (continuar, historial, marcas)            | ✅     |
+| 📡 Tracker IPC mpv (reanudación automática y guardado de posición)  | ✅     |
+| 🎮 Comandos `continue`, `history`, `mark`, `favorite`, `doctor`     | ✅     |
+| 📃 Comando `playlist` (reproduce varios títulos en secuencia)       | ✅     |
+| 🗄️ Comandos `db stats`, `db optimize`, `db backup`, `db restore`    | ✅     |
+| 🏷️ Comandos `tag add/remove/list` y filtro `list --tag`             | ✅     |
+| 🔄 Auto-actualización con `self-update`                             | ✅     |
+| 📋 Sección "Continuar" en la TUI                                    | ✅     |
+| 🧩 Integración con reproductor (mpv/vlc, modo detach/foreground)    | ✅     |
+| 🧪 Tests E2E con IPC falso y `--dry-run`                            | ✅     |
+| 🎞️ Metadatos externos TVMaze/Jikan (sinopsis, póster, calificación) | ✅     |
+| 🖼️ Renderizado de pósters en terminal (Kitty SGP + chafa fallback)  | ✅     |
+| 🔄 Sincronización automática de metadatos con TTL                   | ✅     |
+| 🤖 Metadatos automáticos tipo Sonarr/Radarr (`autoFetch`)           | ✅     |
 
 ## 🚀 Instalación rápida
 
@@ -218,12 +218,12 @@ Si `chafa` no está disponible, la aplicación funciona normalmente pero muestra
 
 Además del binario `mm` (que ya incluye Node.js embalado en las distribuciones oficiales), media-manager necesita algunos programas del sistema para funcionar al 100 %:
 
-| Dependencia | Para qué sirve | Obligatoria | Instalación |
-|-------------|----------------|-------------|-------------|
-| **mpv** | Reproductor principal (recomendado) | ❌ (una de mpv/vlc) | `sudo apt install mpv` / `winget install mpv` / `brew install mpv` |
-| **vlc** | Reproductor alternativo | ❌ (una de mpv/vlc) | `sudo apt install vlc` / `winget install videolan.vlc` / `brew install --cask vlc` |
-| **chafa** | Renderizado de pósters en terminal (fallback ANSI) | ❌ | `sudo apt install chafa` / `winget install chafa` / `brew install chafa` |
-| **Node.js ≥ 22** | Solo si clonás el repo y corrés desde fuente (`npm ci`) | ⚠️ Solo modo fuente | [`nodejs.org`](https://nodejs.org/) o tu gestor de versión |
+| Dependencia      | Para qué sirve                                          | Obligatoria         | Instalación                                                                        |
+| ---------------- | ------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------- |
+| **mpv**          | Reproductor principal (recomendado)                     | ❌ (una de mpv/vlc) | `sudo apt install mpv` / `winget install mpv` / `brew install mpv`                 |
+| **vlc**          | Reproductor alternativo                                 | ❌ (una de mpv/vlc) | `sudo apt install vlc` / `winget install videolan.vlc` / `brew install --cask vlc` |
+| **chafa**        | Renderizado de pósters en terminal (fallback ANSI)      | ❌                  | `sudo apt install chafa` / `winget install chafa` / `brew install chafa`           |
+| **Node.js ≥ 22** | Solo si clonás el repo y corrés desde fuente (`npm ci`) | ⚠️ Solo modo fuente | [`nodejs.org`](https://nodejs.org/) o tu gestor de versión                         |
 
 > 💡 Ninguna de estas dependencias es estrictamente obligatoria para usar la TUI o buscar: si no tenés reproductor, `mm play` te avisará; si no tenés `chafa`, verás un placeholder de texto en lugar del póster.
 
