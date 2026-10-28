@@ -574,6 +574,12 @@ function cleanSearchTitle(title: string): string {
   cleaned = cleaned.replace(/\bT\d{1,2}E\d{1,3}\b/gi, ' ');
   cleaned = cleaned.replace(/\bE\d{1,3}\b/gi, ' ');
 
+  // Eliminar especificadores de temporada sueltos (sin episodio): "Season 01", "Temporada 1", "S01", "T01"
+  cleaned = cleaned.replace(/\bSeason\s*\d{1,2}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bTemporada\s*\d{1,2}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bS\d{1,2}\b/gi, ' ');
+  cleaned = cleaned.replace(/\bT\d{1,2}\b/gi, ' ');
+
   // Eliminar calidad y formato
   cleaned = cleaned.replace(/\b(1080p|720p|480p|2160p|4k)\b/gi, ' ');
   cleaned = cleaned.replace(/\b(BluRay|Blu-Ray|BluRay)\b/gi, ' ');

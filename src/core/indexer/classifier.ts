@@ -38,6 +38,8 @@ function extractCleanTitle(fileName: string): string {
       .replace(/\bT\d{1,2}[ ._-]*(?:E|EP)?[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
       .replace(/\b\d{1,2}x\d{1,3}(?=\D|$)/i, ' ')
       .replace(/\bSeason[ ._-]*\d{1,2}[ ._-]*(?:Episode|Ep|E)[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
+      .replace(/\bSeason\s*\d{1,2}\b/gi, ' ')
+      .replace(/\bTemporada\s*\d{1,2}\b/gi, ' ')
       .replace(/\b(?:Episode|Ep|E)[ ._-]*\d{1,3}(?=\D|$)/i, ' ')
       .replace(/(?:^|[\s._])-\s*\d{1,3}(?:\s*v\d+)?(?=\s*(?:-|\(|\[|$))/i, ' ')
       // Quita sufijos tipo v2, v3 que quedan tras limpiar el episodio
