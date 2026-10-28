@@ -580,6 +580,10 @@ function cleanSearchTitle(title: string): string {
   cleaned = cleaned.replace(/\bS\d{1,2}\b/gi, ' ');
   cleaned = cleaned.replace(/\bT\d{1,2}\b/gi, ' ');
 
+  // Eliminar etiquetas de calidad/resolución y otros residuos comunes
+  cleaned = cleaned.replace(/\b(HD|FHD|UHD|REMUX|RIP)\b/gi, ' ');
+  cleaned = cleaned.replace(/\b(DUAL|LATINO|CASTELLANO|SUBESPAÑOL|SUB)\b/gi, ' ');
+
   // Eliminar calidad y formato
   cleaned = cleaned.replace(/\b(1080p|720p|480p|2160p|4k)\b/gi, ' ');
   cleaned = cleaned.replace(/\b(BluRay|Blu-Ray|BluRay)\b/gi, ' ');

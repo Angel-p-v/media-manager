@@ -111,6 +111,15 @@ export function classifyFile(input: ClassifyInput): ClassifiedFile | null {
     } else if (folderName) {
       const parsed = parseTitleAndYear(folderName);
       cleanTitle = parsed?.title ?? folderName;
+      // Limpiar residuos de temporada que puedan quedar en el nombre de la
+      // carpeta raíz (ej. "Solo Leveling Season 1" → "Solo Leveling")
+      cleanTitle = cleanTitle
+        .replace(/\bSeason\s*\d{1,2}\b/gi, ' ')
+        .replace(/\bTemporada\s*\d{1,2}\b/gi, ' ')
+        .replace(/\bS\d{1,2}\b/gi, ' ')
+        .replace(/\bT\d{1,2}\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
       year = parsed?.year ?? null;
     } else {
       cleanTitle = basename;
