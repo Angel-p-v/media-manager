@@ -42,11 +42,7 @@ export async function renderImageToAnsi(
   imagePath: string,
   options: { width?: number; height?: number; signal?: AbortSignal } = {},
 ): Promise<string> {
-  const {
-    width = DEFAULT_POSTER_SIZE.width,
-    height = DEFAULT_POSTER_SIZE.height,
-    signal,
-  } = options;
+  const { signal } = options;
 
   try {
     await access(imagePath);
@@ -57,15 +53,7 @@ export async function renderImageToAnsi(
   try {
     const { stdout } = await execFilePromiseWithAbort(
       'chafa',
-      [
-        '--format=symbols',
-        '--colors=256',
-        '--symbols=braille',
-        '--align=top,left',
-        `--size=${width}x${height}`,
-        '--animate=false',
-        imagePath,
-      ],
+      [imagePath],
       { encoding: 'utf-8' },
       signal,
     );
