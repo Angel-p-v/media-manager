@@ -31,11 +31,14 @@ export async function isChafaAvailable(): Promise<boolean> {
 /**
  * Convierte una imagen a arte Unicode con colores ANSI usando `chafa`.
  *
- * Usa `--format=symbols` con `--symbols=half` para bloques de medio bloque
- * horizontal (aprovecha las mitades superior/inferior de cada carácter para
- * duplicar la resolución vertical sin insertar líneas en blanco), `--colors=full`
- * para TrueColor (24-bit), y `--stretch` junto a `--size=WxH` para forzar que
- * chafa ocupe el 100% del canvas del Box contenedor.
+ * Usa `--format=symbols` con `--symbols=block+border+space` para bloques
+ * de celda completa con sombreado de alta resolución, `--colors=full` para
+ * TrueColor (24-bit). No se usa `--stretch` para no deformar el aspect ratio
+ * original del póster (vertical 2:3).
+ *
+ * Se restan 2 columnas y 2 filas al tamaño del Box de Ink para compensar el
+ * espacio que ocupan los bordes redondeados (`borderStyle="round"`), evitando
+ * que la imagen sobresale por el borde inferior o derecho del cuadro.
  *
  * El resultado se limpia con `.trimEnd()` para eliminar saltos de línea o
  * retornos de carro finales que descuadren la última fila del Box de Ink.
@@ -69,10 +72,9 @@ export async function renderImageToAnsi(
       [
         '--format=symbols',
         '--colors=full',
-        '--symbols=half',
-        '--stretch',
+        '--symbols=block+border+space',
         '--align=top,left',
-        `--size=${width}x${height}`,
+        `--size=${width - 2}x${height - 2}`,
         '--animate=false',
         imagePath,
       ],

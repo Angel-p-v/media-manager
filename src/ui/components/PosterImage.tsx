@@ -151,9 +151,12 @@ export function PosterImage({
         height={height}
         flexShrink={0}
         flexDirection="column"
+        overflow="hidden"
       >
         {lines.map((line, index) => (
-          <Text key={index}>{line}</Text>
+          <Text key={index} wrap="hard">
+            {line}
+          </Text>
         ))}
       </Box>
     );
