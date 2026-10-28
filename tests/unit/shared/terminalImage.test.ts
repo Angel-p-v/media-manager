@@ -66,7 +66,8 @@ describe('terminalImage', () => {
     expect(file).toBe('chafa');
     expect(cmdArgs).toContain('--format=symbols');
     expect(cmdArgs).toContain('--colors=full');
-    expect(cmdArgs).toContain('--symbols=block+border+space+half');
+    expect(cmdArgs).toContain('--symbols=space+half');
+    expect(cmdArgs).toContain('--dither=none');
     expect(cmdArgs).toContain('--stretch');
     expect(cmdArgs).toContain('--align=top,left');
     expect(cmdArgs).toContain('--size=22x12');
