@@ -231,11 +231,20 @@ export class MetadataService {
       this.logger.debug('[METADATA API] TVMaze sin resultados', {
         provider: 'tvmaze',
         query,
+        status: response.status,
       });
       return [];
     }
 
     if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.debug('[METADATA API] TVMaze error HTTP', {
+        provider: 'tvmaze',
+        query,
+        status: response.status,
+        statusText: response.statusText,
+        body: body.slice(0, 500),
+      });
       throw new MetadataError(`TVMaze API respondió ${response.status}`);
     }
 
@@ -247,6 +256,7 @@ export class MetadataService {
       title: data.name,
       id: data.id,
       hasPoster: !!data.image,
+      hasSummary: !!data.summary,
     });
 
     const posterPath = data.image?.original ?? data.image?.medium ?? null;
@@ -350,6 +360,14 @@ export class MetadataService {
     });
 
     if (!response.ok) {
+      const body = await response.text().catch(() => '');
+      this.logger.debug('[METADATA API] Jikan error HTTP', {
+        provider: 'jikan',
+        query,
+        status: response.status,
+        statusText: response.statusText,
+        body: body.slice(0, 500),
+      });
       throw new MetadataError(`Jikan API respondió ${response.status}`);
     }
 
@@ -359,6 +377,7 @@ export class MetadataService {
       provider: 'jikan',
       query,
       resultsCount: data.data.length,
+      titles: data.data.map((item) => item.title),
     });
 
     const results: MetadataSearchResult[] = [];
