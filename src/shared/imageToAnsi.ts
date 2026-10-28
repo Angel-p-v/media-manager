@@ -25,17 +25,12 @@ export type AnsiArtResult = {
  * dentro de un componente de Ink.
  *
  * Sharp lee la imagen, la redimensiona al ancho y alto indicados (en
- * píxeles, mapeados 1:1 a celdas de terminal) preservando el aspect ratio
- * original con `fit: 'contain'`, y extrae el color RGB de cada píxel.
+ * píxeles, mapeados 1:1 a celdas de terminal) rellenando completamente el
+ * área con `fit: 'cover'` (recortando si es necesario para preservar el
+ * aspect ratio sin dejar padding), y extrae el color RGB de cada píxel.
  * Cada píxel se renderiza como un carácter de bloque lleno (`█`) con el
  * color del píxel como color de fondo ANSI truecolor
  * (`\x1b[48;2;r;g;bm`).
- *
- * Como las celdas de terminal son rectangulares (más altas que anchas,
- * típicamente 16×32 píxeles), cada píxel de la imagen se renderiza como un
- * bloque que ocupa toda la celda. Esto puede distorsionar ligeramente la
- * imagen verticalmente, pero es la mejor aproximación posible sin usar
- * protocolos gráficos nativos.
  *
  * El resultado es un array de líneas que puede renderizarse línea a línea
  * dentro de `<Text>` de Ink, por lo que el póster queda exactamente dentro
@@ -54,9 +49,9 @@ export async function imageToAnsi(options: ImageToAnsiOptions): Promise<AnsiArtR
   try {
     const result = await sharp(imagePath)
       .resize(width, height, {
-        fit: 'contain',
+        fit: 'cover',
         kernel: sharp.kernel.lanczos3,
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
+        position: 'center',
       })
       .raw()
       .toBuffer({ resolveWithObject: true });
@@ -65,10 +60,9 @@ export async function imageToAnsi(options: ImageToAnsiOptions): Promise<AnsiArtR
     return { lines: [], width: 0, height: 0 };
   }
 
-  // Sharp con fit: 'contain' devuelve exactamente width×height píxeles (con
-  // padding de background donde no llega el contenido escalado). Usamos
-  // width directamente para el índice, ya que es la dimensión real del
-  // buffer de salida.
+  // Sharp con fit: 'cover' devuelve exactamente width×height píxeles sin
+  // padding. Usamos width directamente para el índice, que es la dimensión
+  // real del buffer de salida.
   const channels = 3;
   const lines: string[] = [];
   for (let y = 0; y < height; y += 1) {

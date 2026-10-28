@@ -56,7 +56,7 @@ export function MediaDetails({
     >
       <Box flexDirection="row" flexGrow={1} justifyContent="space-between">
         {/* ==================== Derecha: información del título ==================== */}
-        <Box flexDirection="column" flexGrow={1} flexShrink={1} maxWidth={100}>
+        <Box flexDirection="column" flexGrow={1} flexShrink={1}>
           <Text>
             {theme.highlight(`${media.title}${year}`)} {theme.muted(`#${media.id}`)}
           </Text>
