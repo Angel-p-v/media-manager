@@ -60,7 +60,7 @@ export async function renderImageToAnsi(
       [
         '--format=ansi',
         '--colors=256',
-        '--fit=fill',
+        '--align=top,left',
         `--size=${width}x${height}`,
         '--animate=false',
         imagePath,
