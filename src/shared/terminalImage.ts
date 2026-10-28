@@ -31,10 +31,13 @@ export async function isChafaAvailable(): Promise<boolean> {
 /**
  * Convierte una imagen a arte Unicode con colores ANSI usando `chafa`.
  *
- * Usa `--format=symbols` con `--symbols=block+border+space` para bloques
- * sólidos uniformes, `--colors=full` para TrueColor (24-bit), y `--stretch`
- * junto a `--size=WxH` para forzar que chafa ocupe el 100% del canvas del Box
- * contenedor sin dejar huecos a la derecha ni comprimir el ancho.
+ * Usa `--format=symbols` con `--symbols=vhalf` para bloques de medio bloque
+ * vertical (densidad uniforme sin puntos vacíos como braille), `--colors=full`
+ * para TrueColor (24-bit), y `--stretch` junto a `--size=WxH` para forzar que
+ * chafa ocupe el 100% del canvas del Box contenedor.
+ *
+ * El resultado se limpia con `.trimEnd()` para eliminar saltos de línea o
+ * retornos de carro finales que descuadren la última fila del Box de Ink.
  *
  * Devuelve una cadena de texto con secuencias de escape ANSI que se puede
  * mostrar directamente en la terminal (incluido dentro de un `<Text>` de Ink).
@@ -65,7 +68,7 @@ export async function renderImageToAnsi(
       [
         '--format=symbols',
         '--colors=full',
-        '--symbols=block+border+space',
+        '--symbols=vhalf',
         '--stretch',
         '--align=top,left',
         `--size=${width}x${height}`,
@@ -75,7 +78,7 @@ export async function renderImageToAnsi(
       { encoding: 'utf-8' },
       signal,
     );
-    return stdout;
+    return stdout.trimEnd();
   } catch {
     return '';
   }
