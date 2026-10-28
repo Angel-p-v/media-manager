@@ -328,7 +328,7 @@ export function PlayDetails({
       <Box flexGrow={1} flexDirection="row">
         {/* Izquierda: póster grande */}
         <Box flexDirection="column" paddingX={0} paddingY={1} flexShrink={0}>
-          <PosterImage imagePath={posterPath} placement="left" />
+          <PosterImage imagePath={posterPath} />
         </Box>
 
         {/* Centro: metadatos y episodios */}

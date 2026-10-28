@@ -7,24 +7,27 @@
  * pudieran descolocarse al redibujar.
  *
  * Modos de renderizado:
- * - 'auto' (por defecto): usa Chafa dentro del Box de Ink. Posicionamiento
- *   perfecto, compatible con cualquier terminal.
- * - 'native': usa el Protocolo Gráfico de Kitty como overlay directo sobre
- *   stdout. Máxima calidad en Ghostty/Kitty/WezTerm, pero el posicionamiento
- *   es aproximado (esquina basada en `placement`) porque Ink no expone las
- *   coordenadas físicas de pantalla de sus componentes.
- * - 'symbols': usa Chafa forzosamente, ignorando la capacidad nativa.
+ * - 'auto' (por defecto): usa Sharp para convertir la imagen a bloques de
+ *   color ANSI truecolor dentro del Box de Ink. Buena calidad (colores
+ *   reales 24-bit) y posicionamiento perfecto en cualquier terminal.
+ * - 'symbols': usa Chafa dentro del Box de Ink. Posicionamiento perfecto,
+ *   compatible con cualquier terminal, pero calidad limitada (arte ANSI).
+ * - 'native': igual que 'auto' (se mantiene por compatibilidad, pero el
+ *   renderizado gráfico nativo como overlay sobre stdout no puede
+ *   posicionarse con precisión dentro de un <Box> de Ink porque Ink no
+ *   expone las coordenadas físicas de pantalla de sus componentes).
  *
- * Cada vista puede controlar el modo y el placement mediante props, sin
- * modificar el protocolo gráfico.
+ * Cada vista controla la posición mediante la estructura de componentes
+ * (dónde coloca el <PosterImage> en el árbol de React), no mediante
+ * coordenadas absolutas de terminal.
  *
  * Ningún mensaje de depuración se escribe a stdout/stderr.
  */
 
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text } from 'ink';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { detectGraphicsCapability } from '../../shared/terminalCapabilities.js';
+import { imageToAnsi } from '../../shared/imageToAnsi.js';
 import { renderImageToAnsi } from '../../shared/terminalImage.js';
 import { theme } from '../theme.js';
 
@@ -35,10 +38,8 @@ export type PosterImageProps = {
   width?: number;
   /** Alto del póster en caracteres de terminal. Si se omite, se calcula de forma responsiva. */
   height?: number;
-  /** Modo de renderizado: 'auto', 'native' o 'symbols'. */
+  /** Modo de renderizado: 'auto' (Sharp truecolor dentro de Ink), 'symbols' (Chafa dentro de Ink) o 'native' (igual que 'auto'). */
   mode?: 'auto' | 'native' | 'symbols';
-  /** Posición relativa sugerida para el modo nativo (overlay). Ignorado en modo 'symbols'. */
-  placement?: 'left' | 'right' | 'top';
 };
 
 /** Dimensiones por defecto del póster cuando no se puede calcular de forma responsiva. */
@@ -66,170 +67,120 @@ export function computePosterSize(): { width: number; height: number } {
 }
 
 /**
- * Calcula una posición fija y predecible en la terminal para el modo nativo
- * (overlay). Se usa solo cuando el usuario fuerza `mode='native'`, porque
- * Ink no expone las coordenadas físicas de pantalla de sus componentes.
+ * Componente que renderiza el póster como bloques de color ANSI truecolor
+ * dentro del Box de Ink.
  *
- * @param width - Ancho del póster en celdas de terminal.
- * @param height - Alto del póster en celdas de terminal.
- * @param placement - Posición relativa sugerida.
- * @returns Coordenadas (x, y) absolutas de terminal.
+ * Usa Sharp para procesar la imagen y generar bloques de color (█) con el
+ * color de fondo truecolor de cada píxel. Como se renderiza dentro del
+ * flujo de Ink, el póster queda exactamente en la posición que el layout de
+ * Ink le asigne.
  */
-function computeNativePosition(
-  width: number,
-  height: number,
-  placement: 'left' | 'right' | 'top' = 'right',
-): { x: number; y: number } {
-  const terminalCols: number = process.stdout.columns ?? 80;
-  const terminalRows: number = process.stdout.rows ?? 24;
-
-  let x: number;
-  let y: number;
-
-  switch (placement) {
-    case 'left':
-      x = Math.max(0, 1);
-      y = Math.max(1, Math.floor(terminalRows / 4));
-      break;
-    case 'top':
-      x = Math.max(0, Math.floor((terminalCols - width) / 2));
-      y = Math.max(1, 1);
-      break;
-    case 'right':
-    default:
-      x = Math.max(0, terminalCols - width - 1);
-      y = Math.max(1, Math.floor(terminalRows / 4));
-      break;
-  }
-
-  // Limitar para no salirse de la pantalla.
-  x = Math.min(x, Math.max(0, terminalCols - width));
-  y = Math.min(y, Math.max(1, terminalRows - height));
-
-  return { x, y };
-}
-
-/**
- * Componente modo nativo (Kitty SGP). Overlay directo sobre stdout con
- * coordenadas aproximadas. Solo se usa cuando el usuario fuerza
- * `mode='native'`.
- */
-function NativePosterImage({
+function SharpPosterImage({
   imagePath,
   width,
   height,
-  placement,
 }: {
   imagePath: string;
   width: number;
   height: number;
-  placement: 'left' | 'right' | 'top';
 }): React.JSX.Element {
-  const stdout = useStdout();
+  const [lines, setLines] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(!!imagePath);
   const mountedRef = useRef(true);
-  const imageIdRef = useRef<number | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const hideCursor = '\x1b[?25l';
-  const showCursor = '\x1b[?25h';
+  const renderPoster = useCallback(async (): Promise<void> => {
+    if (!mountedRef.current) return;
 
-  const drawPoster = useCallback(async (): Promise<void> => {
-    const imageId: number = Math.floor(Math.random() * 100000);
-    imageIdRef.current = imageId;
+    abortRef.current?.abort();
+    const abortController = new AbortController();
+    abortRef.current = abortController;
 
-    const { x, y } = computeNativePosition(width, height, placement);
-    const moveCursor = `\x1b[${y};${x}H`;
-
-    try {
-      stdout.write(hideCursor);
-      stdout.write(moveCursor);
-    } catch {
-      // No hay nada más que hacer si no podemos escribir a stdout.
+    if (!imagePath) {
+      setLines([]);
+      setLoading(false);
+      return;
     }
 
+    setLoading(true);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    if (!mountedRef.current || abortController.signal.aborted) return;
+
     try {
-      const sharpModule = await import('sharp');
-      const sharpFn = sharpModule.default;
-      const buffer = await sharpFn(imagePath)
-        .resize(width * 16, height * 32, {
-          fit: 'contain',
-          kernel: sharpFn.kernel.lanczos3,
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-        })
-        .toFormat('png')
-        .toBuffer();
+      const result = await imageToAnsi({ imagePath, width, height });
+      if (abortController.signal.aborted || !mountedRef.current) return;
 
-      if (!mountedRef.current) return;
-
-      const base64 = buffer.toString('base64');
-      const CHUNK_SIZE = 4096;
-      const chunks: string[] = [];
-      for (let i = 0; i < base64.length; i += CHUNK_SIZE) {
-        chunks.push(base64.slice(i, i + CHUNK_SIZE));
-      }
-
-      for (let index = 0; index < chunks.length; index += 1) {
-        const chunk = chunks[index] ?? '';
-        const isLast = index === chunks.length - 1;
-        const message = isLast ? '0' : '1';
-        const params = `a=T,f=100,t=d,c=${width},r=${height},i=${imageId},z=1,m=${message}`;
-        const sequence = `\x1b_G${params};${chunk}\x1b\\`;
-
-        try {
-          if (index === 0) {
-            stdout.write(moveCursor);
-          }
-          stdout.write(sequence);
-        } catch {
-          // Ignorar errores de escritura individual.
-        }
-
-        if (isLast) {
-          try {
-            stdout.write(showCursor);
-          } catch {
-            // No hay nada más que hacer.
-          }
-        }
+      if (result.lines.length > 0) {
+        setLines(result.lines);
+        setLoading(false);
+      } else {
+        setLines([]);
+        setLoading(false);
       }
     } catch {
-      try {
-        stdout.write(showCursor);
-      } catch {
-        // No hay nada más que hacer.
-      }
+      if (abortController.signal.aborted || !mountedRef.current) return;
+      setLines([]);
+      setLoading(false);
     }
-  }, [imagePath, width, height, placement, stdout]);
+  }, [imagePath, width, height]);
 
   useEffect(() => {
     mountedRef.current = true;
-    void drawPoster();
+    void renderPoster();
 
     return () => {
       mountedRef.current = false;
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      // Limpieza obligatoria: borrar la imagen por su ID.
-      if (imageIdRef.current !== null) {
-        try {
-          stdout.write(`\x1b_Ga=d,d,i,i=${imageIdRef.current}\x1b\\`);
-        } catch {
-          // Si el borrado falla, se ignora.
-        }
-      }
-      try {
-        stdout.write(showCursor);
-      } catch {
-        // No hay nada más que hacer.
-      }
+      abortRef.current?.abort();
     };
-  }, [imagePath, width, height, placement, stdout, drawPoster]);
+  }, [renderPoster]);
 
-  // Return únicamente un placeholder vacío; la imagen se dibuja sobre él vía stdout.
+  if (loading) {
+    return (
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        width={width}
+        height={height}
+        flexShrink={0}
+      >
+        <Text>{theme.muted('  [ PÓSTER ]')}</Text>
+        <Text>{theme.muted('  Cargando póster…')}</Text>
+      </Box>
+    );
+  }
+
+  if (lines.length > 0) {
+    return (
+      <Box
+        borderStyle="round"
+        borderColor={theme.border}
+        width={width}
+        height={height}
+        flexShrink={0}
+        flexDirection="column"
+      >
+        {lines.map((line: string, index: number) => (
+          <Text key={index} wrap="truncate-end">
+            {line}
+          </Text>
+        ))}
+      </Box>
+    );
+  }
+
   return (
-    <Box borderColor="gray" borderStyle="round" flexShrink={0} height={height} width={width} />
+    <Box
+      borderStyle="round"
+      borderColor={theme.border}
+      width={width}
+      height={height}
+      flexShrink={0}
+    >
+      <Text>{theme.muted('  [ PÓSTER ]')}</Text>
+      <Text>{theme.muted(imagePath ? '  (póster no disponible en disco)' : '  (sin póster)')}</Text>
+    </Box>
   );
 }
 
@@ -376,33 +327,24 @@ export function PosterImage({
   width,
   height,
   mode = 'auto',
-  placement = 'right',
 }: PosterImageProps): React.JSX.Element {
   const { width: posterWidth, height: posterHeight } = computePosterSize();
   const resolvedWidth: number = width ?? posterWidth;
   const resolvedHeight: number = height ?? posterHeight;
 
-  const capability = detectGraphicsCapability();
-  const useNative =
-    mode === 'native' ||
-    (mode === 'auto' &&
-      capability === 'native' &&
-      typeof imagePath === 'string' &&
-      imagePath.length > 0);
+  // Siempre renderizamos dentro del flujo de Ink para que el póster quede
+  // exactamente en la posición que el layout de Ink le asigne. El modo
+  // 'native' (overlay de stdout con protocolo Kitty) no puede posicionarse
+  // con precisión dentro de un <Box> de Ink porque Ink no expone las
+  // coordenadas físicas de pantalla de sus componentes.
 
-  // Modo nativo: overlay sobre stdout con coordenadas aproximadas.
-  // Solo se activa explícitamente o en terminales detectadas como nativas.
-  if (useNative && typeof imagePath === 'string' && imagePath.length > 0) {
-    return (
-      <NativePosterImage
-        imagePath={imagePath}
-        width={resolvedWidth}
-        height={resolvedHeight}
-        placement={placement}
-      />
-    );
+  if (!imagePath) {
+    return <SharpPosterImage imagePath="" width={resolvedWidth} height={resolvedHeight} />;
   }
 
-  // Modo symbols: chafa dentro del Box de Ink (posicionamiento perfecto).
-  return <ChafaPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />;
+  if (mode === 'symbols') {
+    return <ChafaPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />;
+  }
+
+  return <SharpPosterImage imagePath={imagePath} width={resolvedWidth} height={resolvedHeight} />;
 }
