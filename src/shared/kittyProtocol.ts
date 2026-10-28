@@ -58,6 +58,11 @@ export type KittyFrame = {
 export async function encodeKittyGraphic(options: KittyEncodeOptions): Promise<KittyFrame[]> {
   const { imagePath, widthPx, heightPx, columns, rows, imageId } = options;
 
+  // Validación defensiva: la ruta debe ser un string no vacío.
+  if (typeof imagePath !== 'string' || imagePath.length === 0) {
+    throw new Error('Ruta de imagen inválida: se esperaba un string no vacío.');
+  }
+
   // Leer el fichero como Buffer.
   const buffer = await readFileBuffer(imagePath);
 

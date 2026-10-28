@@ -105,11 +105,20 @@ export function PosterImage({
           const showCursor = '\x1b[?25h';
           const moveCursor = `\x1b[${posterY};${posterX}H`;
 
-          stdout.write(hideCursor);
-          for (const frame of frames) {
-            stdout.write(moveCursor + frame.sequence);
+          try {
+            stdout.write(hideCursor);
+            for (const frame of frames ?? []) {
+              stdout.write(moveCursor + frame.sequence);
+            }
+            stdout.write(showCursor);
+          } catch {
+            // Si escribir a stdout falla (terminal cerrada, etc.), se ignora.
+            try {
+              stdout.write(showCursor);
+            } catch {
+              // No hay nada más que hacer.
+            }
           }
-          stdout.write(showCursor);
         } catch {
           // Si falla el codificado nativo, se queda sin póster (sin fallback a chafa
           // en modo nativo: el modo nativo es exclusivo de terminales gráficas).
@@ -123,9 +132,17 @@ export function PosterImage({
         // CRÍTICO: borrar la imagen gráfica de Kitty para este ID al desmontar
         // o cambiar de imagen, evitando artefactos flotantes.
         if (imageIdRef.current !== null) {
-          stdout.write(deleteKittyImage(imageIdRef.current));
+          try {
+            stdout.write(deleteKittyImage(imageIdRef.current));
+          } catch {
+            // Si el borrado falla, se ignora.
+          }
         }
-        stdout.write('\x1b[?25h');
+        try {
+          stdout.write('\x1b[?25h');
+        } catch {
+          // No hay nada más que hacer.
+        }
       };
     }, [imagePath, width, height, posterX, posterY, imageId, stdout]);
 
