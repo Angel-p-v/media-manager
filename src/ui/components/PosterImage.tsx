@@ -71,12 +71,6 @@ export function PosterImage({
   const posterX = Math.max(0, columns - width - marginRight) + offsetX;
   const posterY = Math.max(1, 1 + offsetY);
 
-  // Refs para limpieza del área anterior antes de escribir un nuevo gráfico
-  const lastXRef = useRef<number | null>(null);
-  const lastYRef = useRef<number | null>(null);
-  const lastWidthRef = useRef<number | null>(null);
-  const lastHeightRef = useRef<number | null>(null);
-
   const renderPoster = useCallback(async (): Promise<void> => {
     if (!mountedRef.current) return;
 
@@ -142,56 +136,36 @@ export function PosterImage({
   useEffect(() => {
     if (!poster?.output || poster.format !== 'kitty') return;
 
-    const hideCursor = '\x1b[?25l';
-    const showCursor = '\x1b[?25h';
-    const moveCursor = `\x1b[${posterY};${posterX}H`;
+    const timer = setTimeout(() => {
+      const hideCursor = '\x1b[?25l';
+      const showCursor = '\x1b[?25h';
+      const moveCursor = `\x1b[${posterY};${posterX}H`;
 
-    // Limpiar el área anterior antes de escribir el nuevo gráfico.
-    // Escribir espacios en blanco sobre el área del póster previo para
-    // borrar el gráfico anterior (Kitty SGP imprime imágenes en el buffer,
-    // escribir texto sobre ellas las cubre visualmente).
-    if (
-      lastXRef.current !== null &&
-      lastYRef.current !== null &&
-      lastWidthRef.current !== null &&
-      lastHeightRef.current !== null
-    ) {
-      const clearLines: string[] = [];
-      for (let r = 0; r < lastHeightRef.current; r += 1) {
-        const clearMove = `\x1b[${lastYRef.current + r};${lastXRef.current}H`;
-        clearLines.push(clearMove + ' '.repeat(lastWidthRef.current));
-      }
-      process.stdout.write(clearLines.join(''));
-    }
+      // Inyectar Z-Index z=1 para que el gráfico Kitty se dibuje por encima
+      // del texto/base de Ink (capa z=0).
+      const esc = String.fromCharCode(27);
+      const kittyOutputWithZ = poster.output.replace(new RegExp(`${esc}_G`, 'g'), `${esc}_Gz=1,`);
 
-    // Escribir el nuevo gráfico nativo directamente a stdout.
-    process.stdout.write(hideCursor);
-    process.stdout.write(moveCursor);
-    process.stdout.write(poster.output);
-    process.stdout.write(showCursor);
+      // Limpieza estricta: borrar imágenes Kitty previas usando la secuencia
+      // de delete all del protocolo Kitty. Escribir espacios ya no basta
+      // cuando la imagen está en z=1.
+      process.stdout.write(`${esc}_Ga=d;${esc}\\`);
 
-    // Guardar coordenadas para limpieza futura cuando cambie la imagen.
-    lastXRef.current = posterX;
-    lastYRef.current = posterY;
-    lastWidthRef.current = width;
-    lastHeightRef.current = height;
+      // Pequeña pausa para que el borrado se procese antes de proyectar.
+      setTimeout(() => {
+        process.stdout.write(hideCursor);
+        process.stdout.write(moveCursor);
+        process.stdout.write(kittyOutputWithZ);
+        process.stdout.write(showCursor);
+      }, 10);
+    }, 50);
 
     return () => {
+      clearTimeout(timer);
       // Limpieza al desmontar el componente o al cambiar de imagen.
-      if (
-        lastXRef.current !== null &&
-        lastYRef.current !== null &&
-        lastWidthRef.current !== null &&
-        lastHeightRef.current !== null
-      ) {
-        const clearLines: string[] = [];
-        for (let r = 0; r < lastHeightRef.current; r += 1) {
-          const clearMove = `\x1b[${lastYRef.current + r};${lastXRef.current}H`;
-          clearLines.push(clearMove + ' '.repeat(lastWidthRef.current));
-        }
-        process.stdout.write(clearLines.join(''));
-        process.stdout.write(showCursor);
-      }
+      const esc2 = String.fromCharCode(27);
+      process.stdout.write(`${esc2}_Ga=d;${esc2}\\`);
+      process.stdout.write('\x1b[?25h');
     };
   }, [poster?.output, poster?.format, posterX, posterY, width, height]);
 
