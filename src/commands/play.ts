@@ -65,7 +65,7 @@ export async function runPlayCommand(query: string, options: PlayCommandOptions)
 
     if (options.next) {
       if (!isEpisodic(media.type)) {
-        throw new ValidationError('La opción --next solo está disponible para series y anime.');
+        throw new ValidationError('La opción --next solo está disponible para series.');
       }
       const current = selectMediaFile(files, options.file);
       const next = findNextEpisode(current, files, playbackRepo, playbackConfig);

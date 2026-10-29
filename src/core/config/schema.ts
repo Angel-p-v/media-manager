@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /** Tipos de contenido que la biblioteca puede contener. */
-export const mediaTypeSchema = z.enum(['series', 'anime', 'movie', 'unknown']);
+export const mediaTypeSchema = z.enum(['series', 'movie', 'unknown']);
 
 export type MediaType = z.infer<typeof mediaTypeSchema>;
 

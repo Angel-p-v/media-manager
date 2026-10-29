@@ -39,14 +39,7 @@ export type AppProps = {
   onIndex?: (newConfig: AppConfig) => Promise<void>;
 };
 
-const SECTION_ORDER: readonly Section[] = [
-  'all',
-  'in-progress',
-  'favorites',
-  'series',
-  'anime',
-  'movie',
-];
+const SECTION_ORDER: readonly Section[] = ['all', 'in-progress', 'favorites', 'series', 'movie'];
 
 const VIEW_TITLE: Record<ViewName, string> = {
   library: 'Biblioteca',
@@ -96,7 +89,7 @@ function AppImpl({
   /** ID del título abierto en la vista de detalles de reproducción (play-details). */
   const [playDetailsMediaId, setPlayDetailsMediaId] = useState<number | null>(null);
   /** Clave de refresco de metadatos: se incrementa tras obtener metadatos externos para
-   *  forzar a MediaDetails a volver a leer de la BD y mostrar el póster recién descargado. */
+   *  forzar a MediaDetails y PlayDetails a volver a leer de la BD y mostrar la sinopsis actualizada. */
   const [metadataRefreshKey, setMetadataRefreshKey] = useState(0);
   /** Versión de datos: se incrementa tras indexar para forzar la re-lectura de la BD. */
   const [dataVersion, setDataVersion] = useState(0);
@@ -126,12 +119,11 @@ function AppImpl({
         'in-progress': stats.inProgress,
         favorites: favoritesCount,
         series: stats.media.series,
-        anime: stats.media.anime,
         movie: stats.media.movie,
         unknown: stats.media.unknown,
       };
     } catch {
-      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, anime: 0, movie: 0, unknown: 0 };
+      return { all: 0, 'in-progress': 0, favorites: 0, series: 0, movie: 0, unknown: 0 };
     }
   }, [library]);
 

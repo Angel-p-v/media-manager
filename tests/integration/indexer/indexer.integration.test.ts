@@ -44,7 +44,7 @@ describe('indexLibrary (integración)', () => {
     return {
       roots: [
         { path: path.join(libraryDir, 'series'), type: 'series' },
-        { path: path.join(libraryDir, 'anime'), type: 'anime' },
+        { path: path.join(libraryDir, 'anime'), type: 'series' },
         { path: path.join(libraryDir, 'movies'), type: 'movie' },
       ],
       exclude: defaultConfig.library.exclude,
@@ -93,7 +93,7 @@ describe('indexLibrary (integración)', () => {
     expect(fileRepo.listByMedia(dark!.id)).toHaveLength(2);
 
     const frieren = mediaRepo.findByFolderPath(path.join(libraryDir, 'anime', 'Frieren'));
-    expect(frieren).toMatchObject({ type: 'anime', title: 'Frieren' });
+    expect(frieren).toMatchObject({ type: 'series', title: 'Frieren' });
     expect(fileRepo.listByMedia(frieren!.id)).toMatchObject([
       { season: null, episode: 3 },
       { season: null, episode: 4 },
@@ -260,7 +260,7 @@ describe('indexLibrary (integración)', () => {
     const duplicated = library({
       roots: [
         { path: path.join(libraryDir, 'series'), type: 'series' },
-        { path: path.join(libraryDir, 'series'), type: 'anime' },
+        { path: path.join(libraryDir, 'series'), type: 'series' },
       ],
     });
 

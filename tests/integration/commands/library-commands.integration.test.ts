@@ -31,7 +31,7 @@ describe('comandos de consulta (integración)', () => {
         `    - path: ${quote(path.join(FIXTURES, 'series'))}`,
         '      type: series',
         `    - path: ${quote(path.join(FIXTURES, 'anime'))}`,
-        '      type: anime',
+        '      type: series',
         `    - path: ${quote(path.join(FIXTURES, 'movies'))}`,
         '      type: movie',
         'database:',
@@ -190,7 +190,7 @@ describe('comandos de consulta (integración)', () => {
 
     expect(output).toContain('Base de datos');
     expect(output).toContain('5 títulos · 8 ficheros');
-    expect(output).toContain('2 series · 1 anime · 2 películas');
+    expect(output).toContain('3 series · 2 películas');
     expect(output).toContain('#1 completed');
   });
 
@@ -198,14 +198,14 @@ describe('comandos de consulta (integración)', () => {
     const json = await capture(() => runDbStatsCommand({ config: configPath, json: true }));
     const payload = JSON.parse(json) as {
       database: { path: string; sizeBytes: number };
-      media: { total: number; series: number; anime: number; movie: number };
+      media: { total: number; series: number; movie: number; unknown: number };
       files: number;
       lastRun: { status: string; filesSeen: number; filesAdded: number };
     };
 
     expect(payload.database.path).toBe(path.join(workDir, 'library.db'));
     expect(payload.database.sizeBytes).toBeGreaterThan(0);
-    expect(payload.media).toEqual({ total: 5, series: 2, anime: 1, movie: 2, unknown: 0 });
+    expect(payload.media).toEqual({ total: 5, series: 3, movie: 2, unknown: 0 });
     expect(payload.files).toBe(8);
     expect(payload.lastRun).toMatchObject({
       status: 'completed',

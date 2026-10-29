@@ -126,7 +126,7 @@ function resolveResumeDecisionImpl(options: ResumeOptions): ResumeDecision {
 }
 
 /**
- * Encuentra el siguiente episodio no completado de una serie/anime.
+ * Encuentra el siguiente episodio no completado de una serie.
  * Los especiales (season = 0) no se mezclan con la temporada regular.
  * Devuelve `null` si no hay siguiente (último episodio, película, o todos vistos).
  */
@@ -183,11 +183,11 @@ function findNextEpisodeImpl(
 }
 
 /**
- * Normaliza el tipo de contenido para comparaciones. `series` y `anime`
- * se tratan igual para buscar el siguiente episodio.
+ * Normaliza el tipo de contenido para comparaciones. `series`
+ * se trata como contenido episódico para buscar el siguiente episodio.
  */
 function isEpisodicImpl(type: MediaType): boolean {
-  return type === 'series' || type === 'anime';
+  return type === 'series';
 }
 
 /**

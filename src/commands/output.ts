@@ -23,7 +23,6 @@ export type MediaFileJson = {
 
 const TYPE_LABEL: Record<MediaType, string> = {
   series: 'serie',
-  anime: 'anime',
   movie: 'película',
   unknown: 'desconocido',
 };

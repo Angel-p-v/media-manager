@@ -67,7 +67,7 @@ describeUnix('backup antes de migrar (integración)', () => {
 
     const db = openDatabase(dbPath, { now });
     try {
-      expect(appliedVersions(db)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+      expect(appliedVersions(db)).toEqual([1, 2, 3, 4, 5, 7, 8]);
       expect(db.prepare('SELECT COUNT(*) AS total FROM media').get()).toEqual({ total: 1 });
       expect(db.prepare('SELECT COUNT(*) AS total FROM media_files').get()).toEqual({ total: 1 });
     } finally {
