@@ -2,7 +2,6 @@ import { Box, Text } from 'ink';
 import React, { useEffect, useState } from 'react';
 
 import { shortenPath, theme } from '../theme.js';
-import { PosterImage } from './PosterImage.js';
 
 import type { MediaMetadataRow } from '../../core/db/repositories/metadataRepo.js';
 import type { LibraryService, MediaDetails as Details } from '../../core/library/service.js';
@@ -112,17 +111,6 @@ export function MediaDetails({
               <Text>{theme.muted('  Pulsa «r» para obtener metadatos externos.')}</Text>
             </>
           )}
-        </Box>
-
-        {/* ==================== Izquierda: póster (abajo a la derecha) ==================== */}
-        <Box
-          flexDirection="column"
-          flexGrow={1}
-          flexShrink={0}
-          marginLeft={2}
-          justifyContent="flex-end"
-        >
-          <PosterImage imagePath={metadata?.localPosterPath ?? null} />
         </Box>
       </Box>
     </Box>

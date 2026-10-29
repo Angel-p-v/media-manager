@@ -65,8 +65,8 @@ describe('salida de la CLI', () => {
 
   it('traduce el tipo de contenido a una etiqueta legible', () => {
     expect(mediaTypeLabel('series')).toBe('serie');
-    expect(mediaTypeLabel('anime')).toBe('anime');
     expect(mediaTypeLabel('movie')).toBe('película');
+    expect(mediaTypeLabel('unknown')).toBe('desconocido');
   });
 
   it.each([

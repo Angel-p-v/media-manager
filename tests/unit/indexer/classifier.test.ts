@@ -6,7 +6,7 @@ import { isVideoFile } from '../../../src/core/indexer/video.js';
 import type { LibraryRoot } from '../../../src/core/config/schema.js';
 
 const seriesRoot: LibraryRoot = { path: '/media/series', type: 'series' };
-const animeRoot: LibraryRoot = { path: '/media/anime', type: 'anime' };
+const animeRoot: LibraryRoot = { path: '/media/anime', type: 'series' };
 const movieRoot: LibraryRoot = { path: '/media/movies', type: 'movie' };
 
 function classify(root: LibraryRoot, filePath: string): ReturnType<typeof classifyFile> {
@@ -30,11 +30,11 @@ describe('classifyFile', () => {
     });
   });
 
-  it('usa la numeración absoluta en anime', () => {
+  it('usa la numeración absoluta en serie', () => {
     const result = classify(animeRoot, '/media/anime/Frieren/[SubsPlease] Frieren - 03.mkv');
 
     expect(result).toMatchObject({
-      type: 'anime',
+      type: 'series',
       title: 'Frieren',
       year: null,
       folderPath: '/media/anime/Frieren',

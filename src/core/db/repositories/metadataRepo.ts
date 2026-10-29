@@ -8,16 +8,12 @@ export type MediaMetadataRow = {
   externalId: number;
   title: string | null;
   overview: string | null;
-  posterPath: string | null;
-  backdropPath: string | null;
   voteAverage: number | null;
   firstAirDate: string | null;
   releaseDate: string | null;
   originalLanguage: string | null;
   fetchedAt: string;
   updatedAt: string;
-  /** Ruta local al póster descargado en caché, si existe. */
-  localPosterPath: string | null;
 };
 
 type MetadataDbRow = {
@@ -26,15 +22,12 @@ type MetadataDbRow = {
   external_id: number;
   title: string | null;
   overview: string | null;
-  poster_path: string | null;
-  backdrop_path: string | null;
   vote_average: number | null;
   first_air_date: string | null;
   release_date: string | null;
   original_language: string | null;
   fetched_at: string;
   updated_at: string;
-  local_poster_path: string | null;
 };
 
 export type SetMetadataInput = {
@@ -43,14 +36,11 @@ export type SetMetadataInput = {
   externalId: number;
   title?: string | null;
   overview?: string | null;
-  posterPath?: string | null;
-  backdropPath?: string | null;
   voteAverage?: number | null;
   firstAirDate?: string | null;
   releaseDate?: string | null;
   originalLanguage?: string | null;
   updatedAt: string;
-  localPosterPath?: string | null;
 };
 
 /** Repositorio de metadatos externos (TMDB/TVDB). */
@@ -73,27 +63,22 @@ export type MetadataRepository = {
 export function createMetadataRepository(db: Db): MetadataRepository {
   const setStatement = db.prepare(`
     INSERT INTO media_metadata (
-      media_id, provider, external_id, title, overview, poster_path, backdrop_path,
-      vote_average, first_air_date, release_date, original_language, fetched_at, updated_at,
-      local_poster_path
+      media_id, provider, external_id, title, overview, vote_average,
+      first_air_date, release_date, original_language, fetched_at, updated_at
     )
-    VALUES (@media_id, @provider, @external_id, @title, @overview, @poster_path, @backdrop_path,
-            @vote_average, @first_air_date, @release_date, @original_language, @fetched_at, @updated_at,
-            @local_poster_path)
+    VALUES (@media_id, @provider, @external_id, @title, @overview, @vote_average,
+            @first_air_date, @release_date, @original_language, @fetched_at, @updated_at)
     ON CONFLICT(media_id) DO UPDATE SET
       provider = excluded.provider,
       external_id = excluded.external_id,
       title = excluded.title,
       overview = excluded.overview,
-      poster_path = excluded.poster_path,
-      backdrop_path = excluded.backdrop_path,
       vote_average = excluded.vote_average,
       first_air_date = excluded.first_air_date,
       release_date = excluded.release_date,
       original_language = excluded.original_language,
       fetched_at = excluded.fetched_at,
-      updated_at = excluded.updated_at,
-      local_poster_path = excluded.local_poster_path
+      updated_at = excluded.updated_at
     RETURNING *
   `);
 
@@ -109,15 +94,12 @@ export function createMetadataRepository(db: Db): MetadataRepository {
     externalId: row.external_id,
     title: row.title,
     overview: row.overview,
-    posterPath: row.poster_path,
-    backdropPath: row.backdrop_path,
     voteAverage: row.vote_average,
     firstAirDate: row.first_air_date,
     releaseDate: row.release_date,
     originalLanguage: row.original_language,
     fetchedAt: row.fetched_at,
     updatedAt: row.updated_at,
-    localPosterPath: row.local_poster_path,
   });
 
   return {
@@ -139,15 +121,12 @@ export function createMetadataRepository(db: Db): MetadataRepository {
         external_id: input.externalId,
         title: input.title ?? null,
         overview: input.overview ?? null,
-        poster_path: input.posterPath ?? null,
-        backdrop_path: input.backdropPath ?? null,
         vote_average: input.voteAverage ?? null,
         first_air_date: input.firstAirDate ?? null,
         release_date: input.releaseDate ?? null,
         original_language: input.originalLanguage ?? null,
         fetched_at: now,
         updated_at: input.updatedAt,
-        local_poster_path: input.localPosterPath ?? null,
       }) as MetadataDbRow | undefined;
 
       if (!row) throw new DbError('No se pudieron guardar los metadatos');

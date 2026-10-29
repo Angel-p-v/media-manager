@@ -39,7 +39,7 @@ describe('mm (e2e, binario compilado)', () => {
         `    - path: ${quote(path.join(FIXTURES, 'series'))}`,
         '      type: series',
         `    - path: ${quote(path.join(FIXTURES, 'anime'))}`,
-        '      type: anime',
+        '      type: series',
         `    - path: ${quote(path.join(FIXTURES, 'movies'))}`,
         '      type: movie',
         'database:',

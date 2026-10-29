@@ -317,10 +317,10 @@ describe('playback domain', () => {
   });
 
   describe('isEpisodic', () => {
-    it('true para series y anime', () => {
+    it('true solo para series', () => {
       expect(isEpisodic('series')).toBe(true);
-      expect(isEpisodic('anime')).toBe(true);
       expect(isEpisodic('movie')).toBe(false);
+      expect(isEpisodic('unknown')).toBe(false);
     });
   });
 

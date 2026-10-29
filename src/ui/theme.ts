@@ -67,7 +67,6 @@ export function createTheme(colors: ThemeColors): Theme {
     value: (text) => pc.white(text),
     type: (type) => {
       if (type === 'series') return pc.blue('serie');
-      if (type === 'anime') return pc.magenta('anime');
       return pc.yellow('película');
     },
   };
@@ -89,7 +88,6 @@ export const defaultTheme: Theme = {
   value: (text) => pc.white(text),
   type: (type) => {
     if (type === 'series') return pc.blue('serie');
-    if (type === 'anime') return pc.magenta('anime');
     return pc.yellow('película');
   },
 };
@@ -110,7 +108,6 @@ export const darkTheme: Theme = {
   value: (text) => pc.white(text),
   type: (type) => {
     if (type === 'series') return pc.blue('serie');
-    if (type === 'anime') return pc.magenta('anime');
     return pc.yellow('película');
   },
 };
@@ -131,7 +128,6 @@ export const lightTheme: Theme = {
   value: (text) => pc.black(text),
   type: (type) => {
     if (type === 'series') return pc.blue('serie');
-    if (type === 'anime') return pc.magenta('anime');
     return pc.yellow('película');
   },
 };

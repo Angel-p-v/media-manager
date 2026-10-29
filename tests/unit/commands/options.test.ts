@@ -10,13 +10,13 @@ import {
 
 describe('opciones de la CLI', () => {
   describe('parseMediaType', () => {
-    it.each(['series', 'anime', 'movie'] as const)('acepta %s', (value) => {
+    it.each(['series', 'movie'] as const)('acepta %s', (value) => {
       expect(parseMediaType(value)).toBe(value);
     });
 
     it('rechaza un tipo desconocido', () => {
       expect(() => parseMediaType('libros')).toThrow(InvalidArgumentError);
-      expect(() => parseMediaType('libros')).toThrow(/series, anime o movie/);
+      expect(() => parseMediaType('libros')).toThrow(/series o movie/);
     });
   });
 

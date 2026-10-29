@@ -2,7 +2,6 @@ import { Box, Text, useApp, useInput } from 'ink';
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { readVideoMediaInfo } from '../../core/video/ffprobe.js';
-import { PosterImage } from '../components/PosterImage.js';
 import { theme } from '../theme.js';
 
 import type { MediaMetadataRow } from '../../core/db/repositories/metadataRepo.js';
@@ -34,7 +33,7 @@ export type RealSubtitleTrack = {
 export type PlayDetailsProps = {
   /** Título seleccionado en la biblioteca. */
   details: Details | null;
-  /** Servicio de biblioteca (para obtener metadatos y pósters cacheados). */
+  /** Servicio de biblioteca (para obtener metadatos). */
   library: LibraryService;
   /** Reproduce el fichero seleccionado con las pistas de audio/subtítulo elegidas. */
   onPlay: (input: {
@@ -49,8 +48,7 @@ export type PlayDetailsProps = {
 /**
  * Vista de detalles de reproducción tipo Jellyfin.
  *
- * Diseño (3 columnas flexibles + barra inferior):
- * - Izquierda: póster grande.
+ * Diseño (2 columnas flexibles + barra inferior):
  * - Centro: título, año, códec, sinopsis y listado de episodios con paginación.
  * - Derecha: selección de pista de audio (←→) y subtítulos (Mayús+←→).
  * - Abajo (ancho completo): barra de teclas de acción en filas separadas.
@@ -98,8 +96,6 @@ export function PlayDetails({
   const [fetchingMetadata, setFetchingMetadata] = useState(false);
   /** Error al obtener metadatos externos de la API pública (se muestra en el área de sinopsis). */
   const [externalMetadataError, setExternalMetadataError] = useState<string | null>(null);
-  /** Ruta local al póster cacheado del título (si existe). */
-  const [posterPath, setPosterPath] = useState<string | null>(null);
   /** Metadatos externos (TMDB/TVDB/AniList) del título. */
   const [metadata, setMetadata] = useState<MediaMetadataRow | null>(null);
 
@@ -113,8 +109,7 @@ export function PlayDetails({
   }
 
   const year = media.year === null ? '' : ` (${media.year})`;
-  const typeLabel =
-    media.type === 'series' ? 'serie' : media.type === 'anime' ? 'anime' : 'película';
+  const typeLabel = media.type === 'series' ? 'serie' : 'película';
 
   const selectedFile = files[selectedFileIndex];
   const selectedAudio = audioTracks[selectedAudioIndex ?? -1];
@@ -146,7 +141,6 @@ export function PlayDetails({
       // Refrescar estado local desde el repositorio tras la obtención.
       const saved = library.getMetadata(media.id);
       setMetadata(saved ?? null);
-      setPosterPath(saved?.localPosterPath ?? null);
     } catch (error) {
       setExternalMetadataError(
         error instanceof Error ? error.message : 'No se pudieron obtener los metadatos.',
@@ -201,17 +195,7 @@ export function PlayDetails({
     void loadFileMetadata(selectedFile);
   }, [selectedFile, loadFileMetadata]);
 
-  // Obtener el póster cacheado del título cuando cambian los detalles.
-  useEffect(() => {
-    if (media === null) {
-      setPosterPath(null);
-      return;
-    }
-    const saved = library.getMetadata(media.id);
-    setPosterPath(saved?.localPosterPath ?? null);
-  }, [media, library]);
-
-  // Obtener la sinopsis de los metadatos externos (TMDB/TVDB/AniList).
+  // Obtener la sinopsis de los metadatos externos (TMDB).
   useEffect(() => {
     if (media === null) return;
     const saved = library.getMetadata(media.id);
@@ -326,11 +310,6 @@ export function PlayDetails({
     <Box flexGrow={1} flexDirection="column">
       {/* ==================== Cuerpo principal (3 columnas flexibles) ==================== */}
       <Box flexGrow={1} flexDirection="row">
-        {/* Izquierda: póster grande */}
-        <Box flexDirection="column" paddingX={0} paddingY={1} flexShrink={0}>
-          <PosterImage imagePath={posterPath} />
-        </Box>
-
         {/* Centro: metadatos y episodios */}
         <Box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1} paddingY={1}>
           <Text>
@@ -362,7 +341,7 @@ export function PlayDetails({
             </>
           )}
 
-          {/* Sinopsis real de los metadatos externos (TMDB/Jikan) */}
+          {/* Sinopsis real de los metadatos externos (TVMaze) */}
           <Text>
             {theme.label('Sinopsis')}{' '}
             {fetchingMetadata

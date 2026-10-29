@@ -69,9 +69,7 @@ export async function runDbStatsCommand(options: DbStatsCommandOptions): Promise
     console.log('');
     console.log(pc.bold('Contenido'));
     console.log(`  ${stats.media.total} títulos · ${stats.files} ficheros`);
-    console.log(
-      `  ${stats.media.series} series · ${stats.media.anime} anime · ${stats.media.movie} películas`,
-    );
+    console.log(`  ${stats.media.series} series · ${stats.media.movie} películas`);
     console.log('');
     console.log(pc.bold('Última indexación'));
     if (stats.lastRun === null) {

@@ -162,15 +162,12 @@ function fakeMetadataRepository(): MetadataRepository {
       externalId: 0,
       title: '',
       overview: null,
-      posterPath: null,
-      backdropPath: null,
       voteAverage: null,
       firstAirDate: null,
       releaseDate: null,
       originalLanguage: null,
       fetchedAt: '',
       updatedAt: '',
-      localPosterPath: null,
     }),
     remove: () => false,
     removeAll: () => 0,
@@ -193,7 +190,6 @@ function fakeMetadataService(): MetadataService {
         title: '',
         overview: null,
         posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
@@ -215,7 +211,6 @@ function fakeMetadataService(): MetadataService {
         title: '',
         overview: null,
         posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
@@ -237,7 +232,6 @@ function fakeMetadataService(): MetadataService {
         title: '',
         overview: null,
         posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
@@ -382,7 +376,7 @@ describe('createLibraryService', () => {
       });
 
       expect(library.stats()).toEqual({
-        media: { total: 3, series: 2, anime: 0, movie: 0, unknown: 0 },
+        media: { total: 3, series: 2, movie: 0, unknown: 0 },
         files: 0,
         lastRun,
         inProgress: 0,
@@ -404,8 +398,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -417,8 +409,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -501,8 +491,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -514,8 +502,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -540,7 +526,6 @@ describe('createLibraryService', () => {
             setCalled = true;
             expect(input.provider).toBe('tvmaze');
             expect(input.externalId).toBe(123);
-            expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
             return {
               ...details,
               mediaId: input.mediaId,
@@ -553,7 +538,7 @@ describe('createLibraryService', () => {
         metadataService: {
           ...fakeMetadataService(),
           hasProviderConfigured: () => true,
-          isProviderConfigured: (provider: 'tvmaze' | 'jikan' | 'default') => provider === 'tvmaze',
+          isProviderConfigured: () => true,
           search: () => Promise.resolve([searchResult]),
           getDetails: () => Promise.resolve(details),
         } as unknown as MetadataService,
@@ -564,7 +549,6 @@ describe('createLibraryService', () => {
       expect(setCalled).toBe(true);
       expect(result?.title).toBe('Dark');
       expect(result?.provider).toBe('tvmaze');
-      expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
     });
 
     it('busca por título usando TMDB cuando hay metadatos del proveedor default sin póster y se configura API key de TMDB', async () => {
@@ -575,13 +559,12 @@ describe('createLibraryService', () => {
         title: 'Dark',
         overview: null,
         posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
         originalLanguage: null,
         localPosterPath: null,
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // Expirado
         updatedAt: '',
       };
 
@@ -590,8 +573,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -603,8 +584,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Dark',
         overview: 'Sinopsis de Dark',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -631,14 +610,13 @@ describe('createLibraryService', () => {
             setCalled = true;
             expect(input.provider).toBe('tvmaze');
             expect(input.externalId).toBe(123);
-            expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
             return { ...details, mediaId: input.mediaId, fetchedAt: '', updatedAt: '' };
           },
         },
         metadataService: {
           ...fakeMetadataService(),
           hasProviderConfigured: () => true,
-          isProviderConfigured: (provider: 'tvmaze' | 'jikan' | 'default') => provider === 'tvmaze',
+          isProviderConfigured: () => true,
           search: (query: string) => {
             searchCalled = true;
             expect(query).toBe('Dark');
@@ -658,7 +636,6 @@ describe('createLibraryService', () => {
       expect(setCalled).toBe(true);
       expect(result?.title).toBe('Dark');
       expect(result?.provider).toBe('tvmaze');
-      expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
     });
 
     it('no fuerza refresco si los metadatos no expiraron y ya tienen póster (TTL vigente)', async () => {
@@ -668,8 +645,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Título existente',
         overview: null,
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
@@ -724,13 +699,12 @@ describe('createLibraryService', () => {
         title: 'Título existente',
         overview: null,
         posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
         originalLanguage: null,
         localPosterPath: null, // Sin póster
-        fetchedAt: new Date().toISOString(), // Acabado de obtener (no expirado)
+        fetchedAt: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(), // Expirado
         updatedAt: '',
       };
 
@@ -739,8 +713,6 @@ describe('createLibraryService', () => {
         externalId: 123,
         title: 'Título existente',
         overview: 'Sinopsis obtenida de TMDB',
-        posterPath: '/poster.jpg',
-        backdropPath: null,
         voteAverage: 8.5,
         releaseDate: '2017-12-01',
         firstAirDate: null,
@@ -763,7 +735,6 @@ describe('createLibraryService', () => {
           get: () => existing,
           set: (input: SetMetadataInput) => {
             setCalled = true;
-            expect(input.localPosterPath).toBe('/cache/123-poster.jpg');
             return {
               ...details,
               mediaId: input.mediaId,
@@ -785,7 +756,6 @@ describe('createLibraryService', () => {
 
       const result = await library.getOrFetchMetadata(1);
       expect(setCalled).toBe(true); // Se forzó el refresco para obtener el póster
-      expect(result?.localPosterPath).toBe('/cache/123-poster.jpg');
       expect(result?.overview).toBe('Sinopsis obtenida de TMDB');
     });
   });
@@ -859,7 +829,6 @@ describe('createLibraryService', () => {
         title: 'Dark',
         overview: 'Sinopsis',
         posterPath: null,
-        backdropPath: null,
         voteAverage: 8.5,
         firstAirDate: null,
         releaseDate: '2017-12-01',
@@ -902,7 +871,6 @@ describe('createLibraryService', () => {
               title: 'Dark',
               overview: null,
               posterPath: null,
-              backdropPath: null,
               voteAverage: null,
               releaseDate: null,
               originalLanguage: null,
@@ -929,7 +897,6 @@ describe('createLibraryService', () => {
         title: 'Dark',
         overview: null,
         posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
@@ -978,7 +945,6 @@ describe('createLibraryService', () => {
         title: 'Dark',
         overview: 'Sinopsis vieja',
         posterPath: 'https://static.tvmaze.com/uploads/images/original/123.jpg',
-        backdropPath: null,
         voteAverage: null,
         firstAirDate: null,
         releaseDate: null,
@@ -1025,7 +991,6 @@ describe('createLibraryService', () => {
                 title: 'Dark',
                 overview: 'Sinopsis fresca de Dark',
                 posterPath: 'https://static.tvmaze.com/uploads/images/original/456.jpg',
-                backdropPath: null,
                 voteAverage: 8.5,
                 releaseDate: '2017-12-01',
                 originalLanguage: 'de',
@@ -1072,7 +1037,6 @@ describe('createLibraryService', () => {
                 title: 'Dark',
                 overview: 'Sinopsis fresca de Dark',
                 posterPath: 'https://static.tvmaze.com/uploads/images/original/456.jpg',
-                backdropPath: null,
                 voteAverage: 8.5,
                 releaseDate: '2017-12-01',
                 originalLanguage: 'de',
@@ -1111,7 +1075,6 @@ describe('createLibraryService', () => {
             title: 'Dark',
             overview: '',
             posterPath: null,
-            backdropPath: null,
             voteAverage: null,
             firstAirDate: null,
             releaseDate: null,
@@ -1135,7 +1098,6 @@ describe('createLibraryService', () => {
             title: 'Dark',
             overview: '',
             posterPath: null,
-            backdropPath: null,
             voteAverage: null,
             releaseDate: null,
             originalLanguage: null,

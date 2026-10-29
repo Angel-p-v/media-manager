@@ -39,8 +39,8 @@ describe('migraciones de esquema (integración)', () => {
         { version: 3, name: 'playback-and-preferences' },
         { version: 4, name: 'tags-and-collections' },
         { version: 5, name: 'external-metadata' },
-        { version: 6, name: 'poster-cache' },
         { version: 7, name: 'metadata-provider-update' },
+        { version: 8, name: 'anime-to-series' },
       ]);
 
       expect(db.prepare('SELECT COUNT(*) AS total FROM media').get()).toEqual({ total: 1 });
@@ -97,8 +97,8 @@ describe('migraciones de esquema (integración)', () => {
         { version: 3, name: 'playback-and-preferences' },
         { version: 4, name: 'tags-and-collections' },
         { version: 5, name: 'external-metadata' },
-        { version: 6, name: 'poster-cache' },
         { version: 7, name: 'metadata-provider-update' },
+        { version: 8, name: 'anime-to-series' },
       ]);
 
       const tables = db

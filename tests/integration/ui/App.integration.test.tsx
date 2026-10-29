@@ -44,7 +44,7 @@ const dark: MediaRow = {
 const frieren: MediaRow = {
   ...severance,
   id: 3,
-  type: 'anime',
+  type: 'series',
   title: 'Frieren',
   sortTitle: 'frieren',
   year: 2023,
@@ -152,7 +152,6 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       media: {
         total: rows.length,
         series: rows.filter((row) => row.type === 'series').length,
-        anime: rows.filter((row) => row.type === 'anime').length,
         movie: rows.filter((row) => row.type === 'movie').length,
         unknown: rows.filter((row) => row.type === 'unknown').length,
       },
@@ -176,10 +175,7 @@ function fakeLibrary(rows: MediaRow[] = defaultRows): LibraryService {
       externalId: 0,
       title: null,
       overview: null,
-      posterPath: null,
-      backdropPath: null,
       voteAverage: null,
-      localPosterPath: null,
       firstAirDate: null,
       releaseDate: null,
       originalLanguage: null,

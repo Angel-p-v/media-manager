@@ -50,7 +50,7 @@ describe('comando mm config (integración)', () => {
         'library:',
         '  roots:',
         '    - path: /media/anime',
-        '      type: anime',
+        '      type: series',
         'player:',
         '  default: vlc',
         '',

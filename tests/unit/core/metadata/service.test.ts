@@ -28,7 +28,6 @@ describe('MetadataService (TVMaze - proveedor público gratuito)', () => {
   it('isProviderConfigured devuelve true para todos los proveedores públicos', () => {
     const service = new MetadataService({ logger });
     expect(service.isProviderConfigured('tvmaze')).toBe(true);
-    expect(service.isProviderConfigured('jikan')).toBe(true);
     expect(service.isProviderConfigured('default')).toBe(true);
   });
 
@@ -69,7 +68,6 @@ describe('MetadataService (TVMaze - proveedor público gratuito)', () => {
     expect(results[0]!.voteAverage).toBe(8.5);
     expect(results[0]!.releaseDate).toBe('2022-02-18');
     expect(results[0]!.originalLanguage).toBe('English');
-    expect(results[0]!.posterPath).toBeNull();
   });
 
   it('searchTvMaze devuelve array vacío cuando TVMaze responde 404', async () => {
@@ -119,7 +117,6 @@ describe('MetadataService (TVMaze - proveedor público gratuito)', () => {
     expect(details.voteAverage).toBe(8.5);
     expect(details.releaseDate).toBe('2022-02-18');
     expect(details.originalLanguage).toBe('English');
-    expect(details.posterPath).toBe('https://static.tvmaze.com/uploads/images/original/123.jpg');
   });
 
   it('getTvMazeDetails trata imagen nula como null', async () => {
@@ -150,7 +147,6 @@ describe('MetadataService (TVMaze - proveedor público gratuito)', () => {
     const service = new MetadataService({ logger });
     const details = await service.getTvMazeDetails(999);
 
-    expect(details.posterPath).toBeNull();
     expect(details.voteAverage).toBeNull();
     expect(details.releaseDate).toBeNull();
     expect(details.originalLanguage).toBeNull();
@@ -196,7 +192,7 @@ describe('MetadataService (TVMaze - proveedor público gratuito)', () => {
     const service = new MetadataService({ logger });
     const results = await service.search('Severance');
 
-    expect(fetchMockCalls()).toHaveLength(2);
+    expect(fetchMockCalls()).toHaveLength(1);
     expect(results.length).toBe(1);
     expect(results[0]!.provider).toBe('tvmaze');
   });
@@ -241,6 +237,5 @@ describe('MetadataService (TVMaze - proveedor público gratuito)', () => {
     expect(details.externalId).toBe(999);
     expect(details.title).toBe('');
     expect(details.overview).toBeNull();
-    expect(details.posterPath).toBeNull();
   });
 });

@@ -8,7 +8,7 @@ export type Migration = {
 const initSql = `
 CREATE TABLE IF NOT EXISTS media (
   id          INTEGER PRIMARY KEY,
-  type        TEXT    NOT NULL CHECK (type IN ('series', 'anime', 'movie')),
+  type        TEXT    NOT NULL CHECK (type IN ('series', 'movie')),
   title       TEXT    NOT NULL,
   sort_title  TEXT    NOT NULL,
   year        INTEGER,
@@ -123,16 +123,14 @@ CREATE INDEX IF NOT EXISTS idx_media_tags_tag ON media_tags(tag_id);
 CREATE INDEX IF NOT EXISTS idx_media_tags_media ON media_tags(media_id);
 `;
 
-// v5: metadatos externos (TMDB/TVDB/TVMaze/Jikan). Aditiva: tabla media_metadata.
+// v5: metadatos externos (TVMaze). Aditiva: tabla media_metadata.
 const metadataSql = `
 CREATE TABLE IF NOT EXISTS media_metadata (
   media_id         INTEGER PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE,
-  provider         TEXT    NOT NULL CHECK (provider IN ('tmdb', 'tvdb', 'tvmaze', 'jikan')),
+  provider         TEXT    NOT NULL CHECK (provider IN ('tmdb', 'tvmaze')),
   external_id      INTEGER NOT NULL,
   title            TEXT,
   overview         TEXT,
-  poster_path      TEXT,
-  backdrop_path    TEXT,
   vote_average     REAL,
   first_air_date   TEXT,
   release_date     TEXT,
@@ -144,35 +142,27 @@ CREATE TABLE IF NOT EXISTS media_metadata (
 CREATE INDEX IF NOT EXISTS idx_metadata_provider ON media_metadata(provider, external_id);
 `;
 
-// v6: caché local de imágenes. Aditiva: columna local_poster_path en media_metadata.
-const posterCacheSql = `
-ALTER TABLE media_metadata ADD COLUMN local_poster_path TEXT;
-`;
-
-// v7: actualizar CHECK constraint de provider para incluir tvmaze y jikan.
+// v7: actualizar CHECK constraint de provider para quitar proveedores eliminados.
 // SQLite no permite ALTER TABLE para modificar CHECK constraints, así que
-// recreamos la tabla copiando los datos existentes.
+// recreamos la tabla copiando los datos existentes (sin columnas de póster).
 const metadataProviderUpdateSql = `
 CREATE TABLE IF NOT EXISTS media_metadata_new (
   media_id         INTEGER PRIMARY KEY REFERENCES media(id) ON DELETE CASCADE,
-  provider         TEXT    NOT NULL CHECK (provider IN ('tmdb', 'tvdb', 'tvmaze', 'jikan')),
+  provider         TEXT    NOT NULL CHECK (provider IN ('tmdb', 'tvmaze')),
   external_id      INTEGER NOT NULL,
   title            TEXT,
   overview         TEXT,
-  poster_path      TEXT,
-  backdrop_path    TEXT,
   vote_average     REAL,
   first_air_date   TEXT,
   release_date     TEXT,
   original_language TEXT,
   fetched_at       TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at       TEXT NOT NULL,
-  local_poster_path TEXT
+  updated_at       TEXT NOT NULL
 );
 
 INSERT OR REPLACE INTO media_metadata_new
-SELECT media_id, provider, external_id, title, overview, poster_path, backdrop_path,
-       vote_average, first_air_date, release_date, original_language, fetched_at, updated_at, local_poster_path
+SELECT media_id, provider, external_id, title, overview, vote_average,
+       first_air_date, release_date, original_language, fetched_at, updated_at
 FROM media_metadata;
 
 DROP TABLE media_metadata;
@@ -182,12 +172,18 @@ ALTER TABLE media_metadata_new RENAME TO media_metadata;
 CREATE INDEX IF NOT EXISTS idx_metadata_provider ON media_metadata(provider, external_id);
 `;
 
+// v8: normalizar títulos de tipo 'anime' a 'series' tras eliminar el tipo
+// 'anime' del esquema. Aditiva: solo actualiza filas existentes.
+const animeToSeriesSql = `
+UPDATE media SET type = 'series' WHERE type = 'anime';
+`;
+
 export const migrations: readonly Migration[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'performance-indexes', sql: performanceIndexesSql },
   { version: 3, name: 'playback-and-preferences', sql: playbackAndPreferencesSql },
   { version: 4, name: 'tags-and-collections', sql: tagsSql },
   { version: 5, name: 'external-metadata', sql: metadataSql },
-  { version: 6, name: 'poster-cache', sql: posterCacheSql },
   { version: 7, name: 'metadata-provider-update', sql: metadataProviderUpdateSql },
+  { version: 8, name: 'anime-to-series', sql: animeToSeriesSql },
 ];

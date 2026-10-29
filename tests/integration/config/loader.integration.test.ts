@@ -18,7 +18,7 @@ describe('loadConfig (integración)', () => {
         'library:',
         '  roots:',
         '    - path: ./anime',
-        '      type: anime',
+        '      type: series',
         'database:',
         '  path: ./data/library.db',
         'player:',

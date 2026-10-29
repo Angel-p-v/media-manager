@@ -1,19 +1,16 @@
 import pc from 'picocolors';
 
 import { withCommandContext, type CommandOptions } from './context.js';
-import { clearPosterCache, DEFAULT_CACHE_DIR } from '../core/metadata/posterCache.js';
 import { MetadataService } from '../core/metadata/service.js';
 import { formatError } from '../shared/errors.js';
 
 export type MetadataCommandOptions = CommandOptions & {
-  action?: 'fetch' | 'search' | 'clear' | 'cache';
+  action?: 'fetch' | 'search' | 'clear';
   mediaId?: number;
   query?: string;
-  provider?: 'tvmaze' | 'jikan';
+  provider?: 'tvmaze' | 'default';
   externalId?: number;
   json?: boolean;
-  cacheClear?: boolean;
-  maxAgeDays?: number;
   dryRun?: boolean;
 };
 
@@ -26,7 +23,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
       case 'search': {
         if (!options.query) {
           console.error(
-            pc.red('Uso: mm metadata search <consulta> [--provider tvmaze|jikan] [--json]'),
+            pc.red('Uso: mm metadata search <consulta> [--provider tvmaze|default] [--json]'),
           );
           process.exitCode = 2;
           return;
@@ -58,7 +55,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
         if (!options.mediaId || !options.provider || !options.externalId) {
           console.error(
             pc.red(
-              'Uso: mm metadata fetch <id> --provider tvmaze|jikan --external-id <id> [--json]',
+              'Uso: mm metadata fetch <id> --provider tvmaze|default --external-id <id> [--json]',
             ),
           );
           process.exitCode = 2;
@@ -69,7 +66,7 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
           const details = await service.getDetails(
             options.externalId,
             options.provider,
-            options.provider === 'jikan' ? 'tv' : 'tv',
+            options.provider === 'default' ? 'tv' : 'tv',
           );
 
           const saved = library.setMetadata({
@@ -78,8 +75,6 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
             externalId: options.externalId,
             title: details.title,
             overview: details.overview,
-            posterPath: details.posterPath,
-            backdropPath: details.backdropPath,
             voteAverage: details.voteAverage,
             releaseDate: details.releaseDate,
             originalLanguage: details.originalLanguage,
@@ -152,50 +147,8 @@ export async function runMetadataCommand(options: MetadataCommandOptions): Promi
         }
         return;
       }
-      case 'cache': {
-        if (!options.cacheClear) {
-          console.error(pc.red('Uso: mm metadata cache --clear [--max-age-dias <n>] [--json]'));
-          process.exitCode = 2;
-          return;
-        }
-
-        const maxAgeDays = options.maxAgeDays ?? 30;
-
-        try {
-          const result = await clearPosterCache(DEFAULT_CACHE_DIR, maxAgeDays);
-
-          if (options.json) {
-            console.log(
-              JSON.stringify(
-                {
-                  action: 'cache-clear',
-                  deleted: result.deleted,
-                  errors: result.errors,
-                },
-                null,
-                2,
-              ),
-            );
-          } else {
-            console.log(
-              pc.green(
-                `Caché de pósters limpiado: ${result.deleted} archivo(s) eliminado(s) (más de ${maxAgeDays} días).`,
-              ),
-            );
-            if (result.errors.length > 0) {
-              console.error(
-                pc.yellow(`Se produjeron ${result.errors.length} error(es) al limpiar el caché.`),
-              );
-            }
-          }
-        } catch (error) {
-          console.error(pc.red(`Error limpiando caché: ${formatError(error)}`));
-          process.exitCode = 1;
-        }
-        return;
-      }
       default: {
-        console.error(pc.red('Uso: mm metadata <fetch|search|clear|cache> [opciones] [--json]'));
+        console.error(pc.red('Uso: mm metadata <fetch|search|clear> [opciones] [--json]'));
         process.exitCode = 2;
         return;
       }

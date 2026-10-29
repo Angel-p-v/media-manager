@@ -173,7 +173,7 @@ function setupTestData(db: Db) {
 
   // Media 3: anime, not favorite, in progress
   const m3 = insertMedia.run({
-    type: 'anime',
+    type: 'series',
     title: 'Anime C',
     sort_title: 'anime c',
     year: 2022,
@@ -236,7 +236,7 @@ function setupTestData(db: Db) {
 
   // Media 6: anime, favorite, never played
   const m6 = insertMedia.run({
-    type: 'anime',
+    type: 'series',
     title: 'Anime F',
     sort_title: 'anime f',
     year: 2024,
@@ -449,7 +449,7 @@ describe('MediaRepository filters', () => {
     it('combines with type filter', () => {
       const results = mediaRepo.list({ favorites: true, type: 'series' });
       const titles = results.map((r) => r.title).sort();
-      expect(titles).toEqual(['Series A', 'Series B']);
+      expect(titles).toEqual(['Anime F', 'Series A', 'Series B']);
     });
   });
 
@@ -479,9 +479,9 @@ describe('MediaRepository filters', () => {
     });
 
     it('combines with type filter', () => {
-      const results = mediaRepo.list({ inProgress: true, type: 'anime' });
+      const results = mediaRepo.list({ inProgress: true, type: 'series' });
       const titles = results.map((r) => r.title);
-      expect(titles).toEqual(['Anime C']);
+      expect(titles).toEqual(['Anime C', 'Series A']);
     });
   });
 
@@ -575,9 +575,9 @@ describe('MediaRepository filters', () => {
     });
 
     it('combines with type filter', () => {
-      const results = mediaRepo.list({ unwatched: true, type: 'anime' });
+      const results = mediaRepo.list({ unwatched: true, type: 'series' });
       const titles = results.map((r) => r.title).sort();
-      expect(titles).toEqual(['Anime C', 'Anime F']);
+      expect(titles).toEqual(['Anime C', 'Anime F', 'Series A', 'Series E']);
     });
   });
 
@@ -687,7 +687,7 @@ describe('MediaRepository filters', () => {
     it('combines with type filter', () => {
       const results = mediaRepo.list({ tags: [1], type: 'series' });
       const titles = results.map((r) => r.title).sort();
-      expect(titles).toEqual(['Series A', 'Series B']);
+      expect(titles).toEqual(['Anime F', 'Series A', 'Series B']);
     });
   });
 });

@@ -22,7 +22,6 @@
   "sidebar.in_progress": "Continuar",
   "sidebar.favorites": "Favoritos",
   "sidebar.series": "Series",
-  "sidebar.anime": "Anime",
   "sidebar.movie": "Películas",
 
   "list.no_items": "No hay títulos en esta sección. Ejecuta «mm index» para escanear tus carpetas.",

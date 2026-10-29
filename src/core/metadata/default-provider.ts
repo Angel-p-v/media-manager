@@ -23,12 +23,9 @@ function basicResult(query: string, externalId: number): MetadataSearchResult {
     externalId,
     title: query.trim(),
     overview: null,
-    posterPath: null,
-    backdropPath: null,
     voteAverage: null,
     releaseDate: null,
     originalLanguage: null,
-    localPosterPath: null,
   };
 }
 
@@ -103,12 +100,9 @@ export class DefaultMetadataProvider implements MetadataProvider {
         externalId,
         title: '',
         overview: null,
-        posterPath: null,
-        backdropPath: null,
         voteAverage: null,
         releaseDate: null,
         originalLanguage: null,
-        localPosterPath: null,
       },
     };
   }

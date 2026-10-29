@@ -150,7 +150,7 @@ describe('loadConfig', () => {
   });
 
   it('convierte las rutas relativas en absolutas respecto al archivo', async () => {
-    const file = await tempConfig('library:\n  roots:\n    - path: ./videos\n      type: anime\n');
+    const file = await tempConfig('library:\n  roots:\n    - path: ./videos\n      type: series\n');
 
     const config = await loadConfig({ configPath: file, env: {} });
 

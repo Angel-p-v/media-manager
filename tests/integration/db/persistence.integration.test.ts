@@ -70,7 +70,7 @@ describe('capa de persistencia (integración)', () => {
       const repo = createMediaRepository(db);
 
       const media = repo.upsert({
-        type: 'anime',
+        type: 'series',
         title: 'Cowboy Bebop',
         folderPath: '/media/Cowboy Bebop',
         year: 1998,
@@ -78,34 +78,34 @@ describe('capa de persistencia (integración)', () => {
 
       expect(media.id).toBeGreaterThan(0);
       expect(media.title).toBe('Cowboy Bebop');
-      expect(media.type).toBe('anime');
+      expect(media.type).toBe('series');
       expect(repo.findById(media.id)?.title).toBe('Cowboy Bebop');
     });
 
     it('actualiza en lugar de duplicar cuando la carpeta ya existe', () => {
       const repo = createMediaRepository(db);
 
-      repo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/Akira' });
-      repo.upsert({ type: 'anime', title: 'Akira (1988)', folderPath: '/media/Akira' });
+      repo.upsert({ type: 'series', title: 'Akira', folderPath: '/media/Akira' });
+      repo.upsert({ type: 'series', title: 'Akira (1988)', folderPath: '/media/Akira' });
 
-      expect(repo.count('anime')).toBe(1);
+      expect(repo.count('series')).toBe(1);
       expect(repo.findByFolderPath('/media/Akira')?.title).toBe('Akira (1988)');
     });
 
     it('filtra por tipo y ordena por título', () => {
       const repo = createMediaRepository(db);
-      repo.upsert({ type: 'anime', title: 'Zeta', folderPath: '/media/Zeta' });
+      repo.upsert({ type: 'series', title: 'Zeta', folderPath: '/media/Zeta' });
       repo.upsert({ type: 'movie', title: 'Alien', folderPath: '/media/Alien' });
-      repo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/Akira' });
+      repo.upsert({ type: 'series', title: 'Akira', folderPath: '/media/Akira' });
 
-      const anime = repo.list({ type: 'anime' });
+      const series = repo.list({ type: 'series' });
 
-      expect(anime.map((item) => item.title)).toEqual(['Akira', 'Zeta']);
+      expect(series.map((item) => item.title)).toEqual(['Akira', 'Zeta']);
     });
 
     it('encuentra por búsqueda de texto', () => {
       const repo = createMediaRepository(db);
-      repo.upsert({ type: 'anime', title: 'Cowboy Bebop', folderPath: '/media/cb' });
+      repo.upsert({ type: 'series', title: 'Cowboy Bebop', folderPath: '/media/cb' });
       repo.upsert({ type: 'movie', title: 'Alien', folderPath: '/media/alien' });
 
       const results = repo.search('cowboy');
@@ -116,7 +116,7 @@ describe('capa de persistencia (integración)', () => {
 
     it('busca por prefijo', () => {
       const repo = createMediaRepository(db);
-      repo.upsert({ type: 'anime', title: 'Cowboy Bebop', folderPath: '/media/cb' });
+      repo.upsert({ type: 'series', title: 'Cowboy Bebop', folderPath: '/media/cb' });
 
       expect(repo.search('beb')).toHaveLength(1);
     });
@@ -130,7 +130,11 @@ describe('capa de persistencia (integración)', () => {
     it('borra un título y sus ficheros en cascada', () => {
       const mediaRepo = createMediaRepository(db);
       const fileRepo = createFileRepository(db);
-      const media = mediaRepo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/akira' });
+      const media = mediaRepo.upsert({
+        type: 'series',
+        title: 'Akira',
+        folderPath: '/media/akira',
+      });
       fileRepo.upsertMany([{ mediaId: media.id, filePath: '/media/akira/e01.mkv', episode: 1 }]);
 
       expect(mediaRepo.remove(media.id)).toBe(true);
@@ -255,17 +259,17 @@ describe('capa de persistencia (integración)', () => {
   describe('repositorio de títulos: conteo y carpetas', () => {
     it('cuenta por tipo y en total', () => {
       const repo = createMediaRepository(db);
-      repo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/akira' });
+      repo.upsert({ type: 'series', title: 'Akira', folderPath: '/media/akira' });
       repo.upsert({ type: 'movie', title: 'Alien', folderPath: '/media/alien' });
 
-      expect(repo.count('anime')).toBe(1);
+      expect(repo.count('series')).toBe(1);
       expect(repo.count('movie')).toBe(1);
       expect(repo.count()).toBe(2);
     });
 
     it('lista las carpetas de la biblioteca', () => {
       const repo = createMediaRepository(db);
-      repo.upsert({ type: 'anime', title: 'Akira', folderPath: '/media/akira' });
+      repo.upsert({ type: 'series', title: 'Akira', folderPath: '/media/akira' });
 
       expect(repo.listFolders()).toEqual(['/media/akira']);
     });

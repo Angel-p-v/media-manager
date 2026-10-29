@@ -142,7 +142,7 @@ export function classifyFile(input: ClassifyInput): ClassifiedFile | null {
   //   - Si el nombre tiene año detectable, es claramente una película.
   //   - Si no tiene año pero la raíz está configurada como 'movie', confiamos
   //     en la configuración del usuario.
-  //   - En cualquier otro caso (raíz de series/anime sin año), es ambiguo:
+  //   - En cualquier otro caso (raíz de series sin año), es ambiguo:
   //     se deja para la heurística de carpeta padre o 'unknown'.
   const movie = parseMovie(input.filePath);
   if (movie && (movie.year !== null || input.root.type === 'movie')) {

@@ -71,7 +71,7 @@ describe('configSchema', () => {
   it('informa del campo exacto que falla', () => {
     const result = configSchema.safeParse({
       player: { default: 'mpv' },
-      library: { roots: [{ path: '', type: 'anime' }] },
+      library: { roots: [{ path: '', type: 'series' }] },
     });
 
     expect(result.success).toBe(false);
@@ -82,7 +82,7 @@ describe('configSchema', () => {
 });
 
 describe('mediaTypeSchema', () => {
-  it.each(['series', 'anime', 'movie'] as const)('acepta el tipo %s', (type) => {
+  it.each(['series', 'movie'] as const)('acepta el tipo %s', (type) => {
     expect(mediaTypeSchema.safeParse(type).success).toBe(true);
   });
 

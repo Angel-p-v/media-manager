@@ -3,7 +3,7 @@ import { InvalidArgumentError } from 'commander';
 import type { MediaType } from '../core/config/schema.js';
 import type { ListMediaOptions } from '../core/db/repositories/mediaRepo.js';
 
-const MEDIA_TYPES: readonly MediaType[] = ['series', 'anime', 'movie'];
+const MEDIA_TYPES: readonly MediaType[] = ['series', 'movie'];
 const SORT_ORDERS: readonly NonNullable<ListMediaOptions['orderBy']>[] = [
   'title',
   'added',
@@ -14,7 +14,7 @@ const SORT_ORDERS: readonly NonNullable<ListMediaOptions['orderBy']>[] = [
 export function parseMediaType(value: string): MediaType {
   const match = MEDIA_TYPES.find((type) => type === value);
   if (!match) {
-    throw new InvalidArgumentError(`Tipo no válido: «${value}». Usa series, anime o movie.`);
+    throw new InvalidArgumentError(`Tipo no válido: «${value}». Usa series o movie.`);
   }
   return match;
 }

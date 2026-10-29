@@ -56,13 +56,10 @@ const fakeMetadata: MediaMetadataRow = {
   title: 'Black Torch',
   overview:
     'Jiro Azuma es un joven que puede comunicarse con animales y se une a una organización secreta.',
-  posterPath: 'https://static.tvmaze.com/uploads/images/original/789.jpg',
-  backdropPath: null,
   voteAverage: 8.0,
   releaseDate: '2023-04-08',
   firstAirDate: null,
   originalLanguage: 'Japanese',
-  localPosterPath: null,
   fetchedAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
