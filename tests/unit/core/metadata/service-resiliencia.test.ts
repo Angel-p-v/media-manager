@@ -10,7 +10,6 @@ const logger = {
 };
 
 const tvmazeConfig = { logger };
-const jikanConfig = { logger };
 const noKeyConfig = { logger };
 
 function okResponse(status = 200, body: unknown = {}): Response {
@@ -77,7 +76,6 @@ describe('MetadataService resiliencia', () => {
         externalId: 123,
         title: 'Severance',
         overview: 'Una serie',
-        posterPath: '/poster.jpg',
         voteAverage: 8.5,
       });
     });
@@ -119,7 +117,6 @@ describe('MetadataService resiliencia', () => {
         provider: 'tvmaze',
         externalId: 456,
         title: 'Película',
-        localPosterPath: null,
       });
     });
 
@@ -170,146 +167,42 @@ describe('MetadataService resiliencia', () => {
       const service = new MetadataService(tvmazeConfig);
       const result = await service.getTvMazeDetails(789, 'tv');
 
-      expect(result.localPosterPath).not.toBeNull();
-    });
-  });
-
-  describe('searchJikan', () => {
-    it('lanza MetadataError cuando Jikan responde 429', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValueOnce(errorResponse(429));
-      const service = new MetadataService(jikanConfig);
-      await expect(service.searchJikan('sever')).rejects.toBeInstanceOf(MetadataError);
-    });
-
-    it('propaga error de red', async () => {
-      globalThis.fetch = vi.fn().mockRejectedValueOnce(new TypeError('ECONNREFUSED'));
-      const service = new MetadataService(jikanConfig);
-      await expect(service.searchJikan('sever')).rejects.toThrow('ECONNREFUSED');
-    });
-
-    it('devuelve resultados mapeados con respuesta exitosa', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValueOnce(
-        okResponse(200, {
-          data: [
-            {
-              mal_id: 789,
-              title: 'Serie TV',
-              title_english: 'Serie TV',
-              title_japanese: null,
-              title_synonyms: [],
-              type: 'TV',
-              source: 'Original',
-              episodes: 12,
-              status: 'Finished Airing',
-              airing: false,
-              aired: { from: '2021-01-01', to: null, string: 'Ene 2021' },
-              duration: '24 min',
-              rating: 'PG-13',
-              score: 8.5,
-              ranked: null,
-              popularity: null,
-              members: null,
-              favorites: null,
-              synopsis: 'Una serie de TV',
-              background: null,
-              season: 'winter',
-              year: 2021,
-              broadcast: null,
-              producers: [],
-              licensors: [],
-              studios: [],
-              genres: [{ mal_id: 1, name: 'Action' }],
-              explicit_genres: [],
-              themes: [],
-              demographic: null,
-              images: {
-                jpg: {
-                  image_url: '/poster.jpg',
-                  small_image_url: '/poster.jpg',
-                  large_image_url: '/poster.jpg',
-                },
-                webp: {
-                  image_url: '/poster.jpg',
-                  small_image_url: '/poster.jpg',
-                  large_image_url: '/poster.jpg',
-                },
-              },
-              trailer: null,
-            },
-          ],
-          pagination: { last_visible_page: 1 },
-        }),
-      );
-      const service = new MetadataService(jikanConfig);
-      const results = await service.searchJikan('serie');
-
-      expect(results).toHaveLength(1);
-      expect(results[0]).toMatchObject({
-        provider: 'jikan',
-        externalId: 789,
-        title: 'Serie TV',
-        posterPath: '/poster.jpg',
-      });
+      expect(result.externalId).toBe(789);
     });
   });
 
   describe('search con proveedores públicos', () => {
     it('search funciona sin API keys', async () => {
-      globalThis.fetch = vi
-        .fn()
-        .mockResolvedValueOnce(
-          new Response(JSON.stringify({ error: 'Not Found' }), { status: 404 }),
-        )
-        .mockResolvedValueOnce(
-          okResponse(200, {
-            data: [
-              {
-                mal_id: 456,
-                title: 'Naruto',
-                title_english: 'Naruto',
-                title_japanese: null,
-                title_synonyms: [],
-                type: 'TV',
-                source: 'Manga',
-                episodes: 220,
-                status: 'Finished Airing',
-                airing: false,
-                aired: { from: '2002-10-03', to: null, string: 'Oct 3, 2002' },
-                duration: '23 min',
-                rating: 'PG-13',
-                score: 8.2,
-                ranked: null,
-                popularity: null,
-                members: null,
-                favorites: null,
-                synopsis: 'Un ninja busca ser Hokage.',
-                background: null,
-                season: 'fall',
-                year: 2002,
-                broadcast: null,
-                producers: [],
-                licensors: [],
-                studios: [],
-                genres: [],
-                explicit_genres: [],
-                themes: [],
-                demographic: null,
-                images: {
-                  jpg: { image_url: null, small_image_url: null, large_image_url: null },
-                  webp: { image_url: null, small_image_url: null, large_image_url: null },
-                },
-                trailer: null,
-              },
-            ],
-            pagination: { last_visible_page: 1 },
-          }),
-        );
+      globalThis.fetch = vi.fn().mockResolvedValueOnce(
+        okResponse(200, {
+          id: 456,
+          name: 'Naruto',
+          type: 'TV',
+          language: 'Japanese',
+          genres: ['Action', 'Adventure'],
+          status: 'Ended',
+          runtime: 24,
+          premiered: '2002-10-03',
+          officialSite: null,
+          schedule: { time: '1:25', days: ['Thursday'] },
+          rating: { average: 8.2 },
+          weight: 90,
+          network: null,
+          webChannel: null,
+          externals: { tvrage: null, thetvdb: null, imdb: null },
+          image: { medium: null, original: null },
+          summary: '<p>Un ninja busca ser Hokage.</p>',
+          updated: 1234567890,
+          _links: { self: { href: 'https://api.tvmaze.com/shows/456' } },
+        }),
+      );
 
       const service = new MetadataService(noKeyConfig);
       const results = await service.search('Naruto');
 
       expect(results.length).toBe(1);
-      expect(results[0]!.provider).toBe('jikan');
+      expect(results[0]!.provider).toBe('tvmaze');
+      expect(results[0]!.title).toBe('Naruto');
     });
   });
 });

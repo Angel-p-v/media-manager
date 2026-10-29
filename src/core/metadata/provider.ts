@@ -18,18 +18,12 @@ export type MetadataSearchResult = {
   readonly title: string;
   /** Sinopsis (puede ser null). */
   readonly overview: string | null;
-  /** Ruta del póster en el proveedor (puede ser null). */
-  readonly posterPath: string | null;
-  /** Ruta del backdrop en el proveedor (puede ser null). */
-  readonly backdropPath: string | null;
   /** Puntuación media (puede ser null). */
   readonly voteAverage: number | null;
   /** Fecha de estreno / primera emisión (puede ser null). */
   readonly releaseDate: string | null;
   /** Idioma original (puede ser null). */
   readonly originalLanguage: string | null;
-  /** Ruta local al póster descargado en caché (puede ser null). */
-  readonly localPosterPath: string | null;
 };
 
 /** Resultado de enriquecimiento de un título existente. */
@@ -38,12 +32,9 @@ export type MetadataEnrichment = {
   readonly provider: string;
   readonly title: string;
   readonly overview: string | null;
-  readonly posterPath: string | null;
-  readonly backdropPath: string | null;
   readonly voteAverage: number | null;
   readonly releaseDate: string | null;
   readonly originalLanguage: string | null;
-  readonly localPosterPath: string | null;
 };
 
 /** Tipo discriminado para el resultado de una operación de metadatos. */

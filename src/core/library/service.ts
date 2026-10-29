@@ -76,12 +76,10 @@ export type LibraryService = {
   /** Establece o actualiza metadatos externos de un título. */
   setMetadata(input: {
     mediaId: number;
-    provider: 'tvmaze' | 'jikan' | 'default';
+    provider: 'tvmaze' | 'default';
     externalId: number;
     title?: string | null;
     overview?: string | null;
-    posterPath?: string | null;
-    backdropPath?: string | null;
     voteAverage?: number | null;
     firstAirDate?: string | null;
     releaseDate?: string | null;
@@ -217,7 +215,6 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         media: {
           total: mediaRepo.count(),
           series: mediaRepo.count('series'),
-          anime: mediaRepo.count('anime'),
           movie: mediaRepo.count('movie'),
           unknown: mediaRepo.count('unknown'),
         },
@@ -267,17 +264,14 @@ export function createLibraryService(repositories: LibraryRepositories): Library
 
     setMetadata(input: {
       mediaId: number;
-      provider: 'tvmaze' | 'jikan' | 'default';
+      provider: 'tvmaze' | 'default';
       externalId: number;
       title?: string | null;
       overview?: string | null;
-      posterPath?: string | null;
-      backdropPath?: string | null;
       voteAverage?: number | null;
       firstAirDate?: string | null;
       releaseDate?: string | null;
       originalLanguage?: string | null;
-      localPosterPath?: string | null;
     }): MediaMetadataRow {
       return metadataRepo.set({
         mediaId: input.mediaId,
@@ -285,13 +279,10 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         externalId: input.externalId,
         title: input.title ?? null,
         overview: input.overview ?? null,
-        posterPath: input.posterPath ?? null,
-        backdropPath: input.backdropPath ?? null,
         voteAverage: input.voteAverage ?? null,
         firstAirDate: input.firstAirDate ?? null,
         releaseDate: input.releaseDate ?? null,
         originalLanguage: input.originalLanguage ?? null,
-        localPosterPath: input.localPosterPath ?? null,
         updatedAt: new Date().toISOString(),
       });
     },
@@ -323,62 +314,49 @@ export function createLibraryService(repositories: LibraryRepositories): Library
       const now = new Date();
 
       // Si existen metadatos y no han expirado, devolverlos directamente,
-      // a menos que se force el refresco o que no tengan póster y haya un
-      // proveedor externo disponible.
+      // a menos que se force el refresco.
       if (existing && !forceRefresh) {
         const fetchedAt = new Date(existing.fetchedAt);
         const ageHours = (now.getTime() - fetchedAt.getTime()) / (1000 * 60 * 60);
-        const hasExternalProvider = metadataService.hasProviderConfigured();
-        const needsPoster = existing.localPosterPath === null;
-
-        if (ageHours < ttlHours && !(needsPoster && hasExternalProvider)) {
+        if (ageHours < ttlHours) {
           return existing;
         }
       }
 
       // Si hay algún proveedor disponible, intentar obtener metadatos
       if (metadataService.hasProviderConfigured()) {
-        // Si ya tenemos metadatos previos (expirados o sin póster) con externalId, refrescar por ID
+        // Si ya tenemos metadatos previos (expirados) con externalId, refrescar por ID
         if (existing?.externalId) {
-          for (const provider of ['tvmaze', 'jikan'] as const) {
-            if (!metadataService.isProviderConfigured(provider)) continue;
-
-            try {
-              const mediaType = 'tv';
-              const details = await metadataService.getDetails(
-                existing.externalId,
-                provider,
-                mediaType,
-              );
-              logger?.debug('metadata.fetch.by-id.ok', {
-                mediaId,
-                provider,
-                externalId: details.externalId,
-                title: details.title,
-              });
-              return metadataRepo.set({
-                mediaId,
-                provider,
-                externalId: details.externalId,
-                title: details.title,
-                overview: details.overview,
-                posterPath: details.posterPath,
-                backdropPath: details.backdropPath,
-                voteAverage: details.voteAverage,
-                releaseDate: details.releaseDate,
-                originalLanguage: details.originalLanguage,
-                localPosterPath: details.localPosterPath ?? null,
-                updatedAt: now.toISOString(),
-              });
-            } catch (error) {
-              logger?.debug('metadata.fetch.by-id.fail', {
-                mediaId,
-                provider,
-                error: formatError(error),
-              });
-              // Si falla un proveedor, probar el siguiente
-              continue;
-            }
+          try {
+            const mediaType = 'tv';
+            const details = await metadataService.getDetails(
+              existing.externalId,
+              'tvmaze',
+              mediaType,
+            );
+            logger?.debug('metadata.fetch.by-id.ok', {
+              mediaId,
+              provider: 'tvmaze',
+              externalId: details.externalId,
+              title: details.title,
+            });
+            return metadataRepo.set({
+              mediaId,
+              provider: 'tvmaze',
+              externalId: details.externalId,
+              title: details.title,
+              overview: details.overview,
+              voteAverage: details.voteAverage,
+              releaseDate: details.releaseDate,
+              originalLanguage: details.originalLanguage,
+              updatedAt: now.toISOString(),
+            });
+          } catch (error) {
+            logger?.debug('metadata.fetch.by-id.fail', {
+              mediaId,
+              provider: 'tvmaze',
+              error: formatError(error),
+            });
           }
         }
 
@@ -424,17 +402,14 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                 (
                   r,
                 ): r is {
-                  provider: 'tvmaze' | 'jikan' | 'default';
+                  provider: 'tvmaze' | 'default';
                   externalId: number;
                   title: string;
                   overview: string | null;
-                  posterPath: string | null;
-                  backdropPath: string | null;
                   voteAverage: number | null;
                   releaseDate: string | null;
                   originalLanguage: string | null;
-                  localPosterPath: string | null;
-                } => r.provider === 'tvmaze' || r.provider === 'jikan',
+                } => r.provider === 'tvmaze',
               );
 
               if (result) {
@@ -459,7 +434,6 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                   provider: result.provider,
                   externalId: details.externalId,
                   title,
-                  hasPoster: !!details.localPosterPath,
                 });
                 return metadataRepo.set({
                   mediaId,
@@ -467,12 +441,9 @@ export function createLibraryService(repositories: LibraryRepositories): Library
                   externalId: details.externalId,
                   title,
                   overview: details.overview,
-                  posterPath: details.posterPath,
-                  backdropPath: details.backdropPath,
                   voteAverage: details.voteAverage,
                   releaseDate: details.releaseDate,
                   originalLanguage: details.originalLanguage,
-                  localPosterPath: details.localPosterPath ?? null,
                   updatedAt: now.toISOString(),
                 });
               } else {
@@ -518,37 +489,28 @@ export function createLibraryService(repositories: LibraryRepositories): Library
         }
 
         let updated = false;
-        for (const provider of ['tvmaze', 'jikan'] as const) {
-          if (!metadataService.isProviderConfigured(provider)) continue;
-
-          try {
-            const mediaType = 'tv';
-            const details = await metadataService.getDetails(
-              existing.externalId,
-              provider,
-              mediaType,
-            );
-            metadataRepo.set({
-              mediaId: existing.mediaId,
-              provider,
-              externalId: details.externalId,
-              title: details.title,
-              overview: details.overview,
-              posterPath: details.posterPath,
-              backdropPath: details.backdropPath,
-              voteAverage: details.voteAverage,
-              releaseDate: details.releaseDate,
-              originalLanguage: details.originalLanguage,
-              localPosterPath: details.localPosterPath ?? null,
-              updatedAt: new Date().toISOString(),
-            });
-            refreshed++;
-            updated = true;
-            break;
-          } catch {
-            // Si falla un proveedor, probar el siguiente
-            continue;
-          }
+        try {
+          const mediaType = 'tv';
+          const details = await metadataService.getDetails(
+            existing.externalId,
+            'tvmaze',
+            mediaType,
+          );
+          metadataRepo.set({
+            mediaId: existing.mediaId,
+            provider: 'tvmaze',
+            externalId: details.externalId,
+            title: details.title,
+            overview: details.overview,
+            voteAverage: details.voteAverage,
+            releaseDate: details.releaseDate,
+            originalLanguage: details.originalLanguage,
+            updatedAt: new Date().toISOString(),
+          });
+          refreshed++;
+          updated = true;
+        } catch {
+          // Si falla el proveedor, se cuenta como fallo
         }
 
         if (!updated) {
@@ -627,7 +589,7 @@ function normalizeForMatch(value: string): string {
 
 /**
  * Limpia un título de biblioteca para usarlo como consulta de búsqueda en APIs
- * externas (TVMaze, Jikan). Elimina:
+ * externas (TVMaze). Elimina:
  * - Etiquetas entre corchetes: [Judas], [DualAudio], etc.
  * - Especificadores de temporada/episodio y todo lo que sigue: S01E01, S01 E01, 1x01,
  *   Season 01, T1E2, E01, etc. (corta todo desde el primer patrón en adelante)

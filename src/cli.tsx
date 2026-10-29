@@ -39,9 +39,7 @@ import { runTui, defaultLogFile } from './ui/run.js';
 
 const program = new Command()
   .name('mm')
-  .description(
-    'Media Manager — gestor de contenido multimedia para terminal (series, anime y películas)',
-  )
+  .description('Media Manager — gestor de contenido multimedia para terminal (series y películas)')
   .version(getVersion(), '-V, --version', 'muestra la versión')
   .option('-v, --verbose', 'activa logs de depuración y pilas de error')
   .option('--log-file <ruta>', 'escribe los logs en un archivo con rotación automática (10 MB)')
@@ -52,7 +50,7 @@ const program = new Command()
   )
   .addHelpText(
     'after',
-    '\nEjemplos de uso:\n  mm                              abre la interfaz interactiva (TUI)\n  mm list                         lista todos los títulos indexados\n  mm search "Black Torch"         busca un título por nombre\n  mm show 1                       muestra el detalle del título #1\n  mm play 1                       reproduce el título #1\n  mm index                        indexa la biblioteca completa\n  mm metadata search "Black Torch"busca metadatos externos (TVMaze/Jikan)\n  mm doctor                       diagnostica y repara la biblioteca\n  mm completion bash              genera script de autocompletado para bash\n\nCódigos de salida:\n  0  éxito\n  1  error de ejecución\n  2  uso incorrecto\n',
+    '\nEjemplos de uso:\n  mm                              abre la interfaz interactiva (TUI)\n  mm list                         lista todos los títulos indexados\n  mm search "Black Torch"         busca un título por nombre\n  mm show 1                       muestra el detalle del título #1\n  mm play 1                       reproduce el título #1\n  mm index                        indexa la biblioteca completa\n  mm metadata search "Black Torch"busca metadatos externos (TVMaze)\n  mm doctor                       diagnostica y repara la biblioteca\n  mm completion bash              genera script de autocompletado para bash\n\nCódigos de salida:\n  0  éxito\n  1  error de ejecución\n  2  uso incorrecto\n',
   )
   .exitOverride();
 
@@ -93,7 +91,7 @@ program
   .command('list')
   .description('enumera los títulos de la biblioteca con filtros y paginación')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
-  .option('-t, --type <tipo>', 'filtra por tipo (series, anime, movie)', parseMediaType)
+  .option('-t, --type <tipo>', 'filtra por tipo (series, movie)', parseMediaType)
   .option('--sort <orden>', 'ordena por title, added o recent', parseSortOrder)
   .option('--limit <n>', 'número máximo de resultados', parsePositiveInteger)
   .option('--offset <n>', 'resultados a saltar', parseNonNegativeInteger)
@@ -112,14 +110,14 @@ program
   .description('busca títulos por texto en la biblioteca indexada')
   .argument('<consulta>', 'texto a buscar')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
-  .option('-t, --type <tipo>', 'filtra por tipo (series, anime, movie)', parseMediaType)
+  .option('-t, --type <tipo>', 'filtra por tipo (series, movie)', parseMediaType)
   .option('--limit <n>', 'número máximo de resultados', parsePositiveInteger)
   .option('--json', 'salida en formato JSON')
   .action(runSearchCommand);
 
 program
   .command('show')
-  .description('muestra el detalle completo de un título (metadatos, ficheros, póster)')
+  .description('muestra el detalle completo de un título (metadatos y ficheros)')
   .argument('<id-o-titulo>', 'id numérico o título a consultar')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--json', 'salida en formato JSON')
@@ -207,7 +205,7 @@ program
 
 program
   .command('doctor')
-  .description('diagnóstico y reparación de la biblioteca (índice, metadatos, pósters)')
+  .description('diagnóstico y reparación de la biblioteca (índice y metadatos)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('--json', 'salida en formato JSON')
   .option('--full-hash', 'hash completo para confirmar duplicados')
@@ -231,12 +229,12 @@ program
 
 program
   .command('metadata')
-  .description('gestiona metadatos externos (TVMaze para series/películas, Jikan para anime)')
+  .description('gestiona metadatos externos (TVMaze para series y películas)')
   .option('-c, --config <ruta>', 'archivo de configuración a usar')
   .option('-a, --action <fetch|search|clear|cache>', 'acción: fetch, search, clear o cache')
   .option('-m, --media-id <id>', 'id del título (requerido para fetch/clear)')
   .option('-q, --query <texto>', 'consulta de búsqueda (requerido para search)')
-  .option('-p, --provider <tvmaze|jikan>', 'proveedor de metadatos (tvmaze o jikan)')
+  .option('-p, --provider <tvmaze|default>', 'proveedor de metadatos (tvmaze o default)')
   .option('-e, --external-id <id>', 'id externo (requerido para fetch)')
   .option('--json', 'salida en formato JSON')
   .action(runMetadataCommand);

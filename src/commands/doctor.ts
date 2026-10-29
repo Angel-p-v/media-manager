@@ -1,8 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, readdirSync, statSync, accessSync, constants } from 'node:fs';
+import { existsSync, statSync, accessSync, constants } from 'node:fs';
 import { open } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import path from 'node:path';
 
 import pc from 'picocolors';
@@ -235,7 +234,6 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
             ...(options.full === true && {
               extended: {
                 databaseSizeBytes: databaseSizeBytes(config.database.path),
-                posterCacheSizeBytes: posterCacheSizeBytes(),
                 players: {
                   mpv: playerVersion('mpv'),
                   vlc: playerVersion('vlc'),
@@ -282,7 +280,6 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
       console.log('');
       console.log(pc.bold('Información extendida:'));
       console.log(`  Tamaño BD: ${pc.dim(formatBytes(databaseSizeBytes(config.database.path)))}`);
-      console.log(`  Caché de pósteres: ${pc.dim(formatBytes(posterCacheSizeBytes()))}`);
       console.log(`  Reproductores:`);
       console.log(`    mpv: ${pc.dim(playerVersion('mpv') ?? 'no encontrado')}`);
       console.log(`    vlc: ${pc.dim(playerVersion('vlc') ?? 'no encontrado')}`);
@@ -290,9 +287,7 @@ export async function runDoctorCommand(options: DoctorCommandOptions): Promise<v
       const tvmaze = await checkConnectivity(
         'https://api.tvmaze.com/singlesearch/shows?q=severance',
       );
-      const jikan = await checkConnectivity('https://api.jikan.moe/v4/anime?q=severance');
       console.log(`    TVMaze: ${pc.dim(tvmaze ? 'ok' : 'sin respuesta')}`);
-      console.log(`    Jikan: ${pc.dim(jikan ? 'ok' : 'sin respuesta')}`);
     }
 
     // --prune-missing
@@ -477,29 +472,6 @@ async function fullFileHash(filePath: string): Promise<string> {
   } finally {
     await handle.close();
   }
-}
-
-/**
- * Suma el tamaño de todos los ficheros dentro de un directorio (no recursivo en
- * subdirectorios profundos, suficiente para la caché plana de pósteres).
- */
-function posterCacheSizeBytes(): number {
-  const cacheDir = path.join(homedir(), '.cache', 'media-manager', 'posters');
-  try {
-    const entries = statSync(cacheDir);
-    if (!entries.isDirectory()) return 0;
-  } catch {
-    return 0;
-  }
-  let total = 0;
-  for (const entry of readdirSync(cacheDir)) {
-    try {
-      total += statSync(path.join(cacheDir, entry)).size;
-    } catch {
-      // Ignorado: fichero que desapareció entre el listado y el stat
-    }
-  }
-  return total;
 }
 
 /**

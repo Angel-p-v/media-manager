@@ -219,12 +219,9 @@ export function createMetadataManager(config: MetadataManagerConfig): MetadataMa
         provider: providerName,
         title: data.title,
         overview: data.overview,
-        posterPath: data.posterPath,
-        backdropPath: data.backdropPath,
         voteAverage: data.voteAverage,
         releaseDate: data.releaseDate,
         originalLanguage: data.originalLanguage,
-        localPosterPath: data.localPosterPath,
       },
     };
   }
