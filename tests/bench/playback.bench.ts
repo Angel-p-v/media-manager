@@ -60,7 +60,7 @@ beforeAll(() => {
     for (let index = 0; index < STRESS_ENTRIES; index += 1) {
       const title = `Bench Show ${index}`;
       const folderPath = `/library/bench-${index}`;
-      const type = index % 3 === 0 ? 'series' : index % 3 === 1 ? 'anime' : 'movie';
+      const type = index % 3 === 0 ? 'series' : index % 3 === 1 ? 'series' : 'movie';
 
       const mediaResult = insertMediaStmt.run({
         type,
